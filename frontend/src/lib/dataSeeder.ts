@@ -1,5 +1,6 @@
 import { useAppStore } from '../store/useAppStore';
 import type { Room, Booking } from '../store/useAppStore';
+import { resolveTaxRatePercent } from './tax';
 
 const GUEST_NAMES = [
   'Sarah Johnson', 'Michael Chen', 'Emma Williams', 'David Martinez', 'Lisa Anderson',
@@ -553,8 +554,10 @@ export function seedDatabase(): void {
   // INVOICES (one per paid/checked-out booking, up to 40)
   // ============================================
   const paidBookings = bookings.filter(b => b.paymentStatus === 'paid' || b.status === 'checked-out' || b.status === 'checked-in').slice(0, 40);
+  const seededTaxConfigs = useAppStore.getState().taxConfigs;
   const invoices = paidBookings.map((booking, idx) => {
-    const vatRate = 15;
+    const date = booking.createdAt;
+    const vatRate = resolveTaxRatePercent(seededTaxConfigs, 'room', date, 15);
     const subtotal = booking.amount;
     const taxAmount = Math.floor(subtotal * vatRate / 100);
     const discount = Math.random() > 0.8 ? Math.floor(subtotal * 0.1) : 0;
