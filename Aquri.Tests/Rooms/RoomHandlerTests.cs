@@ -232,6 +232,24 @@ namespace Aquri.Tests.Rooms
             result.Success.Should().BeFalse();
             result.Error.Should().Contain("add");
         }
+
+        [Fact]
+        public async Task Return_Failure_For_Empty_Amenity()
+        {
+            // Previously reached Room.AddAmenity's ArgumentException → 500.
+            // Must now surface as a validation failure.
+            var room = new Room("504", 1, "suite");
+            Context.Rooms.Add(room);
+            await Context.SaveChangesAsync();
+
+            var handler = new UpdateRoomAmenitiesHandler(Context, Mapper);
+            var command = new UpdateRoomAmenitiesCommand { RoomId = room.Id, Action = "add", Amenity = "  " };
+
+            var result = await handler.Handle(command, CancellationToken.None);
+
+            result.Success.Should().BeFalse();
+            result.Error.Should().Contain("Amenity");
+        }
     }
 
     public class UpdateRoomViewHandler_Should : RoomHandlerTestBase

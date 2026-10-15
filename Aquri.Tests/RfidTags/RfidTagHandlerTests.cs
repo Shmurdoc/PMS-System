@@ -133,6 +133,29 @@ namespace Aquri.Tests.RfidTags
         }
 
         [Fact]
+        public async Task Allow_Reissuing_A_Revoked_Card_Number()
+        {
+            // One LIVE tag per physical card: once revoked (blocked), the card's
+            // number may be re-issued to a new holder.
+            var user1 = await SeedUser();
+            var user2 = await SeedUser("Day Porter", "housekeeping");
+            var issue = new IssueRfidTagHandler(Context);
+            var first = await issue.Handle(new IssueRfidTagCommand(
+                1, "staff", "UID-RECYCLE", user1.Id, null, null, null, null),
+                CancellationToken.None);
+            await new RevokeRfidTagHandler(Context).Handle(
+                new RevokeRfidTagCommand(first.Data!.Id, "lost"), CancellationToken.None);
+
+            var second = await issue.Handle(new IssueRfidTagCommand(
+                1, "staff", "UID-RECYCLE", user2.Id, null, null, null, null),
+                CancellationToken.None);
+
+            second.Success.Should().BeTrue();
+            second.Data!.UserId.Should().Be(user2.Id);
+            Context.RfidTags.Should().HaveCount(2);
+        }
+
+        [Fact]
         public async Task Reject_Unknown_Kind_And_Missing_Binding()
         {
             var handler = new IssueRfidTagHandler(Context);

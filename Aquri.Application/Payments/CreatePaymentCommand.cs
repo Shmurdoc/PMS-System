@@ -29,6 +29,31 @@ namespace Aquri.Application.Payments
 
         public async Task<Result<PaymentDto>> Handle(CreatePaymentCommand request, CancellationToken cancellationToken)
         {
+            // The invoice/booking FKs are client-supplied IDs — verify they exist
+            // and belong to the same property before stamping them onto the
+            // payment, otherwise dangling or cross-property references persist.
+            var guest = await _context.Guests.FindAsync(request.GuestId);
+            if (guest is null)
+                return Result<PaymentDto>.Failure("Guest not found.");
+
+            if (request.InvoiceId.HasValue)
+            {
+                var invoice = await _context.Invoices.FindAsync(request.InvoiceId.Value);
+                if (invoice is null)
+                    return Result<PaymentDto>.Failure("Invoice not found.");
+                if (invoice.PropertyId != request.PropertyId)
+                    return Result<PaymentDto>.Failure("Invoice does not belong to the specified property.");
+            }
+
+            if (request.BookingId.HasValue)
+            {
+                var booking = await _context.Bookings.FindAsync(request.BookingId.Value);
+                if (booking is null)
+                    return Result<PaymentDto>.Failure("Booking not found.");
+                if (booking.PropertyId != request.PropertyId)
+                    return Result<PaymentDto>.Failure("Booking does not belong to the specified property.");
+            }
+
             var paymentNumber = await _numbers.NextPaymentNumberAsync(cancellationToken);
 
             try

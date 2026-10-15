@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Aquri.Application.Invoices;
 using Aquri.Application.Payments;
 using Aquri.Domain.Entities;
 using Aquri.Infrastructure.Persistence;
@@ -70,6 +71,61 @@ namespace Aquri.Tests.Payments
             var result = await handler.Handle(command, CancellationToken.None);
 
             result.Success.Should().BeFalse();
+        }
+
+        [Fact]
+        public async Task Fail_For_Unknown_Guest()
+        {
+            var handler = new CreatePaymentHandler(Context, new NumberGenerator(Context));
+            var command = new CreatePaymentCommand(1, 999, null, null, 100m, "card", "front@nexus.com");
+
+            var result = await handler.Handle(command, CancellationToken.None);
+
+            result.Success.Should().BeFalse();
+            result.Error.Should().Contain("Guest not found");
+        }
+
+        [Fact]
+        public async Task Fail_For_Unknown_Invoice()
+        {
+            var handler = new CreatePaymentHandler(Context, new NumberGenerator(Context));
+            var command = new CreatePaymentCommand(1, GuestId, 999, null, 100m, "card", "front@nexus.com");
+
+            var result = await handler.Handle(command, CancellationToken.None);
+
+            result.Success.Should().BeFalse();
+            result.Error.Should().Contain("Invoice not found");
+        }
+
+        [Fact]
+        public async Task Fail_For_Unknown_Booking()
+        {
+            var handler = new CreatePaymentHandler(Context, new NumberGenerator(Context));
+            var command = new CreatePaymentCommand(1, GuestId, null, 999, 100m, "card", "front@nexus.com");
+
+            var result = await handler.Handle(command, CancellationToken.None);
+
+            result.Success.Should().BeFalse();
+            result.Error.Should().Contain("Booking not found");
+        }
+
+        [Fact]
+        public async Task Fail_For_Invoice_Belonging_To_Different_Property()
+        {
+            var created = await new CreateInvoiceHandler(Context, new NumberGenerator(Context)).Handle(
+                new CreateInvoiceCommand(1, GuestId, null, "booking",
+                    DateTime.UtcNow.AddDays(7), 0, "",
+                    new List<InvoiceItemInput> { new("Room night", 1, 100m, 0.15m, "room") },
+                    "front@nexus.com"),
+                CancellationToken.None);
+
+            var handler = new CreatePaymentHandler(Context, new NumberGenerator(Context));
+            var command = new CreatePaymentCommand(2, GuestId, created.Data!.Id, null, 100m, "card", "front@nexus.com");
+
+            var result = await handler.Handle(command, CancellationToken.None);
+
+            result.Success.Should().BeFalse();
+            result.Error.Should().Contain("does not belong");
         }
     }
 
