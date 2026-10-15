@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
+import { toast } from 'sonner';
 import { getAuthToken } from '../lib/api/config';
 import {
   addTicketComment as apiAddTicketComment,
@@ -154,11 +155,15 @@ function normalizeAppRole(role: string): string {
 
 // Local-first sync: state is already updated; fire-and-forget the API call (demo sessions with no token skip it).
 // onOk, when given, receives the response — creates use it to swap the local id for the server's.
-function syncToApi(label: string, task: () => Promise<unknown>, onOk?: (data: unknown) => void): void {
+// onErr, when given, surfaces the failure to the user instead of only logging it.
+function syncToApi(label: string, task: () => Promise<unknown>, onOk?: (data: unknown) => void, onErr?: (error: unknown) => void): void {
   if (!getAuthToken()) return;
   void task()
     .then((data) => onOk?.(data))
-    .catch((error) => console.warn(`[api] ${label} failed:`, error));
+    .catch((error) => {
+      console.warn(`[api] ${label} failed:`, error);
+      onErr?.(error);
+    });
 }
 
 // Store shift times are clock strings ('07:00'); the API takes full timestamps on a date.
@@ -564,7 +569,7 @@ export interface Payment {
 export interface AuditLog {
   id: string;
   action: string;
-  entityType: 'booking' | 'guest' | 'room' | 'invoice' | 'payment' | 'ticket' | 'user' | 'property' | 'expense' | 'inventory' | 'workflow';
+  entityType: 'booking' | 'guest' | 'room' | 'invoice' | 'payment' | 'ticket' | 'user' | 'property' | 'expense' | 'inventory' | 'workflow' | 'rfid_tag';
   entityId: string;
   entityName: string;
   userId: string;
@@ -1309,6 +1314,8 @@ export const useAppStore = create<AppState>()(
         syncToApi(`issueRfidTag(${tag.id})`, () => issueRfidTag(input), (data) => {
           const dto = data as ApiRfidTag;
           get().reconcileRfidTag(tag.id, String(dto.id));
+        }, () => {
+          toast.error(`Couldn't sync tag ${tag.tagNumber} to the server`);
         });
       },
       updateRfidTag: (id, updates) => set((state) => ({
@@ -1333,8 +1340,9 @@ export const useAppStore = create<AppState>()(
         if (!tag) return { kind: 'unknown' };
         if (!tag.userId || !tag.userName) return { kind: 'unbound' };
         if (tag.status !== 'active') return { kind: 'inactive' };
+        // Expiry is day-granular — an evening tap on checkout day still resolves.
         const tappedAt = new Date().toISOString();
-        if (tag.expiresAt && tappedAt > tag.expiresAt) return { kind: 'expired' };
+        if (tag.expiresAt && tappedAt.slice(0, 10) > tag.expiresAt.slice(0, 10)) return { kind: 'expired' };
 
         const userId = tag.userId;
         const userName = tag.userName;
@@ -1357,7 +1365,7 @@ export const useAppStore = create<AppState>()(
         // The server owns punch order — fold its answer back over the local row.
         const propertyId = toNumericId(tag.propertyId);
         if (propertyId !== null) {
-          syncToApi(`tapStaff(${tag.tagNumber})`, () => tapStaffTag(propertyId, tag.tagNumber, tappedAt), (data) => {
+          syncToApi(`tapStaff(${tag.tagNumber})`, () => tapStaffTag(propertyId, tag.tagNumber), (data) => {
             const dto = data as ApiStaffTapResult;
             set((state) => ({
               attendance: state.attendance.map((a) => a.id === localId
@@ -1373,8 +1381,9 @@ export const useAppStore = create<AppState>()(
         const tag = get().rfidTags.find((t) => t.tagNumber === tagNumber && t.kind === 'guest');
         if (!tag) return { kind: 'unknown' };
         if (tag.status !== 'active') return { kind: 'inactive' };
+        // Expiry is day-granular — an evening tap on checkout day still resolves.
         const tappedAt = new Date().toISOString();
-        if (tag.expiresAt && tappedAt > tag.expiresAt) return { kind: 'expired' };
+        if (tag.expiresAt && tappedAt.slice(0, 10) > tag.expiresAt.slice(0, 10)) return { kind: 'expired' };
 
         const stamped: RfidTag = { ...tag, lastUsed: tappedAt };
         set((state) => ({
@@ -1384,7 +1393,7 @@ export const useAppStore = create<AppState>()(
         const propertyId = toNumericId(tag.propertyId);
         if (propertyId !== null) {
           // The server stamps its own last-used; the stay context is resolved locally.
-          syncToApi(`tapGuest(${tag.tagNumber})`, () => tapGuestTag(propertyId, tag.tagNumber, tappedAt));
+          syncToApi(`tapGuest(${tag.tagNumber})`, () => tapGuestTag(propertyId, tag.tagNumber));
         }
 
         return {

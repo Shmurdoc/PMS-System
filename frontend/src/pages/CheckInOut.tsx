@@ -177,7 +177,7 @@ const CheckInOutPage = () => {
     addAuditLog({
       id: `LOG-${Date.now()}`,
       action: 'create',
-      entityType: 'room',
+      entityType: 'rfid_tag',
       entityId: tagId,
       entityName: `RFID Tag ${tagId}`,
       userId: 'system',

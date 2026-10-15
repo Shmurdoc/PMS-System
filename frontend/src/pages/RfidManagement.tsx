@@ -19,11 +19,14 @@ const statusColors: Record<string, string> = {
 };
 
 const tapFailures: Record<string, string> = {
-  unknown: 'Tag not found — issue it from the tags tab first',
+  unknown: 'Tag not found �?" issue it from the tags tab first',
   unbound: 'Tag has no staff member assigned',
-  inactive: 'Tag is not active — activate it from the tags tab',
+  inactive: 'Tag is not active �?" activate it from the tags tab',
   expired: 'Tag has expired',
 };
+
+// Numeric ids come from the API; local-only demo tags carry rfid-<timestamp> ids.
+const isServerTag = (id: string) => /^\d+$/.test(id);
 
 export default function RfidManagement() {
   const {
@@ -115,12 +118,16 @@ export default function RfidManagement() {
   }), [rfidTags]);
 
   const handleToggleStatus = useCallback((tag: RfidTag) => {
+    if (isServerTag(tag.id)) {
+      toast.error("Server-synced tags can't be toggled locally — revoke them instead");
+      return;
+    }
     const newStatus = tag.status === 'active' ? 'inactive' : 'active';
     updateRfidTag(tag.id, { status: newStatus });
     addAuditLog({
       id: `LOG-${Date.now()}`,
       action: 'update',
-      entityType: 'user',
+      entityType: 'rfid_tag',
       entityId: tag.id,
       entityName: `RFID Tag ${tag.tagNumber}`,
       userId: 'system',
@@ -135,11 +142,15 @@ export default function RfidManagement() {
   }, [updateRfidTag, addAuditLog]);
 
   const handleDeleteTag = useCallback((tag: RfidTag) => {
+    if (isServerTag(tag.id)) {
+      toast.error("Server-synced tags can't be deleted — revoke them instead");
+      return;
+    }
     deleteRfidTag(tag.id);
     addAuditLog({
       id: `LOG-${Date.now()}`,
       action: 'delete',
-      entityType: 'user',
+      entityType: 'rfid_tag',
       entityId: tag.id,
       entityName: `RFID Tag ${tag.tagNumber}`,
       userId: 'system',
@@ -162,6 +173,14 @@ export default function RfidManagement() {
       toast.error('Tag number is required');
       return;
     }
+    if (tagNumber.length > 64 || !/^[\x21-\x7E]+$/.test(tagNumber)) {
+      toast.error('Tag number must be 1-64 printable characters');
+      return;
+    }
+    if (rfidTags.some(t => t.tagNumber.toLowerCase() === tagNumber.toLowerCase())) {
+      toast.error(`Tag ${tagNumber} already exists`);
+      return;
+    }
     if (!createAssignTo) {
       toast.error('Please select a person to assign the tag to');
       return;
@@ -181,9 +200,13 @@ export default function RfidManagement() {
       return;
     }
 
-    // Staff tags bind to a user, guest tags to that guest's active booking.
+    // Staff tags bind to a user, guest tags to that guest's active booking —
+    // a checked-in stay outranks a confirmed one, which outranks anything else still open.
+    const stayRank = (status: string) => status === 'checked-in' ? 0 : status === 'confirmed' ? 1 : 2;
     const booking = createAssignType === 'guest'
-      ? bookings.find(b => b.guestId === createAssignTo && b.status !== 'checked-out')
+      ? bookings
+          .filter(b => b.guestId === createAssignTo && b.status !== 'checked-out')
+          .sort((a, b) => stayRank(a.status) - stayRank(b.status))[0]
       : undefined;
     if (createAssignType === 'guest' && !booking) {
       toast.error('Selected guest has no active booking — check them in first');
@@ -212,7 +235,7 @@ export default function RfidManagement() {
     addAuditLog({
       id: `LOG-${Date.now()}`,
       action: 'create',
-      entityType: 'user',
+      entityType: 'rfid_tag',
       entityId: newTag.id,
       entityName: `RFID Tag ${tagNumber}`,
       userId: 'system',
@@ -232,7 +255,7 @@ export default function RfidManagement() {
     setCreateRoomAccess([]);
     setCreateNotes('');
     setShowCreateModal(false);
-  }, [createAutoGenerate, createTagNumber, createAssignTo, createAssignType, createAccessLevel, createRoomAccess, createNotes, users, guests, bookings, properties, addRfidTag, addAuditLog]);
+  }, [createAutoGenerate, createTagNumber, createAssignTo, createAssignType, createAccessLevel, createRoomAccess, createNotes, rfidTags, users, guests, bookings, properties, addRfidTag, addAuditLog]);
 
   const openEditModal = useCallback((tag: RfidTag) => {
     setEditAssignTo(tag.userId ?? '');
@@ -252,6 +275,10 @@ export default function RfidManagement() {
 
     // Blocking a tag goes through revoke — the API marks the row server-side.
     const revoking = editStatus === 'blocked' && showEditModal.status !== 'blocked';
+    if (!revoking && isServerTag(showEditModal.id)) {
+      toast.error("Server-synced tags only accept revoke (block) — other edits need the API");
+      return;
+    }
     const updates: Partial<RfidTag> = {
       userId: editAssignTo || showEditModal.userId,
       userName: assigneeName || showEditModal.userName,
@@ -264,7 +291,7 @@ export default function RfidManagement() {
     addAuditLog({
       id: `LOG-${Date.now()}`,
       action: 'update',
-      entityType: 'user',
+      entityType: 'rfid_tag',
       entityId: showEditModal.id,
       entityName: `RFID Tag ${showEditModal.tagNumber}`,
       userId: 'system',
@@ -362,9 +389,12 @@ export default function RfidManagement() {
       tag.notes ?? '',
     ]);
 
+    // Cells starting with =, +, - or @ execute as formulas in spreadsheets —
+    // prefix them so a hostile tag number or note can't run code when exported.
+    const csvSafe = (cell: string) => (/^[=+\-@]/.test(cell) ? `'${cell}` : cell);
     const csvContent = [
       headers.join(','),
-      ...rows.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')),
+      ...rows.map(row => row.map(cell => `"${csvSafe(String(cell)).replace(/"/g, '""')}"`).join(',')),
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
@@ -387,10 +417,22 @@ export default function RfidManagement() {
     );
   }, []);
 
+  // Serial readers emit the same UID several times per physical tap — swallow
+  // repeats of the same tag for 4s (sliding) so one press can't punch twice.
+  const lastTapRef = useRef<Map<string, number>>(new Map());
+
   const handleTap = useCallback((raw: string) => {
     const tagNumber = normalizeTagNumber(raw);
     if (!tagNumber) {
       toast.error('Tag number must be 1-64 characters');
+      return;
+    }
+    const cooldownKey = tagNumber.toLowerCase();
+    const readAt = Date.now();
+    const lastRead = lastTapRef.current.get(cooldownKey) ?? 0;
+    lastTapRef.current.set(cooldownKey, readAt);
+    if (readAt - lastRead < 4000) {
+      setTapUid('');
       return;
     }
     const tag = rfidTags.find(t => t.tagNumber.toLowerCase() === tagNumber.toLowerCase());
@@ -1182,25 +1224,29 @@ export default function RfidManagement() {
                     <label className="text-sm font-medium mb-2 block">Assign To</label>
                     <select
                       value={editAssignTo}
+                      disabled={isServerTag(showEditModal.id)}
                       onChange={(e) => {
                         setEditAssignTo(e.target.value);
                         const u = users.find(u => u.id === e.target.value);
                         const g = guests.find(g => g.id === e.target.value);
                         setEditAssignName(u?.name ?? g?.name ?? '');
                       }}
-                      className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
+                      className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors disabled:opacity-50"
                     >
                       <option value="">Select person...</option>
-                      <optgroup label="Staff">
-                        {users.map(user => (
-                          <option key={`staff-${user.id}`} value={user.id}>{user.name} - {user.role}</option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="Guests">
-                        {guests.map(guest => (
-                          <option key={`guest-${guest.id}`} value={guest.id}>{guest.name} ({guest.segment})</option>
-                        ))}
-                      </optgroup>
+                      {showEditModal.kind === 'staff' ? (
+                        <optgroup label="Staff">
+                          {users.map(user => (
+                            <option key={`staff-${user.id}`} value={user.id}>{user.name} - {user.role}</option>
+                          ))}
+                        </optgroup>
+                      ) : (
+                        <optgroup label="Guests">
+                          {guests.map(guest => (
+                            <option key={`guest-${guest.id}`} value={guest.id}>{guest.name} ({guest.segment})</option>
+                          ))}
+                        </optgroup>
+                      )}
                     </select>
                   </div>
                   <div>
