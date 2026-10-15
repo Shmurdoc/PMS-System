@@ -86,6 +86,10 @@ namespace Aquri.API.Middleware
             }
             catch (DomainException ex)
             {
+                // If the response already started streaming, we cannot rewrite it —
+                // rethrow and let the host log the failure.
+                if (context.Response.HasStarted) throw;
+
                 // Business-rule violation (illegal transition, overpayment, …).
                 // The request was well-formed but the operation is not allowed —
                 // 400 VALIDATION, not a generic 500.
@@ -109,6 +113,8 @@ namespace Aquri.API.Middleware
             }
             catch (DbUpdateException ex)
             {
+                if (context.Response.HasStarted) throw;
+
                 // Unique-constraint / primary-key violation (duplicate e-mail,
                 // colliding business number, …) — the contract says
                 // 409 CONFLICT, not a generic 500.
@@ -136,6 +142,8 @@ namespace Aquri.API.Middleware
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
+                if (context.Response.HasStarted) throw;
+
                 // Unhandled exception from below — emit an envelope-shaped 500
                 // instead of letting the raw exception bubble (which would break
                 // the client contract).
@@ -177,11 +185,21 @@ namespace Aquri.API.Middleware
             {
                 if (bodyBytes.Length > 0)
                 {
-                    using var doc = JsonDocument.Parse(bodyBytes);
-                    // Box the JsonElement so Data stays `object?` — a raw
-                    // JsonElement on an unconstrained T? would default to
-                    // ValueKind.Undefined and break serialization.
-                    envelope.Data = doc.RootElement.Clone();
+                    try
+                    {
+                        using var doc = JsonDocument.Parse(bodyBytes);
+                        // Box the JsonElement so Data stays `object?` — a raw
+                        // JsonElement on an unconstrained T? would default to
+                        // ValueKind.Undefined and break serialization.
+                        envelope.Data = doc.RootElement.Clone();
+                    }
+                    catch (JsonException)
+                    {
+                        // A 2xx with a non-JSON body (plain-text, streaming blob)
+                        // must not explode into a 500 — carry it through as a
+                        // string so the client still gets the payload.
+                        envelope.Data = System.Text.Encoding.UTF8.GetString(bodyBytes);
+                    }
                 }
                 return envelope;
             }
@@ -220,6 +238,41 @@ namespace Aquri.API.Middleware
                         message.ValueKind == JsonValueKind.String)
                         return message.GetString();
                 }
+
+                // RFC 7807 ProblemDetails (ASP.NET model-validation 400s):
+                // { "title": "...", "status": 400, "detail": "...", "errors": { ... } }.
+                if (root.ValueKind == JsonValueKind.Object && root.TryGetProperty("title", out var title))
+                {
+                    // The default ValidationProblemDetails parks per-field messages
+                    // in "errors" — surface those when present (they name the fields).
+                    if (root.TryGetProperty("errors", out var errors) &&
+                        errors.ValueKind == JsonValueKind.Object)
+                    {
+                        var parts = new List<string>();
+                        foreach (var field in errors.EnumerateObject())
+                        {
+                            if (field.Value.ValueKind == JsonValueKind.Array)
+                            {
+                                foreach (var item in field.Value.EnumerateArray())
+                                {
+                                    if (item.ValueKind == JsonValueKind.String)
+                                        parts.Add($"{field.Name}: {item.GetString()}");
+                                }
+                            }
+                        }
+                        if (parts.Count > 0)
+                            return string.Join(" ", parts.Take(5));
+                    }
+
+                    // Otherwise prefer the concrete validation detail over the generic title.
+                    if (root.TryGetProperty("detail", out var detail) &&
+                        detail.ValueKind == JsonValueKind.String &&
+                        !string.IsNullOrWhiteSpace(detail.GetString()))
+                        return detail.GetString();
+
+                    if (title.ValueKind == JsonValueKind.String)
+                        return title.GetString();
+                }
             }
             catch (JsonException)
             {
@@ -242,6 +295,7 @@ namespace Aquri.API.Middleware
             StatusCodes.Status403Forbidden => ErrorCodes.Forbidden,
             StatusCodes.Status404NotFound => ErrorCodes.NotFound,
             StatusCodes.Status409Conflict => ErrorCodes.Conflict,
+            StatusCodes.Status429TooManyRequests => ErrorCodes.RateLimited,
             _ => ErrorCodes.Internal
         };
 
@@ -252,6 +306,7 @@ namespace Aquri.API.Middleware
             StatusCodes.Status403Forbidden => "You do not have permission to perform this action.",
             StatusCodes.Status404NotFound => "The requested resource was not found.",
             StatusCodes.Status409Conflict => "The request conflicts with the current state of the resource.",
+            StatusCodes.Status429TooManyRequests => "Too many requests. Please slow down and try again shortly.",
             _ => "An unexpected error occurred."
         };
     }
