@@ -55,8 +55,11 @@ namespace Aquri.Application.RfidTags
             if (!propertyExists)
                 return Result<RfidTagDto>.Failure($"Property {request.PropertyId} not found.");
 
+            // One live tag per physical card: only Active rows block re-issue, so
+            // a recycled card (previous tag revoked/lost/blocked) can be re-issued.
             var duplicate = await _context.RfidTags.AnyAsync(
-                t => t.PropertyId == request.PropertyId && t.TagNumber == tagNumber,
+                t => t.PropertyId == request.PropertyId && t.TagNumber == tagNumber
+                    && t.Status == RfidTagStatus.Active,
                 cancellationToken);
             if (duplicate)
                 return Result<RfidTagDto>.ConflictResult($"Tag '{tagNumber}' is already issued at this property.");

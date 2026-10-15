@@ -89,6 +89,21 @@ namespace Aquri.Tests.Bookings
             result.Success.Should().BeFalse();
             result.Error.Should().Contain("Room not found");
         }
+
+        [Fact]
+        public async Task Reject_Booking_When_Room_Belongs_To_Different_Property()
+        {
+            var handler = new CreateBookingHandler(Context);
+            // RoomId is seeded under PropertyId 1 — stamping the booking onto
+            // PropertyId 2 must be rejected, not silently persisted.
+            var command = new CreateBookingCommand(2, GuestId, RoomId,
+                DateTime.UtcNow.Date.AddDays(1), DateTime.UtcNow.Date.AddDays(2), 1, 100m, "direct");
+
+            var result = await handler.Handle(command, CancellationToken.None);
+
+            result.Success.Should().BeFalse();
+            result.Error.Should().Contain("does not belong");
+        }
     }
 
     public class ChangeBookingStatusHandler_Should : BookingHandlerTestBase

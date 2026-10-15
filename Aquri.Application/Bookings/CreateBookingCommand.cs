@@ -32,6 +32,12 @@ namespace Aquri.Application.Bookings
             if (room is null)
                 return Result<BookingDto>.Failure("Room not found.");
 
+            // The booking's PropertyId is client-supplied, so verify the room
+            // actually belongs to that property — otherwise a caller could stamp
+            // a booking onto a different property than its room.
+            if (room.PropertyId != request.PropertyId)
+                return Result<BookingDto>.Failure("Room does not belong to the specified property.");
+
             var guest = await _context.Guests.FindAsync(request.GuestId);
             if (guest is null)
                 return Result<BookingDto>.Failure("Guest not found.");

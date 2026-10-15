@@ -147,6 +147,14 @@ namespace Aquri.Application.Rooms.Handlers
 
         public async Task<Result<RoomDto>> Handle(UpdateRoomAmenitiesCommand request, CancellationToken cancellationToken)
         {
+            // Validate before touching the domain model: Room.Add/RemoveAmenity throw
+            // ArgumentException on empty input, which would escape the Result pipeline
+            // and surface as an enveloped 500 instead of a 400 VALIDATION failure.
+            if (string.IsNullOrWhiteSpace(request.Amenity))
+            {
+                return Result<RoomDto>.Failure("Amenity cannot be null or empty.");
+            }
+
             var room = await _context.Rooms
                 .FindAsync(request.RoomId, cancellationToken);
 
