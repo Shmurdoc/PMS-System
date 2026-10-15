@@ -11,6 +11,8 @@ logs/
 .vs/
 .gstack/
 .agents/
+*.user
+*.suo
 
 # Local-only artifacts — dumps, backups, dev certs
 certs/
