@@ -1,0 +1,477 @@
+================================================================================
+ AQURI - ARCHITECTURE, FLOW & FULL FILE TREE
+================================================================================
+ Project   : Aquri - Hotel Property Management System (PMS)
+ Stack     : .NET 8 · EF Core 8 · PostgreSQL 16 · ASP.NET Core · MediatR
+             AutoMapper · JWT Auth · Serilog · Swagger · Docker Compose · nginx
+ Shape     : Clean Architecture, 5 projects in Aquri.sln
+ Generated : 2026-10-14
+ Root      : C:\Users\madoc\source\repos\Aquri
+ Files     : 155 source/config files (bin/, obj/, .vs/ excluded)
+
+================================================================================
+ SECTION 1 - RUNTIME ARCHITECTURE (docker-compose topology)
+================================================================================
+
+  docker-compose.yml defines ONLY TWO services:  db  and  api.
+  (There is no redis, no minio, no nginx container in the compose file.)
+
+   Browser / React frontend (outside repo)
+        |
+        |  HTTP :80  /  HTTPS :443
+        +---------------------------->  +-------------------------------+
+        |                               |  nginx                        |
+        |                               |  (nginx.conf + certs/ exist   |
+        |                               |   but nginx is NOT a compose  |
+        |                               |   service -> TLS is INERT)    |
+        |                               +---------------+---------------+
+        |                                               | proxy_pass
+        |                                               | http://api:8080
+        |  direct (dev, no TLS)                         v
+        +-------------------------------->+-------------------------------+
+                                          |  api   (container aquri-api)  |
+                                          |  root Dockerfile              |
+                                          |  ASPNETCORE_URLS=http://+:8080|
+                                          |  ports 8080:8080              |
+                                          |  non-root user uid 10001      |
+                                          |  healthcheck GET /health      |
+                                          +---------------+---------------+
+                                                          | Host=db:5432
+                                                          v
+                                          +-------------------------------+
+                                          |  db    (container aquri-db)    |
+                                          |  postgres:16-alpine           |
+                                          |  ports 5432:5432  (exposed!)  |
+                                          |  volume aquri-data            |
+                                          |  healthcheck pg_isready       |
+                                          +-------------------------------+
+
+  ENTRY:  two Dockerfiles exist
+     - ./Dockerfile              -> USED by docker-compose (build context ".")
+     - ./Aquri.API/Dockerfile    -> NOT referenced by compose (secondary)
+
+
+  INTERNAL API PIPELINE (Aquri.API/Program.cs)
+  -----------------------------------------------------------------------
+   HTTP request
+      |
+      v
+   [1]  ExceptionHandler          catch-all -> ApiResponse error envelope
+   [2]  ApiResponseMiddleware      wraps every JSON response, X-Request-ID
+   [3]  Swagger / SwaggerUI       /swagger (open in ALL environments)
+   [4]  HttpsRedirection
+   [5]  CORS "FrontendPolicy"     localhost:4200 / :5173 / :3000
+   [6]  Authentication            JWT Bearer
+   [7]  Authorization             [Authorize(Roles=...)]
+   [8]  Controllers  ---->  MediatR  ---->  Request/Query Handlers
+      |
+      v
+   Scoped AquriDbContext  ( = IApplicationDbContext = unit of work )
+      |
+      +--> single SaveChangesAsync() per HTTP request (one transaction)
+
+
+================================================================================
+ SECTION 2 - LAYERS & DEPENDENCY RULES (Clean Architecture)
+================================================================================
+
+  RULES (enforced by project references):
+     - Domain         references  NOTHING
+     - Application    references  Domain
+     - Infrastructure references  Application + Domain
+     - API            references  Application + Infrastructure  (never Domain direct)
+     - Tests          references  ALL FOUR
+
+  DEPENDENCY GRAPH (arrow = "references"):
+
+        +------------------+
+        |   Aquri.Tests    |  (xUnit + Testcontainers + WebApplicationFactory)
+        +--------+---------+
+                 | references all
+     +-----------+-------------------------------+
+     |           |                               |
+     v           v                               |
++----------+   +-------------------+             |
+| Aquri.   |-->| Aquri.Application|<---+         |
+| API      |   +---------+---------+    |         |
++----+-----+             ^              |         |
+     |                   |              |         |
+     |                   |              |         |
+     v                   |              |         |
++---------------------+  |              |         |
+| Aquri.Infrastructure|---              |         |
++----------+----------+                 |         |
+           | references                 |         |
+           +----------------------------+         |
+           |                                      |
+           v                                      v
+        +------------------+        (Aquri.Application -> Aquri.Domain)
+        |   Aquri.Domain   |        (Aquri.Infrastructure -> Aquri.Domain)
+        | entities only,   |
+        | NO EF / NO deps  |
+        +------------------+
+
+
+  LAYER RESPONSIBILITIES
+  ------------------------------------------------------------------------
+  Aquri.API            Controllers (11), Program.cs (DI/JWT/Swagger/Serilog),
+                       ApiResponse envelope + middleware, health endpoints
+  Aquri.Application    MediatR commands/queries/handlers, DTOs, Result<T>,
+                       interfaces: IApplicationDbContext, IPasswordHasher,
+                       ITokenService, AutoMapper MappingProfile
+  Aquri.Domain         19 entities only (Booking, Room, Property, Guest...)
+  Aquri.Infrastructure AquriDbContext (EF Core), 3 migrations, DbSeeder,
+                       JwtTokenService, Pbkdf2PasswordHasher
+  Aquri.Tests          unit (EF InMemory) + integration (Testcontainers /
+                       WebApplicationFactory) + NetArchTest rules
+
+  KEY PACKAGES BY PROJECT
+  ------------------------------------------------------------------------
+  Domain         (none - plain class library)
+  Application    MediatR 12.4.1, AutoMapper 12.0.1, Mapster, FluentValidation, EF Core
+  Infrastructure Npgsql, StackExchange.Redis, Minio, Hangfire, QuestPDF,
+                 Ardalis.Specification, System.IdentityModel.Tokens.Jwt
+                 (NOTE: Redis / Minio / Hangfire / QuestPDF are referenced
+                  in the csproj but have ZERO usages in code - PostgreSQL only)
+  API            JwtBearer, Swashbuckle, Serilog, Mvc.Versioning, HealthChecks
+  Tests          xUnit, FluentAssertions, Moq, Testcontainers, NetArchTest,
+                 Bogus, AutoFixture, Mvc.Testing
+
+
+================================================================================
+ SECTION 3 - REQUEST FLOW:  POST /api/v1/rooms
+================================================================================
+
+  1. RoomsController.Create receives the command DTO from the request body.
+  2. Controller calls _mediator.Send(command).
+  3. MediatR resolves CreateRoomHandler from DI (scoped to this request).
+  4. Handler takes IApplicationDbContext + IMapper via constructor injection.
+  5. Handler queries Rooms / Properties, mutates tracked entities, then calls
+     SaveChangesAsync() ONCE  ->  one transaction  (no repository layer,
+     no IUnitOfWork - the scoped DbContext IS the unit of work).
+  6. Handler returns Result<RoomDto>.SuccessResult(dto)  or  a failure.
+  7. Controller maps Result -> 201 / 200 / 400 / 404.
+  8. ApiResponseMiddleware wraps the JSON body in the ApiResponse envelope
+     (success, error, timestamp, requestId) before it leaves the process.
+
+  Read side (CQRS queries DO exist): e.g. GetRoomQuery / GetRoomHandler in
+  Aquri.Application\Rooms\Queries.cs  (IRequest<RoomDto?> on IApplicationDbContext).
+
+
+  AUTH FLOW:  POST /api/v1/auth/login
+  ------------------------------------------------------------------------
+   LoginCommand -> LoginHandler
+      1. look up user by email (AquriDbContext)
+      2. verify PBKDF2 hash  -> IPasswordHasher (Pbkdf2PasswordHasher)
+      3. issue JWT          -> ITokenService   (JwtTokenService)
+         claims: NameIdentifier, Email, Name, Role
+      4. controllers guard with [Authorize(Roles="admin,manager")]
+         role constants live in Domain (AppRoles)
+   GET /api/v1/auth/me  reads the NameIdentifier claim back -> profile.
+   DbSeeder runs at startup (idempotent: skips if Users.AnyAsync()),
+   wrapped in try/catch so the API boots even when Postgres is down.
+
+
+================================================================================
+ SECTION 4 - END-TO-END FLOW DIAGRAM (client to database)
+================================================================================
+
+  +--------+   +----------+   +-------+   +------------+   +-----------+   +--------+
+  |Client  |-->| nginx    |-->| API   |-->| Controller|-->|  MediatR  |-->| Handler|
+  |(React/ |   |TLS :443  |   |:8080  |   | [route]   |   |  Send()   |   |        |
+  | curl)  |   |(optional)|   |       |   +------------+   +-----------+   +---+----+
+  +--------+   +----------+   +-------+                                            |
+       |             |            |                                               |
+       |             |            |  middleware:                                  |
+       |             |            |  Exception -> Envelope -> CORS -> JWT         |
+       |             |            |                                               v
+       |             |            |                                      +-----------------+
+       |             |            |                                      | IApplicationDb- |
+       |             |            |                                      | Context (scoped)|
+       |             |            |                                      +--------+--------+
+       |             |            |                                               |
+       |             |            |                                               v
+       |             |            |                                    +--------------------+
+       |             |            |                                    | AquriDbContext     |
+       |             |            |                                    | SaveChangesAsync() |
+       |             |            |                                    +---------+----------+
+       |             |            |                                              |
+       |             |            |                                              v
+       |             |            |                                    +--------------------+
+       |             |            |                                    | PostgreSQL 16      |
+       |             |            |                                    | db:5432 / Aquri    |
+       |             |            |                                    +--------------------+
+       |             |            |
+       |             |            +--> Serilog -> console + logs/aquri-*.log (7 days)
+       |             |
+       |             +--> (TLS terminate, certs/ - only if nginx is started manually)
+       |
+       +--> ApiResponse envelope: { success, data|error, timestamp, requestId }
+
+
+================================================================================
+ SECTION 5 - FULL FILE TREE  (all paths, in depth)
+================================================================================
+ (bin/, obj/, .vs/ build artifacts excluded. Counts = files per project.)
+
+
+Aquri/
+|-- .dockerignore
+|-- Aquri.sln
+|-- Dockerfile                          <-- USED by docker-compose (port 8080)
+|-- docker-compose.yml                  <-- services: db + api only
+|-- nginx.conf                          <-- TLS reverse proxy (NOT started by compose)
+|-- NuGet.Config.bak
+|-- README.md
+|
+|-- Aquri.Domain/                       [20 files]  references NOTHING
+|   |-- Aquri.Domain.csproj
+|   |-- Common/                         (empty directory)
+|   `-- Entities/                       (19 entities)
+|       |-- AttendanceRecord.cs
+|       |-- AuditLog.cs
+|       |-- Booking.cs
+|       |-- Expense.cs
+|       |-- Guest.cs
+|       |-- InventoryItem.cs
+|       |-- Invoice.cs
+|       |-- InvoiceItem.cs
+|       |-- MaintenanceRequest/
+|       |   `-- MaintenanceRequest.cs
+|       |-- Message.cs
+|       |-- Payment.cs
+|       |-- Property.cs
+|       |-- RatePlan.cs
+|       |-- Room.cs
+|       |-- Shift.cs
+|       |-- TaxConfig.cs
+|       |-- Ticket.cs
+|       |-- TicketComment.cs
+|       `-- User.cs
+|
+|-- Aquri.Application/                  [52 files]  references Domain
+|   |-- Aquri.Application.csproj
+|   |-- Auth/
+|   |   |-- GetCurrentUserQuery.cs
+|   |   `-- LoginCommand.cs
+|   |-- Bookings/
+|   |   |-- BookingDto.cs
+|   |   |-- ChangeBookingStatusCommand.cs
+|   |   |-- CreateBookingCommand.cs
+|   |   `-- GetBookingsQuery.cs
+|   |-- Common/
+|   |   |-- IApplicationDbContext.cs
+|   |   |-- Result.cs
+|   |   `-- Interfaces/
+|   |       |-- IPasswordHasher.cs
+|   |       `-- ITokenService.cs
+|   |-- DTOs/
+|   |   |-- AuthDto.cs
+|   |   `-- RoomDto.cs
+|   |-- Expenses/
+|   |   |-- CreateExpenseCommand.cs
+|   |   |-- DecideExpenseCommand.cs
+|   |   |-- DeleteExpenseCommand.cs
+|   |   |-- ExpenseDto.cs
+|   |   |-- GetExpenseQuery.cs
+|   |   `-- UpdateExpenseCommand.cs
+|   |-- Guests/
+|   |   |-- CreateGuestCommand.cs
+|   |   |-- GetGuestsQuery.cs
+|   |   |-- GuestDto.cs
+|   |   `-- UpdateGuestCommand.cs
+|   |-- Inventory/
+|   |   |-- CreateInventoryItemCommand.cs
+|   |   |-- DeleteInventoryItemCommand.cs
+|   |   |-- GetInventoryItemQuery.cs
+|   |   |-- InventoryItemDto.cs
+|   |   `-- UpdateInventoryItemCommand.cs
+|   |-- Invoices/
+|   |   |-- CreateInvoiceCommand.cs
+|   |   |-- InvoiceDto.cs
+|   |   `-- RecordInvoicePaymentCommand.cs
+|   |-- MappingProfiles/
+|   |   `-- MappingProfile.cs
+|   |-- Payments/
+|   |   |-- CreatePaymentCommand.cs
+|   |   |-- PaymentCommands.cs
+|   |   `-- PaymentDto.cs
+|   |-- Properties/
+|   |   |-- CreatePropertyCommand.cs
+|   |   |-- CreatePropertyHandler.cs
+|   |   |-- Queries.cs
+|   |   `-- Status/
+|   |       |-- UpdatePropertyStatusCommand.cs
+|   |       `-- UpdatePropertyStatusHandler.cs
+|   |-- RatePlans/
+|   |   |-- CreateRatePlanCommand.cs
+|   |   |-- DeleteRatePlanCommand.cs
+|   |   |-- GetRatePlanQuery.cs
+|   |   |-- RatePlanDto.cs
+|   |   `-- UpdateRatePlanCommand.cs
+|   |-- Rooms/
+|   |   |-- Commands.cs                 <-- CreateRoom/UpdateRoom/... + Result<T>
+|   |   |-- Handlers.cs                 <-- CreateRoomHandler etc.
+|   |   `-- Queries.cs                  <-- GetRoomQuery / GetRoomHandler (CQRS read)
+|   `-- Tickets/
+|       |-- CreateTicketCommand.cs
+|       |-- GetTicketsQuery.cs
+|       |-- TicketCommands.cs
+|       `-- TicketDto.cs
+|
+|-- Aquri.Infrastructure/               [13 files]  references Application + Domain
+|   |-- Aquri.Infrastructure.csproj
+|   |-- Persistence/
+|   |   |-- AquriDbContext.cs
+|   |   |-- AquriDbContextFactory.cs    <-- design-time factory for dotnet ef
+|   |   |-- DbSeeder.cs                 <-- idempotent demo-user seeding
+|   |   `-- Migrations/
+|   |       |-- 20261013180346_InitialCreate.cs
+|   |       |-- 20261013180346_InitialCreate.Designer.cs
+|   |       |-- 20261013184432_AddCoreEntities.cs
+|   |       |-- 20261013184432_AddCoreEntities.Designer.cs
+|   |       |-- 20261013192346_AddSupportingEntities.cs
+|   |       |-- 20261013192346_AddSupportingEntities.Designer.cs
+|   |       `-- AquriDbContextModelSnapshot.cs
+|   `-- Security/
+|       |-- JwtTokenService.cs
+|       `-- Pbkdf2PasswordHasher.cs
+|
+|-- Aquri.API/                          [21 files]  references Application + Infrastructure
+|   |-- Aquri.API.csproj
+|   |-- Aquri.API.csproj.user
+|   |-- Aquri.API.http
+|   |-- appsettings.json
+|   |-- appsettings.Development.json
+|   |-- Dockerfile                      <-- secondary: NOT used by compose
+|   |-- Program.cs                      <-- DI, JWT, Swagger, Serilog, pipeline
+|   |-- Common/
+|   |   `-- ApiResponse.cs              <-- response envelope type
+|   |-- Controllers/                    (11 controllers, all MediatR-based)
+|   |   |-- AuthController.cs
+|   |   |-- BookingsController.cs
+|   |   |-- ExpensesController.cs
+|   |   |-- GuestsController.cs
+|   |   |-- InventoryItemsController.cs
+|   |   |-- InvoicesController.cs
+|   |   |-- PaymentsController.cs
+|   |   |-- PropertiesController.cs
+|   |   |-- RatePlansController.cs
+|   |   |-- RoomsController.cs
+|   |   `-- TicketsController.cs
+|   |-- Middleware/
+|   |   `-- ApiResponseMiddleware.cs    <-- wraps responses + X-Request-ID
+|   `-- Properties/
+|       `-- launchSettings.json
+|
+|-- Aquri.Tests/                        [37 files]  references ALL four projects
+|   |-- Aquri.Tests.csproj
+|   |-- Api/
+|   |   |-- ApiTestBase.cs
+|   |   |-- AquriApiFactory.cs          <-- WebApplicationFactory host
+|   |   |-- Envelope/
+|   |   |   `-- EnvelopeTests.cs
+|   |   |-- ExpensesApiTests.cs
+|   |   |-- InventoryApiTests.cs
+|   |   `-- RatePlansApiTests.cs
+|   |-- Auth/
+|   |   |-- AuthHandlerTests.cs
+|   |   `-- Pbkdf2PasswordHasherTests.cs
+|   |-- Bookings/
+|   |   `-- BookingHandlerTests.cs
+|   |-- Builders/
+|   |   |-- EntityBuilder.cs
+|   |   `-- FakeTimeProvider.cs
+|   |-- Domain/
+|   |   `-- UserTests.cs
+|   |-- Entities/                       (13 test files)
+|   |   |-- AttendanceRecordTests.cs
+|   |   |-- AuditLogTests.cs
+|   |   |-- BookingTests.cs
+|   |   |-- ExpenseTests.cs
+|   |   |-- GuestTests.cs
+|   |   |-- InventoryItemTests.cs
+|   |   |-- InvoiceTests.cs
+|   |   |-- MessageTests.cs
+|   |   |-- PaymentTests.cs
+|   |   |-- RatePlanTests.cs
+|   |   |-- ShiftTests.cs
+|   |   |-- TaxConfigTests.cs
+|   |   `-- TicketTests.cs
+|   |-- Guests/
+|   |   `-- GuestHandlerTests.cs
+|   |-- Invoices/
+|   |   `-- InvoiceHandlerTests.cs
+|   |-- Payments/
+|   |   `-- PaymentHandlerTests.cs
+|   |-- Rooms/
+|   |   `-- RoomHandlerTests.cs
+|   |-- Tickets/
+|   |   `-- TicketHandlerTests.cs
+|   |-- CreatePropertyCommandTests.cs
+|   |-- DependencyInjectionTests.cs     <-- verifies DbContext/MediatR wiring
+|   |-- MaintenanceRequestTests.cs
+|   |-- MinimalTest.cs
+|   |-- PropertyTests.cs
+|   `-- UpdatePropertyStatusTests.cs
+|
+|-- certs/                              (empty directory - no cert.pem / key.pem)
+|
+|-- docs/
+|   |-- architecture.md
+|   |-- conventions.md
+|   |-- getting-started.md
+|   `-- roadmap.md
+|
+`-- Infrastructure/                     (NOT part of Aquri.sln - loose folder)
+    `-- InitSql/
+        `-- init.sql
+
+ EXCLUDED FROM TREE: Aquri.*/bin/, Aquri.*/obj/, .vs/ (build artifacts)
+
+ FILE COUNT BY PROJECT
+   Aquri.Domain          20
+   Aquri.Application     52
+   Aquri.Infrastructure  13
+   Aquri.API             21
+   Aquri.Tests           37
+   root files             7
+   docs                   4
+   Infrastructure/        1
+   --------------------------
+   TOTAL                155
+
+
+================================================================================
+ SECTION 6 - NOTES & OBSERVATIONS
+================================================================================
+ 1. CQRS STATUS: mostly CQRS. Commands and Queries both flow through MediatR
+    (Rooms has Commands.cs + Handlers.cs + Queries.cs). Write side returns
+    Result<T>; read side returns DTO? directly. Some older controllers call
+    _mediator.Send(command).Result - blocking async (deadlock risk).
+
+ 2. UNIT OF WORK: no repository pattern, no IUnitOfWork. The scoped
+    AquriDbContext is the unit of work; one SaveChangesAsync per request.
+
+ 3. DEAD PACKAGE REFERENCES: Infrastructure's csproj pulls StackExchange.Redis,
+    Minio, Hangfire, QuestPDF, Ardalis.Specification - none are used anywhere
+    in the code (grep = 0 hits). Runtime data store is PostgreSQL only.
+
+ 4. DOCKER MISMATCH: docker-compose only defines db + api. nginx.conf (TLS
+    reverse proxy) and certs/ (empty) are never started by compose. The
+    second Dockerfile (Aquri.API/Dockerfile) is not referenced by compose
+    either. Port 8080 is consistent between root Dockerfile and nginx.conf.
+
+ 5. SECURITY NOTE (resolved): docker-compose no longer carries credentials —
+    POSTGRES_PASSWORD and JWT_KEY come from .env (gitignored; .env.example
+    ships placeholders and compose refuses to boot without them). appsettings.json
+    ships empty and Program.cs fails fast on a missing value; no fallback
+    secrets remain.
+
+ 6. EMPTY / LOOSE ITEMS: Aquri.Domain/Common/ is empty (architecture.md mentions
+    IRepository.cs/IUnitOfWork.cs but they do not exist); Infrastructure/ at
+    repo root is not in Aquri.sln; NuGet.Config.bak is a disabled NuGet config.
+
+ 7. TRANSITION: codebase is mid-migration from flat Application folders to
+    vertical slices (see docs/conventions.md and docs/roadmap.md).
+================================================================================
