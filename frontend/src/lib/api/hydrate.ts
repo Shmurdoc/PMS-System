@@ -11,7 +11,8 @@
 //   1. GET /properties first — per-property list endpoints key off it and the
 //      join maps are built from it. If it fails, the per-property collections
 //      are skipped entirely (their mocks stay) and only globals hydrate.
-//   2. One parallel wave: /auth/me, /users, /guests, /maintenanceRequests,
+//   2. One parallel wave: /auth/me, /users (admin/manager only — other roles
+//      skip it), /guests, /maintenanceRequests,
 //      /ratePlans, /aiInsights, /workflows, /shifts, /attendance, /messages,
 //      /auditlogs, /taxconfigs + per-property rooms/bookings/invoices/payments/
 //      tickets/rfidtags.
@@ -28,7 +29,8 @@
 // a page reload the current user would otherwise stay the mock seed.
 
 import { useAppStore } from '../../store/useAppStore';
-import { getAuthToken } from './config';
+import { getAuthToken, getTokenRole } from './config';
+import { ROLE_PERMISSIONS, type UserRole } from '../rbac';
 import {
   indexBy,
   mapAiInsight,
@@ -146,6 +148,17 @@ function dedupeById<T extends { id: number }>(lists: T[][]): T[] {
   return out;
 }
 
+/**
+ * True when the signed-in role may list the staff roster (/users). Reads the
+ * role from the JWT because store.user may not be set yet on page reload.
+ * If the claim cannot be decoded, we fetch anyway — the API still enforces.
+ */
+function canViewUsers(): boolean {
+  const role = getTokenRole();
+  if (!role) return true;
+  return ROLE_PERMISSIONS[role.toLowerCase() as UserRole]?.viewUsers ?? false;
+}
+
 // ---------- hydrate ----------
 
 export async function hydrateFromApi(): Promise<HydrateResult> {
@@ -188,7 +201,9 @@ export async function hydrateFromApi(): Promise<HydrateResult> {
     rfidLists,
   ] = await Promise.all([
     settle('auth/me', fetchCurrentUser(), failed),
-    settle('users', fetchUsers(), failed),
+    // /users is the staff roster — only admin/manager may list it, so other
+    // roles skip the fetch entirely (and the store keeps the mock seed).
+    canViewUsers() ? settle('users', fetchUsers(), failed) : Promise.resolve(undefined),
     settle('guests', fetchGuests(), failed),
     settle('maintenanceRequests', fetchMaintenanceRequests(), failed),
     settle('ratePlans', fetchRatePlans(), failed),
