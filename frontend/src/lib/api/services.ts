@@ -1362,16 +1362,16 @@ export function revokeRfidTag(id: number, notes?: string | null): Promise<ApiRfi
   });
 }
 
-export function tapStaffTag(propertyId: number, tagNumber: string, tappedAt?: string): Promise<ApiStaffTapResult> {
+export function tapStaffTag(propertyId: number, tagNumber: string): Promise<ApiStaffTapResult> {
   return unwrap<ApiStaffTapResult>('/rfidtags/tap/staff', {
     method: 'POST',
-    body: { propertyId, tagNumber, tappedAt: tappedAt ?? null },
+    body: { propertyId, tagNumber },
   });
 }
 
-export function tapGuestTag(propertyId: number, tagNumber: string, tappedAt?: string): Promise<ApiGuestTapContext> {
+export function tapGuestTag(propertyId: number, tagNumber: string): Promise<ApiGuestTapContext> {
   return unwrap<ApiGuestTapContext>('/rfidtags/tap/guest', {
     method: 'POST',
-    body: { propertyId, tagNumber, tappedAt: tappedAt ?? null },
+    body: { propertyId, tagNumber },
   });
 }
