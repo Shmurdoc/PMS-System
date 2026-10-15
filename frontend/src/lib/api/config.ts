@@ -45,3 +45,23 @@ export function clearAuthToken(): void {
     // Ignore — nothing to clean up.
   }
 }
+
+/**
+ * Best-effort role extraction from the stored JWT (payload `role` claim).
+ * Used to gate data fetches before /auth/me resolves; returns null when the
+ * token is missing or unparseable — callers must fall back safely.
+ */
+export function getTokenRole(): string | null {
+  const token = getAuthToken();
+  if (!token) return null;
+  try {
+    const payload = token.split('.')[1];
+    if (!payload) return null;
+    const base64 = payload.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = base64 + '='.repeat((4 - (base64.length % 4)) % 4);
+    const decoded = JSON.parse(atob(padded)) as { role?: unknown };
+    return typeof decoded.role === 'string' && decoded.role !== '' ? decoded.role : null;
+  } catch {
+    return null;
+  }
+}
