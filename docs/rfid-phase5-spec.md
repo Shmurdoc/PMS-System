@@ -51,8 +51,8 @@ existing tests stay green and new behavior is covered.
 Build:   $env:TEMP="C:\Temp"; $env:TMP="C:\Temp"; dotnet build Aquri.sln -nodeReuse:false
 Test:    $env:TEMP="C:\Temp"; $env:TMP="C:\Temp"; dotnet test Aquri.sln -nodeReuse:false --no-build
 Migrate: dotnet ef migrations add AddRfidTags --project Aquri.Infrastructure --startup-project Aquri.API
-Front-end lint:  npx eslint <touched files>   (workdir C:\wamp64\www\employee2\app)
-Front-end build: npm run build                (workdir C:\wamp64\www\employee2\app)
+Frontend lint:  npx eslint <touched files>   (workdir frontend/)
+Frontend build: npm run build                (workdir frontend/)
 ```
 
 ## Project Structure
@@ -64,8 +64,8 @@ Aquri.Infrastructure/Persistence/Configurations/RfidTagConfiguration.cs
 Aquri.Infrastructure/Persistence/Migrations/<next> — scaffolds AddRfidTags
 Aquri.API/Controllers/RfidTagsController.cs
 Aquri.Tests/RfidTags/                     — handler + tap-flow tests
-app/src/store/useAppStore.ts              — replace RfidTag interface, add tap actions
-app/src/lib/nfc/                          — WebSerialReader (flag-gated) + manual entry
+frontend/src/store/useAppStore.ts            — replace RfidTag interface, add tap actions
+frontend/src/lib/nfc/                        — WebSerialReader (flag-gated) + manual entry
 ```
 
 ## Code Style

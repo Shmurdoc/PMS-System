@@ -19,9 +19,9 @@ const statusColors: Record<string, string> = {
 };
 
 const tapFailures: Record<string, string> = {
-  unknown: 'Tag not found �?" issue it from the tags tab first',
+  unknown: 'Tag not found - issue it from the tags tab first',
   unbound: 'Tag has no staff member assigned',
-  inactive: 'Tag is not active �?" activate it from the tags tab',
+  inactive: 'Tag is not active - activate it from the tags tab',
   expired: 'Tag has expired',
 };
 
