@@ -82,14 +82,15 @@ namespace Aquri.Application.RfidTags
                 }
                 else
                 {
-                    record = await _context.AttendanceRecords
+                    var repeatRecord = await _context.AttendanceRecords
                         .Where(a => a.UserId == user.Id && a.Date == tappedAt.Date)
                         .OrderByDescending(a => a.CheckIn)
                         .FirstOrDefaultAsync(cancellationToken);
 
-                    if (record is not null)
+                    if (repeatRecord is not null)
                     {
                         punch = "out";
+                        record = repeatRecord;
                     }
                     else
                     {
