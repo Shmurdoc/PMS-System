@@ -6,18 +6,22 @@ namespace Aquri.Infrastructure.Persistence
 {
     /// <summary>
     /// Issues unique business numbers (TKT-2026-00001, INV-…, PAY-…) from
-    /// NumberSequence rows — one row per prefix+year, bumped on the scoped
-    /// DbContext so the increment commits atomically with the caller's
-    /// SaveChanges (failed insert => rolled-back counter, no stale bump).
+    /// NumberSequence rows — one row per prefix+year. The increment is persisted
+    /// immediately (before the caller's SaveChanges) so a concurrent racer is
+    /// detected here via the CurrentValue optimistic-concurrency token and
+    /// resolved by reloading and retrying, instead of both requests silently
+    /// receiving the same number and the loser failing later with a 409.
     ///
-    /// On first use for a key the counter seeds from the highest suffix already
-    /// on file for that prefix+year, so numbers issued by the legacy
-    /// clock-ticks scheme are never reissued. If two requests ever race past
-    /// the counter, the unique indexes on TicketNumber/InvoiceNumber/PaymentNumber
-    /// reject the loser and ApiResponseMiddleware surfaces it as 409 CONFLICT.
+    /// Because the bump commits independently, a caller whose own insert
+    /// subsequently fails leaves a gap in the number series — gaps are
+    /// acceptable for business numbering; duplicates are not. The unique
+    /// indexes on TicketNumber/InvoiceNumber/PaymentNumber remain the final
+    /// backstop against any residual race.
     /// </summary>
     public class NumberGenerator : INumberGenerator
     {
+        private const int MaxAttempts = 5;
+
         private readonly IApplicationDbContext _context;
 
         public NumberGenerator(IApplicationDbContext context) => _context = context;
@@ -33,22 +37,39 @@ namespace Aquri.Infrastructure.Persistence
 
         private async Task<string> NextAsync(string prefix, IQueryable<string> existingNumbers, CancellationToken cancellationToken)
         {
-            var year = DateTime.UtcNow.Year;
-            var key = $"{prefix}-{year}";
-
-            var sequence = await _context.NumberSequences.FindAsync(new object[] { key }, cancellationToken);
-            if (sequence is null)
+            for (var attempt = 1; ; attempt++)
             {
-                sequence = new NumberSequence
+                try
                 {
-                    Key = key,
-                    CurrentValue = await SeedFromExistingNumbersAsync(key, existingNumbers, cancellationToken)
-                };
-                _context.NumberSequences.Add(sequence);
-            }
+                    var year = DateTime.UtcNow.Year;
+                    var key = $"{prefix}-{year}";
 
-            sequence.CurrentValue++;
-            return $"{key}-{sequence.CurrentValue:D5}";
+                    var sequence = await _context.NumberSequences.FindAsync(new object[] { key }, cancellationToken);
+                    if (sequence is null)
+                    {
+                        sequence = new NumberSequence
+                        {
+                            Key = key,
+                            CurrentValue = await SeedFromExistingNumbersAsync(key, existingNumbers, cancellationToken)
+                        };
+                        _context.NumberSequences.Add(sequence);
+                    }
+
+                    sequence.CurrentValue++;
+                    // Persist the bump now: the concurrency token turns a racer
+                    // into a retryable DbUpdateException at this point rather
+                    // than a duplicate number at the caller's save.
+                    await _context.SaveChangesAsync(cancellationToken);
+                    return $"{key}-{sequence.CurrentValue:D5}";
+                }
+                catch (DbUpdateException) when (attempt < MaxAttempts)
+                {
+                    // Detach the stale sequence row(s) so the next attempt
+                    // reloads fresh state (the winner's value) from the store.
+                    foreach (var entry in _context.ChangeTracker.Entries<NumberSequence>().ToList())
+                        entry.State = EntityState.Detached;
+                }
+            }
         }
 
         /// <summary>

@@ -1,5 +1,6 @@
 using Aquri.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Aquri.Application.Common.Interfaces
 {
@@ -38,6 +39,13 @@ namespace Aquri.Application.Common.Interfaces
         DbSet<Agent> Agents { get; }
         DbSet<AgentLog> AgentLogs { get; }
         DbSet<RfidTag> RfidTags { get; }
+
+        /// <summary>
+        /// Change tracker of the underlying DbContext (exposed for retry loops
+        /// that need to detach stale entities — e.g. NumberGenerator's
+        /// conflict-reload). Satisfied automatically by EF's DbContext.
+        /// </summary>
+        ChangeTracker ChangeTracker { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     }
