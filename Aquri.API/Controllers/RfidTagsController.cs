@@ -68,7 +68,11 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Staff badge tap: toggles today's attendance in/out.</summary>
+        /// <summary>
+        /// Staff badge tap: toggles today's attendance in/out. Timestamps are
+        /// stamped server-side; a re-read within 3s reports the current punch
+        /// instead of toggling.
+        /// </summary>
         [HttpPost("tap/staff")]
         [Authorize(Roles = "admin,manager,front_desk,housekeeping,maintenance")]
         [ProducesResponseType(typeof(StaffTapResultDto), StatusCodes.Status200OK)]
@@ -77,7 +81,7 @@ namespace Aquri.API.Controllers
         public async Task<ActionResult<StaffTapResultDto>> TapStaff([FromBody] TapRequest request)
         {
             var result = await _mediator.Send(new RecordStaffTapCommand(
-                request.PropertyId, request.TagNumber, request.TappedAt));
+                request.PropertyId, request.TagNumber, DateTime.UtcNow));
             if (result.NotFound)
                 return NotFound();
             if (!result.Success)
@@ -86,7 +90,10 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Guest tag tap: resolves guest, room, and booking status. Writes nothing.</summary>
+        /// <summary>
+        /// Guest tag tap: resolves guest, room, and booking status and stamps
+        /// the tag's last-used time. No attendance is written.
+        /// </summary>
         [HttpPost("tap/guest")]
         [Authorize(Roles = "admin,manager,front_desk,housekeeping,maintenance")]
         [ProducesResponseType(typeof(GuestTapContextDto), StatusCodes.Status200OK)]
@@ -95,7 +102,7 @@ namespace Aquri.API.Controllers
         public async Task<ActionResult<GuestTapContextDto>> TapGuest([FromBody] TapRequest request)
         {
             var result = await _mediator.Send(new ResolveGuestTapCommand(
-                request.PropertyId, request.TagNumber, request.TappedAt));
+                request.PropertyId, request.TagNumber, DateTime.UtcNow));
             if (result.NotFound)
                 return NotFound();
             if (!result.Success)
@@ -122,5 +129,9 @@ namespace Aquri.API.Controllers
 
     public record RevokeRfidTagRequest(string? Notes);
 
-    public record TapRequest(int PropertyId, string TagNumber, DateTime? TappedAt);
+    /// <summary>
+    /// Tap wire shape. Deliberately has no timestamp field — clients cannot
+    /// backdate punches; the controller stamps every tap with server time.
+    /// </summary>
+    public record TapRequest(int PropertyId, string TagNumber);
 }

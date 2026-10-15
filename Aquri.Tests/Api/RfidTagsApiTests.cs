@@ -82,6 +82,26 @@ namespace Aquri.Tests.Api
             throw new InvalidOperationException("Seeded front desk user not found.");
         }
 
+        /// <summary>
+        /// Mints a per-test badge holder so attendance records (keyed by user
+        /// and day) never leak between tests that punch with server stamps.
+        /// </summary>
+        private async Task<int> CreateBadgeUserAsync(HttpClient client, string email)
+        {
+            var response = await client.PostAsync("/api/v1/users", JsonBody(new
+            {
+                email,
+                name = "Front Desk",
+                password = "secret123",
+                role = "front_desk",
+                department = "Front Desk",
+                phone = "+27123456789"
+            }));
+            response.EnsureSuccessStatusCode();
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            return doc.RootElement.GetProperty("data").GetProperty("id").GetInt32();
+        }
+
         private static object IssueStaff(int propertyId, int userId, string tagNumber) =>
             new
             {
@@ -108,8 +128,8 @@ namespace Aquri.Tests.Api
                 notes = (string?)null
             };
 
-        private static object Tap(int propertyId, string tagNumber, string? tappedAt) =>
-            new { propertyId, tagNumber, tappedAt };
+        private static object Tap(int propertyId, string tagNumber) =>
+            new { propertyId, tagNumber };
 
         [Fact]
         public async Task Issue_Staff_Tag_Returns_201_And_List_Filters_By_Kind()
@@ -199,14 +219,14 @@ namespace Aquri.Tests.Api
         {
             var admin = await AdminClientAsync();
             var propertyId = await CreatePropertyAsync(admin, 714);
-            var frontDeskId = await FrontDeskUserIdAsync(admin);
+            var frontDeskId = await CreateBadgeUserAsync(admin, "rfid.714.badge@nexus.com");
             await admin.PostAsync("/api/v1/rfidtags",
                 JsonBody(IssueStaff(propertyId, frontDeskId, "RFID-714-STAFF-1")));
 
             var frontDesk = await FrontDeskClientAsync();
 
             var clockIn = await frontDesk.PostAsync("/api/v1/rfidtags/tap/staff",
-                JsonBody(Tap(propertyId, "RFID-714-STAFF-1", "2026-12-01T08:00:00")));
+                JsonBody(Tap(propertyId, "RFID-714-STAFF-1")));
             clockIn.StatusCode.Should().Be(HttpStatusCode.OK);
             var inEnvelope = await ParseAsync(clockIn);
             var inData = inEnvelope.GetProperty("data");
@@ -215,8 +235,12 @@ namespace Aquri.Tests.Api
             var attendanceId = inData.GetProperty("attendanceId").GetInt32();
             attendanceId.Should().BeGreaterThan(0);
 
+            // The server stamps its own timestamps — wait out the 3s debounce
+            // window so the second tap is a genuine clock-out.
+            await Task.Delay(3200);
+
             var clockOut = await frontDesk.PostAsync("/api/v1/rfidtags/tap/staff",
-                JsonBody(Tap(propertyId, "RFID-714-STAFF-1", "2026-12-01T17:00:00")));
+                JsonBody(Tap(propertyId, "RFID-714-STAFF-1")));
             clockOut.StatusCode.Should().Be(HttpStatusCode.OK);
             var outEnvelope = await ParseAsync(clockOut);
             var outData = outEnvelope.GetProperty("data");
@@ -225,7 +249,7 @@ namespace Aquri.Tests.Api
             outData.GetProperty("checkOut").ValueKind.Should().NotBe(JsonValueKind.Null);
 
             var unknown = await frontDesk.PostAsync("/api/v1/rfidtags/tap/staff",
-                JsonBody(Tap(propertyId, "RFID-714-NOPE", "2026-12-01T17:30:00")));
+                JsonBody(Tap(propertyId, "RFID-714-NOPE")));
             unknown.StatusCode.Should().Be(HttpStatusCode.NotFound);
         }
 
@@ -243,7 +267,7 @@ namespace Aquri.Tests.Api
             var frontDesk = await FrontDeskClientAsync();
 
             var guestTap = await frontDesk.PostAsync("/api/v1/rfidtags/tap/guest",
-                JsonBody(Tap(propertyId, "RFID-715-GUEST-1", null)));
+                JsonBody(Tap(propertyId, "RFID-715-GUEST-1")));
             guestTap.StatusCode.Should().Be(HttpStatusCode.OK);
             var envelope = await ParseAsync(guestTap);
             var data = envelope.GetProperty("data");
@@ -254,7 +278,7 @@ namespace Aquri.Tests.Api
             data.GetProperty("tagId").GetInt32().Should().BeGreaterThan(0);
 
             var staffTap = await frontDesk.PostAsync("/api/v1/rfidtags/tap/staff",
-                JsonBody(Tap(propertyId, "RFID-715-GUEST-1", "2026-12-01T08:00:00")));
+                JsonBody(Tap(propertyId, "RFID-715-GUEST-1")));
             staffTap.StatusCode.Should().Be(HttpStatusCode.BadRequest);
             var staffEnvelope = await ParseAsync(staffTap);
             staffEnvelope.GetProperty("error").GetProperty("message").GetString()
@@ -284,7 +308,7 @@ namespace Aquri.Tests.Api
 
             var frontDesk = await FrontDeskClientAsync();
             var blockedTap = await frontDesk.PostAsync("/api/v1/rfidtags/tap/staff",
-                JsonBody(Tap(propertyId, "RFID-716-STAFF-1", "2026-12-01T08:00:00")));
+                JsonBody(Tap(propertyId, "RFID-716-STAFF-1")));
             blockedTap.StatusCode.Should().Be(HttpStatusCode.BadRequest);
             var tapEnvelope = await ParseAsync(blockedTap);
             tapEnvelope.GetProperty("error").GetProperty("message").GetString()
@@ -293,6 +317,132 @@ namespace Aquri.Tests.Api
             var forbidden = await frontDesk.PostAsync($"/api/v1/rfidtags/{tagId}/revoke",
                 JsonBody(new { notes = (string?)null }));
             forbidden.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        }
+
+        [Fact]
+        public async Task Staff_Tap_Ignores_Client_Supplied_Timestamp()
+        {
+            var admin = await AdminClientAsync();
+            var propertyId = await CreatePropertyAsync(admin, 721);
+            var frontDeskId = await CreateBadgeUserAsync(admin, "rfid.721.badge@nexus.com");
+            await admin.PostAsync("/api/v1/rfidtags",
+                JsonBody(IssueStaff(propertyId, frontDeskId, "RFID-721-STAFF-1")));
+
+            var frontDesk = await FrontDeskClientAsync();
+            var response = await frontDesk.PostAsync("/api/v1/rfidtags/tap/staff",
+                JsonBody(new
+                {
+                    propertyId,
+                    tagNumber = "RFID-721-STAFF-1",
+                    tappedAt = "2026-12-01T08:00:00"
+                }));
+
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            var envelope = await ParseAsync(response);
+            var data = envelope.GetProperty("data");
+            data.GetProperty("punch").GetString().Should().Be("in");
+            data.GetProperty("checkIn").GetDateTime().Date.Should().Be(DateTime.UtcNow.Date);
+        }
+
+        [Fact]
+        public async Task Staff_Tap_Within_3s_Reports_Without_Toggling()
+        {
+            var admin = await AdminClientAsync();
+            var propertyId = await CreatePropertyAsync(admin, 719);
+            var frontDeskId = await CreateBadgeUserAsync(admin, "rfid.719.badge@nexus.com");
+            await admin.PostAsync("/api/v1/rfidtags",
+                JsonBody(IssueStaff(propertyId, frontDeskId, "RFID-719-STAFF-1")));
+
+            var frontDesk = await FrontDeskClientAsync();
+
+            var first = await frontDesk.PostAsync("/api/v1/rfidtags/tap/staff",
+                JsonBody(Tap(propertyId, "RFID-719-STAFF-1")));
+            first.StatusCode.Should().Be(HttpStatusCode.OK);
+            var firstData = (await ParseAsync(first)).GetProperty("data");
+            firstData.GetProperty("punch").GetString().Should().Be("in");
+            var firstAttendance = firstData.GetProperty("attendanceId").GetInt32();
+            firstAttendance.Should().BeGreaterThan(0);
+
+            var replay = await frontDesk.PostAsync("/api/v1/rfidtags/tap/staff",
+                JsonBody(Tap(propertyId, "RFID-719-STAFF-1")));
+            replay.StatusCode.Should().Be(HttpStatusCode.OK);
+            var replayData = (await ParseAsync(replay)).GetProperty("data");
+            replayData.GetProperty("punch").GetString().Should().Be("in");
+            replayData.GetProperty("attendanceId").GetInt32().Should().Be(firstAttendance);
+        }
+
+        [Fact]
+        public async Task Staff_Tap_At_Wrong_Property_404s()
+        {
+            var admin = await AdminClientAsync();
+            var propertyId = await CreatePropertyAsync(admin, 720);
+            var frontDeskId = await FrontDeskUserIdAsync(admin);
+            await admin.PostAsync("/api/v1/rfidtags",
+                JsonBody(IssueStaff(propertyId, frontDeskId, "RFID-720-STAFF-1")));
+
+            var frontDesk = await FrontDeskClientAsync();
+            var response = await frontDesk.PostAsync("/api/v1/rfidtags/tap/staff",
+                JsonBody(Tap(999998, "RFID-720-STAFF-1")));
+
+            response.StatusCode.Should().Be(HttpStatusCode.NotFound);
+        }
+
+        [Fact]
+        public async Task List_With_Unknown_Kind_Returns_Empty()
+        {
+            var client = await AdminClientAsync();
+            var propertyId = await CreatePropertyAsync(client, 717);
+            var frontDeskId = await FrontDeskUserIdAsync(client);
+            await client.PostAsync("/api/v1/rfidtags",
+                JsonBody(IssueStaff(propertyId, frontDeskId, "RFID-717-STAFF-1")));
+
+            var response = await client.GetAsync(
+                $"/api/v1/rfidtags?propertyId={propertyId}&kind=visitor");
+
+            response.StatusCode.Should().Be(HttpStatusCode.OK);
+            var envelope = await ParseAsync(response);
+            envelope.GetProperty("data").EnumerateArray().Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task Issue_For_Unknown_Property_Returns_400()
+        {
+            var client = await AdminClientAsync();
+            var frontDeskId = await FrontDeskUserIdAsync(client);
+
+            var response = await client.PostAsync("/api/v1/rfidtags",
+                JsonBody(IssueStaff(999999, frontDeskId, "RFID-NO-PROP")));
+
+            response.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+            var envelope = await ParseAsync(response);
+            envelope.GetProperty("error").GetProperty("message").GetString()
+                .Should().Contain("not found");
+        }
+
+        [Fact]
+        public async Task Issue_Rejects_Overlong_Tag_Number_And_Notes()
+        {
+            var client = await AdminClientAsync();
+            var propertyId = await CreatePropertyAsync(client, 718);
+            var frontDeskId = await FrontDeskUserIdAsync(client);
+
+            var longTag = await client.PostAsync("/api/v1/rfidtags",
+                JsonBody(IssueStaff(propertyId, frontDeskId, new string('X', 65))));
+            longTag.StatusCode.Should().Be(HttpStatusCode.BadRequest);
+
+            var longNotes = await client.PostAsync("/api/v1/rfidtags",
+                JsonBody(new
+                {
+                    propertyId,
+                    kind = "staff",
+                    tagNumber = "RFID-718-NOTES",
+                    userId = frontDeskId,
+                    bookingId = (int?)null,
+                    accessLevel = "staff",
+                    expiresAt = (DateTime?)null,
+                    notes = new string('n', 2001)
+                }));
+            longNotes.StatusCode.Should().Be(HttpStatusCode.BadRequest);
         }
     }
 }
