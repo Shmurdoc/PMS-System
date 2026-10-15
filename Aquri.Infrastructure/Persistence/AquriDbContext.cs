@@ -392,6 +392,11 @@ namespace Aquri.Infrastructure.Persistence
             {
                 entity.HasKey(e => e.Key);
                 entity.Property(e => e.Key).IsRequired().HasMaxLength(20);
+                // Optimistic-concurrency token (client-side only, no DDL): concurrent
+                // increments of the same sequence row now fail deterministically so
+                // NumberGenerator can reload and retry instead of silently issuing
+                // the same business number twice.
+                entity.Property(e => e.CurrentValue).IsConcurrencyToken();
             });
 
             modelBuilder.Entity<AiInsight>(entity =>
