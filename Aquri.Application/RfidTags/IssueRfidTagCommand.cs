@@ -32,9 +32,28 @@ namespace Aquri.Application.RfidTags
             if (!RfidTagKindExtensions.TryParseWire(request.Kind, out var kind))
                 return Result<RfidTagDto>.Failure("Kind must be 'guest' or 'staff'.");
 
+            // Exactly one binding per tag — reject the cross-kind pairing outright.
+            if (kind == RfidTagKind.Staff && request.BookingId.HasValue)
+                return Result<RfidTagDto>.Failure("A staff tag cannot be bound to a booking.");
+            if (kind == RfidTagKind.Guest && request.UserId.HasValue)
+                return Result<RfidTagDto>.Failure("A guest tag cannot be bound to a user.");
+
             var tagNumber = request.TagNumber?.Trim() ?? string.Empty;
             if (tagNumber.Length == 0)
                 return Result<RfidTagDto>.Failure("Tag number cannot be empty.");
+            if (tagNumber.Length > 64)
+                return Result<RfidTagDto>.Failure("Tag number cannot exceed 64 characters.");
+            if (request.Notes?.Trim().Length > 2000)
+                return Result<RfidTagDto>.Failure("Notes cannot exceed 2000 characters.");
+
+            // Property rows carry both a surrogate Id and a tenant PropertyId, and
+            // callers reference either one — accept both, reject only true unknowns.
+            var propertyExists = await _context.Properties
+                .AnyAsync(
+                    p => p.Id == request.PropertyId || p.PropertyId == request.PropertyId,
+                    cancellationToken);
+            if (!propertyExists)
+                return Result<RfidTagDto>.Failure($"Property {request.PropertyId} not found.");
 
             var duplicate = await _context.RfidTags.AnyAsync(
                 t => t.PropertyId == request.PropertyId && t.TagNumber == tagNumber,
@@ -57,6 +76,7 @@ namespace Aquri.Application.RfidTags
 
                     var staffTag = RfidTag.ForStaff(
                         request.PropertyId, user.Id, tagNumber, request.AccessLevel ?? "staff");
+                    staffTag.SetExpiry(request.ExpiresAt);
                     staffTag.SetNotes(request.Notes);
 
                     _context.RfidTags.Add(staffTag);
