@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: aquri-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: Aquri
+      POSTGRES_USER: aquri_user
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (copy .env.example)}"
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - aquri-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aquri_user -d Aquri"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: aquri-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__DefaultConnection: "Host=db;Port=5432;Database=Aquri;Username=aquri_user;Password=${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (copy .env.example)}"
+      Jwt__Key: "${JWT_KEY:?set JWT_KEY in .env (copy .env.example, minimum 32 characters)}"
+      Jwt__Issuer: "Aquri.API"
+      Jwt__Audience: "Aquri.Client"
+      Seed__DemoUsers: "${SEED_DEMO_USERS:-true}"
+      Cors__AllowedOrigins__0: "http://localhost:4200"
+      Cors__AllowedOrigins__1: "http://localhost:5173"
+      Cors__AllowedOrigins__2: "http://localhost:3000"
+    ports:
+      - "8080:8080"
+
+volumes:
+  aquri-data:
