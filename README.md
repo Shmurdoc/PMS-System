@@ -4,7 +4,7 @@ A clean-architecture backend for a hospitality PMS: properties, rooms, guests, b
 
 - Stack: **.NET 8**, **EF Core (PostgreSQL)**, **MediatR** (vertical slices), **JWT** auth.
 - Layers: `Domain` → `Application` → `Infrastructure` → `API`. `Application` depends only on `Domain`; nothing flows the wrong way.
-- Tests: **xUnit** + EF InMemory — **448 passing**.
+- Tests: **xUnit** + EF InMemory — **489 passing**.
 
 ## Getting started
 
