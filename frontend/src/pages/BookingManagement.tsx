@@ -11,6 +11,7 @@ import { useAppStore } from '../store/useAppStore';
 import type { Booking } from '../store/useAppStore';
 import { toast } from 'sonner';
 import { exportToCsv } from '../utils/exportCsv';
+import { resolveTaxRatePercent } from '../lib/tax';
 
 // ─── colour maps ──────────────────────────────────────────────────────────────
 const statusColors: Record<string, { bg: string; text: string; border: string }> = {
@@ -113,7 +114,7 @@ export default function BookingManagement() {
     bookings, addBooking, updateBooking, deleteBooking,
     guests, rooms, properties,
     addInvoice, addAuditLog,
-    updateRoom,
+    updateRoom, taxConfigs,
   } = useAppStore();
 
   // UI state
@@ -385,8 +386,13 @@ export default function BookingManagement() {
       toast.success(`${booking.guestName} checked in to Room ${booking.roomNumber}`);
     } else if (newStatus === 'checked-out') {
       updateRoom(booking.roomId, { status: 'cleaning' });
-      // Auto-create invoice on checkout
+      // Auto-create invoice on checkout — tax from the active TaxConfigs
+      // (server-derived once hydrated; 15% fallback when none apply).
       const invoiceId = 'INV' + Date.now().toString(36).toUpperCase();
+      const today = now.split('T')[0];
+      const taxRate = resolveTaxRatePercent(taxConfigs, 'room', today, 15);
+      const taxAmount = Math.round(booking.amount * taxRate) / 100;
+      const total = Math.round((booking.amount + taxAmount) * 100) / 100;
       addInvoice({
         id: invoiceId,
         invoiceNumber: invoiceId,
@@ -401,20 +407,20 @@ export default function BookingManagement() {
           description: `Room ${booking.roomNumber} (${booking.roomType}) — ${booking.nights} night(s)`,
           quantity: booking.nights,
           unitPrice: booking.ratePerNight ?? (booking.amount / booking.nights),
-          taxRate: 15,
+          taxRate,
           amount: booking.amount,
-          category: 'accommodation',
+          category: 'room',
         }],
         subtotal: booking.amount,
-        taxAmount: Math.round(booking.amount * 0.15 * 100) / 100,
+        taxAmount,
         discountAmount: 0,
-        total: Math.round(booking.amount * 1.15 * 100) / 100,
+        total,
         currency: 'ZAR',
         status: booking.paymentStatus === 'paid' ? 'paid' : 'pending',
-        issueDate: now.split('T')[0],
-        dueDate: now.split('T')[0],
-        paidDate: booking.paymentStatus === 'paid' ? now.split('T')[0] : undefined,
-        paidAmount: booking.paymentStatus === 'paid' ? Math.round(booking.amount * 1.15 * 100) / 100 : 0,
+        issueDate: today,
+        dueDate: today,
+        paidDate: booking.paymentStatus === 'paid' ? today : undefined,
+        paidAmount: booking.paymentStatus === 'paid' ? total : 0,
         notes: `Auto-generated on checkout for booking ${bookingId}`,
         createdAt: now,
         createdBy: 'system',
@@ -537,7 +543,7 @@ export default function BookingManagement() {
     else { setSortBy(col); setSortOrder('desc'); }
   };
 
-  const SortIcon = ({ col }: { col: string }) =>
+  const sortIcon = (col: string) =>
     sortBy === col ? (sortOrder === 'asc' ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />) : null;
 
   // ─── RENDER ─────────────────────────────────────────────────────────────────
@@ -695,19 +701,19 @@ export default function BookingManagement() {
                 <tr>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     <button onClick={() => toggleSort('name')} className="flex items-center gap-1 hover:text-foreground">
-                      Booking / Guest <SortIcon col="name" />
+                      Booking / Guest {sortIcon('name')}
                     </button>
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Room</th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     <button onClick={() => toggleSort('date')} className="flex items-center gap-1 hover:text-foreground">
-                      Dates <SortIcon col="date" />
+                      Dates {sortIcon('date')}
                     </button>
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
                     <button onClick={() => toggleSort('amount')} className="flex items-center gap-1 hover:text-foreground">
-                      Amount <SortIcon col="amount" />
+                      Amount {sortIcon('amount')}
                     </button>
                   </th>
                   <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
