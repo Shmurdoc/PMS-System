@@ -11,10 +11,6 @@ namespace Aquri.Domain.Entities
     /// </summary>
     public class RfidTag
     {
-        /// <summary>Free-form door/zone label carried on the badge (frontend demo parity).</summary>
-        public static readonly string[] ValidAccessLevels =
-            { "guest", "staff", "housekeeping", "maintenance", "manager", "admin" };
-
         public int Id { get; private set; }
         public int PropertyId { get; private set; }
 
@@ -38,7 +34,7 @@ namespace Aquri.Domain.Entities
 
         public DateTime? ExpiresAt { get; private set; }
         public DateTime? LastUsed { get; private set; }
-        public string? Notes { get; set; }
+        public string? Notes { get; private set; }
 
         public DateTime Created { get; private set; }
         public DateTime LastModified { get; private set; }
@@ -88,20 +84,21 @@ namespace Aquri.Domain.Entities
             return tag;
         }
 
+        /// <summary>Free-form door/zone label — trimmed, non-empty, at most 128 chars.</summary>
         public void SetAccessLevel(string accessLevel)
         {
             if (string.IsNullOrWhiteSpace(accessLevel))
                 throw new ArgumentException("Access level cannot be empty.", nameof(accessLevel));
-            if (!ValidAccessLevels.Contains(accessLevel.Trim().ToLowerInvariant()))
-                throw new ArgumentException(
-                    $"Access level must be one of: {string.Join(", ", ValidAccessLevels)}.",
-                    nameof(accessLevel));
 
-            AccessLevel = accessLevel.Trim().ToLowerInvariant();
+            var trimmed = accessLevel.Trim();
+            if (trimmed.Length > 128)
+                throw new ArgumentException("Access level cannot exceed 128 characters.", nameof(accessLevel));
+
+            AccessLevel = trimmed;
             LastModified = DateTime.UtcNow;
         }
 
-        /// <summary>Revocation and restore both land here; only active tags can be tapped.</summary>
+        /// <summary>Revocation and restore both land here; only inactive tags can be reactivated.</summary>
         public void ChangeStatus(RfidTagStatus status)
         {
             if (status == RfidTagStatus.Active && Status != RfidTagStatus.Inactive)
@@ -111,11 +108,12 @@ namespace Aquri.Domain.Entities
             LastModified = DateTime.UtcNow;
         }
 
+        /// <summary>Expiry is day-granular: a tag works for the whole day it expires on.</summary>
         public void RecordUse(DateTime usedAt)
         {
             if (Status != RfidTagStatus.Active)
                 throw new DomainException("Tag is not active.");
-            if (ExpiresAt.HasValue && usedAt > ExpiresAt.Value)
+            if (ExpiresAt.HasValue && usedAt.Date > ExpiresAt.Value.Date)
                 throw new DomainException("Tag has expired.");
 
             LastUsed = usedAt;
