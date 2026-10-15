@@ -39,6 +39,7 @@ namespace Aquri.API.Common
         public const string Forbidden = "FORBIDDEN";
         public const string NotFound = "NOT_FOUND";
         public const string Conflict = "CONFLICT";
+        public const string RateLimited = "RATE_LIMITED";
         public const string Internal = "INTERNAL";
     }
 }
