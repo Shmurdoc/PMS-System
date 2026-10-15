@@ -1,0 +1,30 @@
+# Local environment secrets — never commit
+.env
+Aquri.API/appsettings.Development.json
+
+# Build output
+**/bin/
+**/obj/
+logs/
+
+# IDE and tooling caches
+.vs/
+.gstack/
+.agents/
+
+# Local-only artifacts — dumps, backups, dev certs
+certs/
+NuGet.Config.bak
+commits.json
+runs.json
+wf.json
+npm.json
+skills-lock.json
+
+# Test and coverage output
+TestResults/
+**/coverage/
+
+# Node — frontend ships its own .gitignore too; these are belt and braces
+**/node_modules/
+**/dist/

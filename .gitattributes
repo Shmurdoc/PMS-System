@@ -1,0 +1,11 @@
+# Normalise line endings on commit, keep working copies as-is.
+* text=auto
+
+*.cs   text diff=csharp
+*.ts   text
+*.tsx  text
+*.sql  text
+*.md   text
+*.png  binary
+*.jpg  binary
+*.ico  binary
