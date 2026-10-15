@@ -27,6 +27,10 @@ namespace Aquri.Tests.RfidTags
                 .Options;
 
             Context = new AquriDbContext(options);
+
+            // Tenant 1 must exist before any handler issues a tag there.
+            Context.Properties.Add(new Property("Test Hotel", 1));
+            Context.SaveChanges();
         }
 
         public void Dispose() => Context.Dispose();
@@ -39,12 +43,12 @@ namespace Aquri.Tests.RfidTags
             return user;
         }
 
-        protected async Task<Booking> SeedBooking(int? propertyId = null, DateTime? checkOut = null)
+        protected async Task<Booking> SeedBooking(DateTime? checkOut = null)
         {
-            var propertyId1 = propertyId ?? 1;
-            if (!await Context.Properties.AnyAsync(p => p.PropertyId == propertyId1))
+            const int propertyId = 1;
+            if (!await Context.Properties.AnyAsync(p => p.PropertyId == propertyId))
             {
-                Context.Properties.Add(new Property("Test Hotel", 1));
+                Context.Properties.Add(new Property("Test Hotel", propertyId));
                 await Context.SaveChangesAsync();
             }
 
@@ -52,13 +56,13 @@ namespace Aquri.Tests.RfidTags
             Context.Guests.Add(guest);
             await Context.SaveChangesAsync();
 
-            var room = new Room("101", propertyId1, "double");
+            var room = new Room("101", propertyId, "double");
             Context.Rooms.Add(room);
             await Context.SaveChangesAsync();
 
             var checkIn = DateTime.UtcNow.Date.AddDays(1);
             var booking = new Booking(
-                propertyId1, guest.Id, room.Id,
+                propertyId, guest.Id, room.Id,
                 checkIn, checkOut ?? checkIn.AddDays(2),
                 2, 150m, "direct");
             Context.Bookings.Add(booking);
@@ -146,9 +150,103 @@ namespace Aquri.Tests.RfidTags
         }
 
         [Fact]
+        public async Task Reject_Staff_Tag_Bound_To_A_Booking()
+        {
+            var user = await SeedUser();
+            var booking = await SeedBooking();
+            var handler = new IssueRfidTagHandler(Context);
+
+            var result = await handler.Handle(new IssueRfidTagCommand(
+                1, "staff", "UID-XBIND", user.Id, booking.Id, null, null, null),
+                CancellationToken.None);
+
+            result.Success.Should().BeFalse();
+            result.Error.Should().Contain("staff tag cannot be bound to a booking");
+            Context.RfidTags.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task Reject_Guest_Tag_Bound_To_A_User()
+        {
+            var user = await SeedUser();
+            var booking = await SeedBooking();
+            var handler = new IssueRfidTagHandler(Context);
+
+            var result = await handler.Handle(new IssueRfidTagCommand(
+                1, "guest", "UID-XBIND", user.Id, booking.Id, null, null, null),
+                CancellationToken.None);
+
+            result.Success.Should().BeFalse();
+            result.Error.Should().Contain("guest tag cannot be bound to a user");
+            Context.RfidTags.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task Wire_Staff_Expiry_Date_Through_Issue()
+        {
+            var user = await SeedUser();
+            var handler = new IssueRfidTagHandler(Context);
+            var expires = DateTime.UtcNow.Date.AddDays(30);
+
+            var result = await handler.Handle(new IssueRfidTagCommand(
+                1, "staff", "UID-EXPS", user.Id, null, "housekeeping", expires, null),
+                CancellationToken.None);
+
+            result.Success.Should().BeTrue();
+            result.Data!.ExpiresAt.Should().Be(expires);
+        }
+
+        [Fact]
+        public async Task Reject_Issue_For_Unknown_Property()
+        {
+            var user = await SeedUser();
+            var handler = new IssueRfidTagHandler(Context);
+
+            var result = await handler.Handle(new IssueRfidTagCommand(
+                4242, "staff", "UID-PROP", user.Id, null, null, null, null),
+                CancellationToken.None);
+
+            result.Success.Should().BeFalse();
+            result.Error.Should().Contain("not found");
+            Context.RfidTags.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task Reject_Tag_Number_Over_64_Characters()
+        {
+            var user = await SeedUser();
+            var handler = new IssueRfidTagHandler(Context);
+
+            var result = await handler.Handle(new IssueRfidTagCommand(
+                1, "staff", new string('X', 65), user.Id, null, null, null, null),
+                CancellationToken.None);
+
+            result.Success.Should().BeFalse();
+            result.Error.Should().Contain("64");
+            Context.RfidTags.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task Reject_Notes_Over_2000_Characters()
+        {
+            var user = await SeedUser();
+            var handler = new IssueRfidTagHandler(Context);
+
+            var result = await handler.Handle(new IssueRfidTagCommand(
+                1, "staff", "UID-LONG", user.Id, null, null, null, new string('n', 2001)),
+                CancellationToken.None);
+
+            result.Success.Should().BeFalse();
+            result.Error.Should().Contain("2000");
+            Context.RfidTags.Should().BeEmpty();
+        }
+
+        [Fact]
         public async Task Reject_Guest_Tag_For_Booking_At_Another_Property()
         {
             var booking = await SeedBooking();
+            Context.Properties.Add(new Property("Other Hotel", 2));
+            await Context.SaveChangesAsync();
             var handler = new IssueRfidTagHandler(Context);
 
             var result = await handler.Handle(new IssueRfidTagCommand(
@@ -277,6 +375,80 @@ namespace Aquri.Tests.RfidTags
             result.Error.Should().Contain("not active");
             Context.AttendanceRecords.Should().BeEmpty();
         }
+
+        [Fact]
+        public async Task Repeat_Tap_Within_3s_Reports_Without_Toggling()
+        {
+            await SeedStaffTag();
+            var handler = new RecordStaffTapHandler(Context);
+            var clockIn = DateTime.UtcNow.Date.AddHours(9);
+
+            var first = await handler.Handle(
+                new RecordStaffTapCommand(1, "UID-TAP", clockIn), CancellationToken.None);
+            var replay = await handler.Handle(
+                new RecordStaffTapCommand(1, "UID-TAP", clockIn.AddSeconds(1)), CancellationToken.None);
+            var later = await handler.Handle(
+                new RecordStaffTapCommand(1, "UID-TAP", clockIn.AddSeconds(5)), CancellationToken.None);
+
+            first.Data!.Punch.Should().Be("in");
+            replay.Success.Should().BeTrue();
+            replay.Data!.Punch.Should().Be("in");
+            replay.Data.AttendanceId.Should().Be(first.Data.AttendanceId);
+            replay.Data.CheckOut.Should().BeNull();
+
+            later.Success.Should().BeTrue();
+            later.Data!.Punch.Should().Be("out");
+            later.Data.AttendanceId.Should().Be(first.Data.AttendanceId);
+
+            var record = Context.AttendanceRecords.Single();
+            record.CheckOut.Should().Be(clockIn.AddSeconds(5));
+        }
+
+        [Fact]
+        public async Task Reject_Tap_At_Another_Property()
+        {
+            await SeedStaffTag();
+            var handler = new RecordStaffTapHandler(Context);
+
+            var result = await handler.Handle(
+                new RecordStaffTapCommand(2, "UID-TAP", null), CancellationToken.None);
+
+            result.NotFound.Should().BeTrue();
+            Context.AttendanceRecords.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task Reject_Tap_When_Badge_User_Is_Gone()
+        {
+            await SeedStaffTag();
+            Context.Users.RemoveRange(Context.Users);
+            await Context.SaveChangesAsync();
+
+            var handler = new RecordStaffTapHandler(Context);
+            var result = await handler.Handle(
+                new RecordStaffTapCommand(1, "UID-TAP", null), CancellationToken.None);
+
+            result.Success.Should().BeFalse();
+            result.Error.Should().Contain("no longer exists");
+            Context.AttendanceRecords.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task Reject_Inactive_Tag_Tap()
+        {
+            var tagId = await SeedStaffTag();
+            var tag = Context.RfidTags.Single(t => t.Id == tagId);
+            tag.ChangeStatus(RfidTagStatus.Inactive);
+            await Context.SaveChangesAsync();
+
+            var handler = new RecordStaffTapHandler(Context);
+            var result = await handler.Handle(
+                new RecordStaffTapCommand(1, "UID-TAP", null), CancellationToken.None);
+
+            result.Success.Should().BeFalse();
+            result.Error.Should().Contain("not active");
+            Context.AttendanceRecords.Should().BeEmpty();
+        }
     }
 
     public class ResolveGuestTapHandler_Should : RfidTagTestBase
@@ -374,6 +546,25 @@ namespace Aquri.Tests.RfidTags
             all.Single(t => t.Kind == "guest").GuestName.Should().Be("Ada Lovelace");
             staffOnly.Should().ContainSingle().Which.Kind.Should().Be("staff");
             otherProperty.Should().BeEmpty();
+        }
+
+        [Fact]
+        public async Task Return_Empty_List_For_Unknown_Kind()
+        {
+            var user = await SeedUser();
+            var issue = new IssueRfidTagHandler(Context);
+            await issue.Handle(new IssueRfidTagCommand(
+                1, "staff", "UID-K1", user.Id, null, null, null, null),
+                CancellationToken.None);
+
+            var handler = new GetRfidTagsHandler(Context);
+            var invalid = await handler.Handle(new GetRfidTagsQuery(1, "visitor"), CancellationToken.None);
+            var blank = await handler.Handle(new GetRfidTagsQuery(1, "  "), CancellationToken.None);
+            var valid = await handler.Handle(new GetRfidTagsQuery(1, "staff"), CancellationToken.None);
+
+            invalid.Should().BeEmpty();
+            blank.Should().HaveCount(1);
+            valid.Should().HaveCount(1);
         }
     }
 }

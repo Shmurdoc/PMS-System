@@ -38,11 +38,13 @@ namespace Aquri.Application.RfidTags
                 return Result<StaffTapResultDto>.Failure("Tag is not a staff badge.");
 
             var tappedAt = request.TappedAt ?? DateTime.UtcNow;
+            var previousTap = tag.LastUsed;
 
             try
             {
                 // Throws when the tag is inactive/blocked/expired — the guard before
-                // any attendance state is touched.
+                // any attendance state is touched. Stamps LastUsed either way so a
+                // held badge keeps sliding past the debounce window.
                 tag.RecordUse(tappedAt);
             }
             catch (DomainException ex)
@@ -63,10 +65,41 @@ namespace Aquri.Application.RfidTags
                 .OrderByDescending(a => a.CheckIn)
                 .FirstOrDefaultAsync(cancellationToken);
 
+            // A second read within 3s of the previous one is the same physical tap
+            // (held badge, serial hiccup): report the current punch, don't toggle.
+            var isRepeatTap = previousTap.HasValue
+                && tappedAt - previousTap.Value < TimeSpan.FromSeconds(3);
+
             string punch;
             AttendanceRecord record;
 
-            if (openRecord is not null)
+            if (isRepeatTap)
+            {
+                if (openRecord is not null)
+                {
+                    punch = "in";
+                    record = openRecord;
+                }
+                else
+                {
+                    record = await _context.AttendanceRecords
+                        .Where(a => a.UserId == user.Id && a.Date == tappedAt.Date)
+                        .OrderByDescending(a => a.CheckIn)
+                        .FirstOrDefaultAsync(cancellationToken);
+
+                    if (record is not null)
+                    {
+                        punch = "out";
+                    }
+                    else
+                    {
+                        record = new AttendanceRecord(request.PropertyId, user.Id, user.Name, tappedAt);
+                        _context.AttendanceRecords.Add(record);
+                        punch = "in";
+                    }
+                }
+            }
+            else if (openRecord is not null)
             {
                 try
                 {

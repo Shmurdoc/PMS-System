@@ -20,8 +20,15 @@ namespace Aquri.Application.RfidTags
                 .AsNoTracking()
                 .Where(t => t.PropertyId == request.PropertyId);
 
-            if (RfidTagKindExtensions.TryParseWire(request.Kind, out var kind))
+            if (!string.IsNullOrWhiteSpace(request.Kind))
+            {
+                // An unparseable kind is a client bug, not a filter to skip —
+                // return nothing rather than silently listing every tag.
+                if (!RfidTagKindExtensions.TryParseWire(request.Kind, out var kind))
+                    return new List<RfidTagDto>();
+
                 query = query.Where(t => t.Kind == kind);
+            }
 
             var tags = await query
                 .OrderByDescending(t => t.Id)
