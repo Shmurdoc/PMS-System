@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  backend:
+    name: Backend build & test
+    runs-on: ubuntu-latest
+    # The test host boots the real Program.cs, which fails fast on missing
+    # config. Values are dummies: every test overrides the DbContext with
+    # EF InMemory, so nothing ever dials Postgres or signs a real token.
+    env:
+      ConnectionStrings__DefaultConnection: "Host=unused;Database=unused;Username=unused;Password=unused"
+      Jwt__Key: "ci-dummy-signing-key-0123456789abcdef"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+      - name: Build
+        run: dotnet build Aquri.sln -nodeReuse:false --configuration Release
+      - name: Test
+        run: dotnet test Aquri.sln --no-build --configuration Release --logger "console;verbosity=minimal"
+
+  frontend:
+    name: Frontend build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      # Full-repo eslint is red by design today (~60 pre-existing errors);
+      # tsc (via build) is the honest gate until that baseline is cleared.
+      - name: Build (tsc + vite)
+        run: npm run build
