@@ -49,7 +49,7 @@ This docs folder is the start: architecture, conventions, getting-started, roadm
 
 ## AI agent layer — DONE
 
-Insights, workflows, agents, and chat are served from the backend now: `Aquri.Application\AiInsights\`, `AiWorkflows\`, `AiAgents\`, `AiChat\` behind `api/v1/{aiInsights,workflows,agents,chat}` (admin/manager, WS3 envelope). Chat is deterministic first — an LLM only joins in when `AI:ApiKey` is set, and nothing in the app or the test suite needs one. `DbSeeder` seeds 6 agents plus sample insights and workflows. Frontend is wired to all of it (4 tabs + drawer). 489 tests, all green.
+Insights, workflows, agents, and chat are served from the backend now: `Aquri.Application\AiInsights\`, `AiWorkflows\`, `AiAgents\`, `AiChat\` behind `api/v1/{aiInsights,workflows,agents,chat}` (admin/manager, WS3 envelope). Chat is deterministic first — an LLM only joins in when `AI:ApiKey` is set, and nothing in the app or the test suite needs one. `DbSeeder` seeds 6 agents plus sample insights and workflows. Frontend is wired to all of it (4 tabs + drawer). 504 tests, all green.
 
 ## Dual NFC tags — DONE
 
