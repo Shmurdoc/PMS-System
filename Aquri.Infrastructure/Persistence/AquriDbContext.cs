@@ -458,8 +458,14 @@ namespace Aquri.Infrastructure.Persistence
                     .HasConversion(v => v.ToWire(), v => RfidTagStatusExtensions.FromWire(v));
                 entity.Property(e => e.AccessLevel).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Notes).HasMaxLength(2000);
-                // One physical card per property — duplicate reads are a programming error.
-                entity.HasIndex(e => new { e.PropertyId, e.TagNumber }).IsUnique();
+                // One *active* physical card per property — a recycled or revoked
+                // UID may be re-issued (the handler reuses the row), so the
+                // uniqueness constraint is a partial index over active tags only;
+                // a full unique index would 500 on every re-issue. PostgreSQL
+                // honors the filter; the InMemory test provider ignores it, so
+                // the invariant is pinned by ModelMetadataTests.
+                entity.HasIndex(e => new { e.PropertyId, e.TagNumber }).IsUnique()
+                    .HasFilter("\"Status\" = 'active'");
                 entity.HasIndex(e => e.PropertyId);
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.BookingId);

@@ -1107,7 +1107,8 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasIndex("UserId");
 
                     b.HasIndex("PropertyId", "TagNumber")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"Status\" = 'active'");
 
                     b.ToTable("RfidTags");
                 });
