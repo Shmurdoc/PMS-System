@@ -40,7 +40,8 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
       - run: npm ci
-      # Full-repo eslint is red by design today (~60 pre-existing errors);
-      # tsc (via build) is the honest gate until that baseline is cleared.
+      # Full-repo eslint is clean as of bae63ef; keep it a hard gate so it stays that way.
+      - name: Lint
+        run: npx eslint src
       - name: Build (tsc + vite)
         run: npm run build
