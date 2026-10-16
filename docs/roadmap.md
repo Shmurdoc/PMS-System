@@ -1,6 +1,6 @@
 # Roadmap
 
-Seven slices. Slices 1–5 are done. Slice 6 is open; Slice 7 is in progress.
+Seven slices, all done.
 
 The north star: the React frontend (Zustand, 26 models, ~81 actions, 24 pages, 7 roles) started out on mock data with zero network calls. The backend grows to serve shapes compatible with those models, endpoint by endpoint. Frontend types are the contract; read `useAppStore.ts` before designing any entity or DTO.
 
@@ -34,18 +34,13 @@ RatePlan, Expense, InventoryItem, Shift, AttendanceRecord, Message, AuditLog, an
 
 Also on this slice's periphery: RfidTag, ElectricityRecord, Integration (frontend-only at the time; RfidTag has since landed end to end — see the Dual NFC section below). Workflow and AiInsight landed separately — see the AI agent layer section below.
 
-## Slice 6 — FluentValidation pipeline
+## Slice 6 — FluentValidation pipeline — DONE
 
-FluentValidation packages are already referenced (Application + Infrastructure) but not wired. Add validators per command/query, register them in DI, and either:
+`ValidationBehavior` added to the MediatR pipeline (before `PropertyScopeBehavior`): it runs all registered validators for a request, and on failure returns `Result.Failure` with the messages joined by `"; "`. Validators cover the 79 write commands — not the 38 read queries, and not sparse updates where every field is optional. Validators guard shape only (null/empty/range); handler rules stay in handlers, and the pre-existing ad-hoc checks were left in place as belt and braces. Registration is assembly scanning with `using FluentValidation;` in `Program.cs`. Also on this slice: the unused Mapster package reference was dropped (AutoMapper remains, used only for the few collection projections).
 
-- Add a MediatR behavior that runs validators and converts failures to `Result.Failure`, or
-- Call validators explicitly in handlers (simpler, no pipeline).
+## Slice 7 — Documentation — DONE
 
-Pick one approach and apply it consistently. Until then, handlers do ad-hoc null/empty checks (see LoginHandler, CreateRoomHandler).
-
-## Slice 7 — Documentation — IN PROGRESS
-
-This docs folder is the start: architecture, conventions, getting-started, roadmap. Remaining: endpoint reference, deployment notes, and a root README (owned by a separate task — not this slice's deliverable from here).
+`docs/api-reference.md` documents all 127 endpoints across the 25 controllers (routes, roles, one-line purposes). `docs/deployment.md` covers compose topology, env vars, images, migrations, health checks, CI, and a production checklist. `docs/architecture.md`, `conventions.md`, `getting-started.md`, and this roadmap complete the set.
 
 ## AI agent layer — DONE
 
@@ -59,5 +54,5 @@ One `RfidTag` entity serves both kinds: `staff` binds a User, `guest` binds a Bo
 
 - Currency ZAR. VAT 15%. Tourism levy 1%. Frontend `AppSettings` holds the rates; tax rules live in the TaxConfig entity (Slice 5) rather than being hardcoded.
 - Frontend role strings and status unions are the source of truth. Do not invent new status values; extend the union in the store first, then mirror.
-- 26 Zustand models vs the entities landed (Properties, Rooms, Users, Bookings, Guests, Invoices, Payments, Tickets, RatePlans, Expenses, InventoryItems, MaintenanceRequests, Shift, Attendance, Message, AuditLog, TaxConfig, RfidTag + the AI layer). The deferred periphery is ElectricityRecord, Integration.
+- 26 Zustand models, all served by the backend: Properties, Rooms, Users, Bookings, Guests, Invoices, Payments, Tickets, RatePlans, Expenses, InventoryItems, MaintenanceRequests, Shift, Attendance, Message, AuditLog, TaxConfig, RfidTag, ElectricityRecord, Integration + the AI layer (insights, workflows, agents, chat).
 - Multi-tenancy: every Room belongs to a Property (`PropertyId`). New guest-scoped entities should carry `PropertyId` the same way.
