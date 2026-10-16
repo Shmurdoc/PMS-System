@@ -138,6 +138,34 @@ namespace Aquri.API.Middleware
                 };
                 await context.Response.WriteAsJsonAsync(envelope);
             }
+            catch (FluentValidation.ValidationException ex)
+            {
+                // Command input failed a FluentValidation rule on a response
+                // type that is not Result-shaped — 400 VALIDATION with the rule
+                // messages, same envelope as DomainException above. (Most
+                // commands return Result and never reach this catch: the
+                // pipeline behavior converts failures to Result.Failure.)
+                if (context.Response.HasStarted) throw;
+
+                context.Response.Body = originalBody;
+                context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                context.Response.ContentType = "application/json; charset=utf-8";
+                context.Response.Headers.ContentLength = null;
+
+                var envelope = new ApiResponse<object>
+                {
+                    Success = false,
+                    Error = new ApiError
+                    {
+                        Code = ErrorCodes.Validation,
+                        Message = string.Join("; ",
+                            ex.Errors.Select(f => f.ErrorMessage).Distinct())
+                    },
+                    Timestamp = _timeProvider.GetUtcNow().UtcDateTime,
+                    RequestId = requestId
+                };
+                await context.Response.WriteAsJsonAsync(envelope);
+            }
             catch (DbUpdateException ex)
             {
                 if (context.Response.HasStarted) throw;

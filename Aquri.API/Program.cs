@@ -154,11 +154,13 @@ builder.Services.AddHttpClient(Aquri.Application.AiChat.OpenAiCompatibleClient.H
 // Agent run generator: one deterministic recipe per agent key (spec §6)
 builder.Services.AddScoped<Aquri.Application.AiAgents.AgentInsightGenerator>();
 
-// MediatR application service layer (command/query handlers); the behavior
-// confines property-assigned accounts to their own property (403 otherwise)
+// MediatR application service layer (command/query handlers); the behaviors
+// run first (FluentValidation input rules → Result.Failure), then confine
+// property-assigned accounts to their own property (403 otherwise)
 builder.Services.AddMediatR(cfg =>
 {
     cfg.RegisterServicesFromAssembly(typeof(CreatePropertyCommand).Assembly);
+    cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
     cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PropertyScopeBehavior<,>));
 });
 
