@@ -1,7 +1,6 @@
-# WS4 — AI Agent Layer Specification
+# AI Agent Layer Specification
 
-Status: **SHIPPED** (decisions 1–3 confirmed: seeding, `deepseek-flash`, CRUD-only workflows; T1–T19 complete, 448 tests green)
-Approach: **Hybrid (deterministic-first, LLM-optional)** — chosen by product owner.
+Status: **Shipped.** Chat is deterministic-first with an optional LLM; workflows are CRUD-only; demo seeding is on.
 Provider: **DeepSeek** (default) / **Nemotron 3.5** (drop-in alternative) — both OpenAI-compatible.
 
 ---
