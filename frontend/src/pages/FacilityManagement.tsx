@@ -8,6 +8,7 @@ import {
 import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { useAppStore } from '../store/useAppStore';
 import { toast } from 'sonner';
+import { newId } from '../utils/id';
 import type { MaintenanceTicket, ElectricityRecord } from '../store/useAppStore';
 
 const inputClass = 'w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors';
@@ -374,7 +375,7 @@ export default function FacilityManagement() {
     }
 
     const newTicket: MaintenanceTicket = {
-      id: `MT-${Date.now()}`,
+      id: newId('MT'),
       title: ticketForm.title,
       description: ticketForm.description,
       priority: ticketForm.priority,
@@ -389,7 +390,7 @@ export default function FacilityManagement() {
 
     addMaintenanceTicket(newTicket);
     addAuditLog({
-      id: `LOG-${Date.now()}`,
+      id: newId('LOG'),
       action: 'create',
       entityType: 'ticket',
       entityId: newTicket.id,
@@ -442,7 +443,7 @@ export default function FacilityManagement() {
 
     updateMaintenanceTicket(editingTicket.id, updates);
     addAuditLog({
-      id: `LOG-${Date.now()}`,
+      id: newId('LOG'),
       action: 'update',
       entityType: 'ticket',
       entityId: editingTicket.id,

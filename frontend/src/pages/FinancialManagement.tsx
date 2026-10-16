@@ -13,6 +13,7 @@ import { useAppStore } from '../store/useAppStore';
 import type { Expense, Invoice, Payment } from '../store/useAppStore';
 import { exportToCsv } from '../utils/exportCsv';
 import toastHelpers from '../lib/toast';
+import { newId } from '../utils/id';
 
 /* ─── Constants ─── */
 const INVOICE_STATUS_COLORS: Record<string, { bg: string; text: string }> = {
@@ -382,7 +383,7 @@ export default function FinancialManagement() {
   const handleApproveExpense = (exp: Expense) => {
     updateExpense(exp.id, { status: 'approved', approvedBy: 'Current User', approvedAt: new Date().toISOString() });
     addAuditLog({
-      id: `LOG-${Date.now()}`,
+      id: newId('LOG'),
       action: 'update',
       entityType: 'expense',
       entityId: exp.id,

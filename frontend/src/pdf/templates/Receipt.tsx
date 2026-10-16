@@ -1,5 +1,39 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 
+export type ReceiptCompany = {
+  name?: string;
+  address?: string;
+  email?: string;
+  phone?: string;
+  taxId?: string;
+  registrationNumber?: string;
+};
+
+export type ReceiptItem = {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+};
+
+export type ReceiptTax = {
+  label: string;
+  amount: number;
+};
+
+export type ReceiptData = {
+  company?: ReceiptCompany;
+  guest?: string;
+  bookingId?: string;
+  room?: string;
+  checkIn?: string;
+  checkOut?: string;
+  items?: ReceiptItem[];
+  taxes?: ReceiptTax[];
+  subtotal: number;
+  total: number;
+};
+
 const styles = StyleSheet.create({
   page: {
     padding: 32,
@@ -54,7 +88,7 @@ const styles = StyleSheet.create({
   }
 });
 
-const ReceiptTemplate = ({ data }: { data: Record<string, any> }) => {
+const ReceiptTemplate = ({ data }: { data: ReceiptData }) => {
   const { company, guest, bookingId, room, checkIn, checkOut, items, taxes, subtotal, total } = data;
 
   return (
@@ -86,7 +120,7 @@ const ReceiptTemplate = ({ data }: { data: Record<string, any> }) => {
             <Text style={styles.colPrice}>Unit</Text>
             <Text style={styles.colTotal}>Total</Text>
           </View>
-          {items?.map((item: any, index: number) => (
+          {items?.map((item, index) => (
             <View key={index} style={styles.tableRow}>
               <Text style={styles.colDesc}>{item.description}</Text>
               <Text style={styles.colQty}>{item.quantity}</Text>
@@ -103,7 +137,7 @@ const ReceiptTemplate = ({ data }: { data: Record<string, any> }) => {
             <Text style={styles.muted}>Subtotal</Text>
             <Text>{subtotal.toFixed(2)}</Text>
           </View>
-          {taxes?.map((tax: any, index: number) => (
+          {taxes?.map((tax, index) => (
             <View key={index} style={styles.totalRow}>
               <Text style={styles.muted}>{tax.label}</Text>
               <Text>{tax.amount.toFixed(2)}</Text>

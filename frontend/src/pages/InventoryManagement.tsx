@@ -10,6 +10,7 @@ import { useAppStore } from '../store/useAppStore';
 import type { InventoryItem } from '../store/useAppStore';
 import toastHelpers from '../lib/toast';
 import { exportInventoryToCsv } from '../utils/exportCsv';
+import { newId } from '../utils/id';
 
 const CATEGORIES = ['All', 'Linens', 'Toiletries', 'Kitchen', 'F&B', 'Maintenance', 'Office'];
 
@@ -113,7 +114,7 @@ export default function InventoryManagement() {
       toastHelpers.error('Validation Error', 'Price must be greater than zero');
       return;
     }
-    const id = `INV-${Date.now()}`;
+    const id = newId('INV');
     const newItem: InventoryItem = {
       ...formData,
       id,
@@ -121,7 +122,7 @@ export default function InventoryManagement() {
     };
     addInventoryItem(newItem);
     addAuditLog({
-      id: `LOG-${Date.now()}`,
+      id: newId('LOG'),
       action: 'create',
       entityType: 'inventory',
       entityId: id,
@@ -149,7 +150,7 @@ export default function InventoryManagement() {
     }
     updateInventory(showEditItem, formData);
     addAuditLog({
-      id: `LOG-${Date.now()}`,
+      id: newId('LOG'),
       action: 'update',
       entityType: 'inventory',
       entityId: showEditItem,
@@ -242,10 +243,10 @@ export default function InventoryManagement() {
     const itemNames = cart.map(c => `${c.item.name} x${c.qty}`).join(', ');
 
     addAuditLog({
-      id: `LOG-${Date.now()}`,
+      id: newId('LOG'),
       action: 'sale',
       entityType: 'inventory',
-      entityId: `SALE-${Date.now()}`,
+      entityId: newId('SALE'),
       entityName: 'POS Sale',
       userId: user?.id ?? '0',
       userName: currentUser,
@@ -274,7 +275,7 @@ export default function InventoryManagement() {
     const description = selectedItems.map(i => `${i.name} x${poQuantities[i.id]}`).join(', ');
 
     addExpense({
-      id: `EXP-${Date.now()}`,
+      id: newId('EXP'),
       category: 'Supplies',
       amount: totalCost,
       description: `Purchase Order — ${supplierName}: ${description}`,
@@ -286,10 +287,10 @@ export default function InventoryManagement() {
     });
 
     addAuditLog({
-      id: `LOG-${Date.now()}`,
+      id: newId('LOG'),
       action: 'create',
       entityType: 'expense',
-      entityId: `EXP-${Date.now()}`,
+      entityId: newId('EXP'),
       entityName: `PO — ${supplierName}`,
       userId: user?.id ?? '0',
       userName: currentUser,
@@ -354,7 +355,7 @@ export default function InventoryManagement() {
     <>
       <div className="flex items-center justify-between p-5 border-b border-border/30">
         <h3 className="text-lg font-semibold">{title}</h3>
-        <button onClick={() => { showEditItem ? setShowEditItem(null) : setShowAddItem(false); resetForm(); }} className="p-2 hover:bg-muted rounded-lg">
+        <button onClick={() => { if (showEditItem) { setShowEditItem(null); } else { setShowAddItem(false); } resetForm(); }} className="p-2 hover:bg-muted rounded-lg">
           <X className="w-5 h-5" />
         </button>
       </div>
@@ -404,7 +405,7 @@ export default function InventoryManagement() {
           <textarea rows={2} value={formData.notes ?? ''} onChange={e => setFormData({ ...formData, notes: e.target.value })} className={inputClass} placeholder="Additional notes..." />
         </div>
         <div className="flex gap-3 pt-2">
-          <button onClick={() => { showEditItem ? setShowEditItem(null) : setShowAddItem(false); resetForm(); }} className="flex-1 py-2.5 bg-muted rounded-lg hover:bg-muted/80 transition-colors">Cancel</button>
+          <button onClick={() => { if (showEditItem) { setShowEditItem(null); } else { setShowAddItem(false); } resetForm(); }} className="flex-1 py-2.5 bg-muted rounded-lg hover:bg-muted/80 transition-colors">Cancel</button>
           <button onClick={onSubmit} className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors flex items-center justify-center gap-2">
             <Save className="w-4 h-4" />
             {showEditItem ? 'Update Item' : 'Add Item'}

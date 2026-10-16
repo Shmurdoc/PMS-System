@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import toastHelpers from '../lib/toast';
+import { newId } from '../utils/id';
 
 const statusColors = {
   available: { bg: 'bg-success/15', text: 'text-success', border: 'border-success/30', icon: CheckCircle },
@@ -107,7 +108,7 @@ export default function Rooms() {
     } else {
       const newRoom = {
         ...formData,
-        id: `ROOM${Date.now()}`,
+        id: newId('ROOM'),
         image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400',
       };
       addRoom(newRoom);
@@ -504,7 +505,7 @@ export default function Rooms() {
                     <label className="text-sm font-medium mb-2 block">Status</label>
                     <select
                       value={formData.status}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+                      onChange={(e) => setFormData({ ...formData, status: e.target.value as typeof formData.status })}
                       className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
                     >
                       <option value="available">Available</option>

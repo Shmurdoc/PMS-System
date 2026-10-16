@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import toastHelpers from '../lib/toast';
+import { newId } from '../utils/id';
 
 const PRIORITY_COLORS = {
   low: { bg: 'bg-info/15', text: 'text-info', border: 'border-info/30', label: 'Low' },
@@ -121,7 +122,7 @@ export default function TicketManagement() {
     const guest = guests.find(g => g.id === formData.guestId);
     
     const newTicket = {
-      id: `TKT-${Date.now()}`,
+      id: newId('TKT'),
       ticketNumber,
       title: formData.title,
       description: formData.description,
@@ -528,7 +529,7 @@ export default function TicketManagement() {
                     <label className="text-sm font-medium mb-2 block">Type</label>
                     <select
                       value={formData.type}
-                      onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                      onChange={(e) => setFormData({ ...formData, type: e.target.value as typeof formData.type })}
                       className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
                     >
                       {TYPES.map(t => (
@@ -541,7 +542,7 @@ export default function TicketManagement() {
                     <label className="text-sm font-medium mb-2 block">Category</label>
                     <select
                       value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
+                      onChange={(e) => setFormData({ ...formData, category: e.target.value as typeof formData.category })}
                       className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
                     >
                       {CATEGORIES.map(c => (
@@ -554,7 +555,7 @@ export default function TicketManagement() {
                     <label className="text-sm font-medium mb-2 block">Priority</label>
                     <select
                       value={formData.priority}
-                      onChange={(e) => setFormData({ ...formData, priority: e.target.value as any })}
+                      onChange={(e) => setFormData({ ...formData, priority: e.target.value as typeof formData.priority })}
                       className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
                     >
                       <option value="low">Low</option>
@@ -711,7 +712,7 @@ export default function TicketManagement() {
                       return (
                         <button
                           key={key}
-                          onClick={() => handleStatusChange(selectedTicket.id, key as any)}
+                          onClick={() => handleStatusChange(selectedTicket.id, key as typeof tickets[0]['status'])}
                           disabled={selectedTicket.status === key}
                           className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                             selectedTicket.status === key

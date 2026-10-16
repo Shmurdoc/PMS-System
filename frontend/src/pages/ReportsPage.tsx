@@ -17,6 +17,19 @@ const PIE_COLORS = ['#c9a87c', '#007aff', '#34c759', '#ff9500', '#af52de', '#ff2
 const fmtR = (n: number) => `R${n.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fmtRShort = (n: number) => `R${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
+const initialScheduleSeed: ScheduledReport[] = [
+  { id: 'SCH-1', name: 'Daily Revenue Summary', type: 'financial', frequency: 'daily', nextRun: new Date(Date.now() + 86400000).toISOString().split('T')[0], recipients: 'manager@nexus.com', active: true },
+  { id: 'SCH-2', name: 'Weekly Occupancy Report', type: 'occupancy', frequency: 'weekly', nextRun: (() => { const d = new Date(); d.setDate(d.getDate() + (8 - d.getDay()) % 7); return d.toISOString().split('T')[0]; })(), recipients: 'team@nexus.com', active: true },
+  { id: 'SCH-3', name: 'Monthly P&L Statement', type: 'financial', frequency: 'monthly', nextRun: (() => { const d = new Date(); d.setMonth(d.getMonth() + 1, 1); return d.toISOString().split('T')[0]; })(), recipients: 'cfo@nexus.com, manager@nexus.com', active: true },
+];
+
+const initialGenerateForm = {
+  type: 'financial',
+  name: '',
+  dateFrom: new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0],
+  dateTo: new Date().toISOString().split('T')[0],
+};
+
 const getMonthKey = (dateStr: string) => {
   const d = new Date(dateStr);
   if (isNaN(d.getTime())) return '';
@@ -58,18 +71,9 @@ const ReportsPage = () => {
   const [showReportViewer, setShowReportViewer] = useState(false);
   const [viewingReport, setViewingReport] = useState<GeneratedReport | null>(null);
   const [generatedReports, setGeneratedReports] = useState<GeneratedReport[]>([]);
-  const [scheduledReports, setScheduledReports] = useState<ScheduledReport[]>([
-    { id: 'SCH-1', name: 'Daily Revenue Summary', type: 'financial', frequency: 'daily', nextRun: new Date(Date.now() + 86400000).toISOString().split('T')[0], recipients: 'manager@nexus.com', active: true },
-    { id: 'SCH-2', name: 'Weekly Occupancy Report', type: 'occupancy', frequency: 'weekly', nextRun: (() => { const d = new Date(); d.setDate(d.getDate() + (8 - d.getDay()) % 7); return d.toISOString().split('T')[0]; })(), recipients: 'team@nexus.com', active: true },
-    { id: 'SCH-3', name: 'Monthly P&L Statement', type: 'financial', frequency: 'monthly', nextRun: (() => { const d = new Date(); d.setMonth(d.getMonth() + 1, 1); return d.toISOString().split('T')[0]; })(), recipients: 'cfo@nexus.com, manager@nexus.com', active: true },
-  ]);
+  const [scheduledReports, setScheduledReports] = useState<ScheduledReport[]>(initialScheduleSeed);
 
-  const [generateForm, setGenerateForm] = useState({
-    type: 'financial',
-    name: '',
-    dateFrom: new Date(Date.now() - 30 * 86400000).toISOString().split('T')[0],
-    dateTo: new Date().toISOString().split('T')[0],
-  });
+  const [generateForm, setGenerateForm] = useState(initialGenerateForm);
 
   const [scheduleForm, setScheduleForm] = useState({
     name: '',

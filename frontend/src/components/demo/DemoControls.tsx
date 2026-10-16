@@ -14,14 +14,10 @@ interface DemoControlsProps {
 
 export function DemoControls({ children }: DemoControlsProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [demo, setDemo] = useState(false);
+  const [demo, setDemo] = useState(() => isDemoMode());
   const [showRoleSwitcher, setShowRoleSwitcher] = useState(false);
   const [isSeeding, setIsSeeding] = useState(false);
   const { user, setUser } = useAppStore();
-
-  useEffect(() => {
-    setDemo(isDemoMode());
-  }, []);
 
   const toggleDemoMode = () => {
     const newValue = !demo;
@@ -192,10 +188,9 @@ export function DemoControls({ children }: DemoControlsProps) {
 }
 
 export function useDemoMode() {
-  const [demo, setDemo] = useState(false);
+  const [demo, setDemo] = useState(() => isDemoMode());
 
   useEffect(() => {
-    setDemo(isDemoMode());
     const interval = setInterval(() => {
       setDemo(isDemoMode());
     }, 1000);

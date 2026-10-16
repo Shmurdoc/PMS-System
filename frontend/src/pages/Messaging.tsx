@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAppStore } from '../store/useAppStore';
+import { newId } from '../utils/id';
 
 const CURRENT_USER_ID = '1';
 
@@ -118,7 +119,7 @@ export default function Messaging() {
     if (!text.trim() || !recipient) return;
     const recipientUser = users.find(u => u.id === recipient);
     const message = {
-      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: newId('msg'),
       senderId: CURRENT_USER_ID,
       senderName: users.find(u => u.id === CURRENT_USER_ID)?.name ?? 'You',
       content: text,
@@ -129,7 +130,7 @@ export default function Messaging() {
     };
     addMessage(message);
     addAuditLog({
-      id: `log-${Date.now()}`,
+      id: newId('log'),
       action: 'send_message',
       entityType: 'user',
       entityId: recipient,
@@ -207,7 +208,7 @@ export default function Messaging() {
     setShowMoreMenu(false);
     toast.success(`Chat with ${selectedUser.name} cleared`);
     addAuditLog({
-      id: `log-${Date.now()}`,
+      id: newId('log'),
       action: 'clear_chat',
       entityType: 'user',
       entityId: selectedUser.id,
@@ -256,7 +257,7 @@ export default function Messaging() {
     const content = `[Attached: ${fileName}]`;
     const recipientUser = users.find(u => u.id === selectedConversation);
     const message = {
-      id: `msg-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+      id: newId('msg'),
       senderId: CURRENT_USER_ID,
       senderName: users.find(u => u.id === CURRENT_USER_ID)?.name ?? 'You',
       content,
@@ -269,7 +270,7 @@ export default function Messaging() {
     addMessage(message);
     toast.success(`${type} "${fileName}" attached and sent`);
     addAuditLog({
-      id: `log-${Date.now()}`,
+      id: newId('log'),
       action: 'send_attachment',
       entityType: 'user',
       entityId: selectedConversation,

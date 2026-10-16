@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Search, X, Calendar, Users, DoorOpen, 
@@ -38,7 +38,6 @@ interface GlobalSearchProps {
 
 const GlobalSearch = ({ isOpen, onClose, onNavigate }: GlobalSearchProps) => {
   const [query, setQuery] = useState('');
-  const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -48,18 +47,33 @@ const GlobalSearch = ({ isOpen, onClose, onNavigate }: GlobalSearchProps) => {
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    if (query.trim()) {
-      const filtered = mockSearchData.filter(item =>
-        item.title.toLowerCase().includes(query.toLowerCase()) ||
-        item.subtitle.toLowerCase().includes(query.toLowerCase())
-      );
-      setResults(filtered);
-      setSelectedIndex(0);
-    } else {
-      setResults([]);
-    }
+  // Derived (not stored) so filtering never round-trips through setState-in-effect.
+  const results = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return [];
+    return mockSearchData.filter(item =>
+      item.title.toLowerCase().includes(q) ||
+      item.subtitle.toLowerCase().includes(q)
+    );
   }, [query]);
+
+  // Clamp instead of resetting when the result set shrinks.
+  const safeIndex = Math.min(selectedIndex, results.length - 1);
+
+  const handleSelect = useCallback((result: SearchResult) => {
+    // Navigate based on type
+    const pageMap: Record<string, string> = {
+      booking: 'bookings',
+      guest: 'guests',
+      room: 'rooms',
+      staff: 'staff',
+      report: 'reports',
+      setting: 'settings',
+    };
+    onNavigate(pageMap[result.type] || 'dashboard');
+    onClose();
+    setQuery('');
+  }, [onNavigate, onClose]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -76,8 +90,8 @@ const GlobalSearch = ({ isOpen, onClose, onNavigate }: GlobalSearchProps) => {
           break;
         case 'Enter':
           e.preventDefault();
-          if (results[selectedIndex]) {
-            handleSelect(results[selectedIndex]);
+          if (results[safeIndex]) {
+            handleSelect(results[safeIndex]);
           }
           break;
         case 'Escape':
@@ -88,22 +102,7 @@ const GlobalSearch = ({ isOpen, onClose, onNavigate }: GlobalSearchProps) => {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, results, selectedIndex, onClose]);
-
-  const handleSelect = (result: SearchResult) => {
-    // Navigate based on type
-    const pageMap: Record<string, string> = {
-      booking: 'bookings',
-      guest: 'guests',
-      room: 'rooms',
-      staff: 'staff',
-      report: 'reports',
-      setting: 'settings',
-    };
-    onNavigate(pageMap[result.type] || 'dashboard');
-    onClose();
-    setQuery('');
-  };
+  }, [isOpen, results, safeIndex, onClose, handleSelect]);
 
   const getTypeLabel = (type: SearchResult['type']) => {
     const labels: Record<string, string> = {
@@ -173,7 +172,7 @@ const GlobalSearch = ({ isOpen, onClose, onNavigate }: GlobalSearchProps) => {
                           key={result.id}
                           onClick={() => handleSelect(result)}
                           className={`w-full flex items-center gap-3 p-3 rounded-xl text-left transition-colors ${
-                            index === selectedIndex ? 'bg-primary/10' : 'hover:bg-muted'
+                            index === safeIndex ? 'bg-primary/10' : 'hover:bg-muted'
                           }`}
                         >
                           <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${

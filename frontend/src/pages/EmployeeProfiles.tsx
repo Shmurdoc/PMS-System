@@ -10,6 +10,7 @@ import type { User } from '../store/useAppStore';
 import toastHelpers from '../lib/toast';
 import { exportToCsv } from '../utils/exportCsv';
 import { PermissionGate } from '../components/demo/DemoControls';
+import { newId } from '../utils/id';
 
 const statusColors: Record<User['status'], string> = {
   active: 'bg-success/15 text-success',
@@ -115,7 +116,7 @@ export default function EmployeeProfiles() {
     e.preventDefault();
     if (!validateForm()) return;
     const newUser: User = {
-      id: `EMP-${Date.now()}`,
+      id: newId('EMP'),
       name: formData.name.trim(),
       email: formData.email.trim(),
       role: formData.role.trim(),
@@ -127,7 +128,7 @@ export default function EmployeeProfiles() {
     };
     addUser(newUser);
     addAuditLog({
-      id: `LOG-${Date.now()}`,
+      id: newId('LOG'),
       action: 'create',
       entityType: 'user',
       entityId: newUser.id,
@@ -171,7 +172,7 @@ export default function EmployeeProfiles() {
       status: formData.status,
     });
     addAuditLog({
-      id: `LOG-${Date.now()}`,
+      id: newId('LOG'),
       action: 'update',
       entityType: 'user',
       entityId: editingUserId,
