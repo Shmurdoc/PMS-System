@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.AiAgents
 {
-    /// <summary>Lists every agent with its 20 most recent log entries.</summary>
     public record GetAgentsQuery : IRequest<List<AgentDto>>;
 
     public class GetAgentsHandler : IRequestHandler<GetAgentsQuery, List<AgentDto>>

@@ -7,11 +7,7 @@ using Aquri.Domain.Exceptions;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// A bill issued to a guest. Totals are recalculated from line items and the
-    /// discount whenever something changes — handlers never set Subtotal/Total
-    /// by hand, so the numbers on screen always match the lines.
-    /// </summary>
+    /// <summary>A bill issued to a guest. Totals are recalculated from line items and the discount whenever something changes — handlers never set Subtotal/Total by hand, so the numbers on screen always match the lines.</summary>
     public class Invoice
     {
         private static readonly IReadOnlyDictionary<InvoiceStatus, InvoiceStatus[]> AllowedTransitions =
@@ -141,10 +137,7 @@ namespace Aquri.Domain.Entities
             LastModified = DateTime.UtcNow;
         }
 
-        /// <summary>
-        /// Moves the invoice through its lifecycle, refusing jumps that don't
-        /// make sense (e.g. paid → sent).
-        /// </summary>
+        /// <summary>Moves the invoice through its lifecycle, refusing jumps that don't make sense (e.g. paid → sent).</summary>
         public void ChangeStatus(InvoiceStatus newStatus)
         {
             if (!CanTransitionTo(Status, newStatus))
@@ -154,7 +147,6 @@ namespace Aquri.Domain.Entities
             LastModified = DateTime.UtcNow;
         }
 
-        /// <summary>Records a payment against this invoice and updates the paid amount.</summary>
         public void RecordPayment(decimal amount, string paymentMethod)
         {
             if (amount <= 0)

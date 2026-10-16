@@ -5,11 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Invoices
 {
-    /// <summary>
-    /// Deletes an invoice. Nothing references an invoice with Restrict: line
-    /// items cascade with the invoice and payments detach (FK SetNull — the
-    /// money records are preserved), so no conflict guard is needed.
-    /// </summary>
+    /// <summary>Deletes an invoice. Nothing references an invoice with Restrict: line items cascade with the invoice and payments detach (FK SetNull — the money records are preserved), so no conflict guard is needed.</summary>
     public record DeleteInvoiceCommand(int Id) : IRequest<Result>;
 
     public class DeleteInvoiceHandler : IRequestHandler<DeleteInvoiceCommand, Result>

@@ -10,10 +10,7 @@ using MediatR;
 
 namespace Aquri.API.Controllers
 {
-    /// <summary>
-    /// Property management endpoints.
-    /// Access controlled by role-based authorization.
-    /// </summary>
+    /// <summary>Property management endpoints. Access controlled by role-based authorization.</summary>
     [ApiVersion("1.0")]
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
@@ -27,9 +24,6 @@ namespace Aquri.API.Controllers
             _mediator = mediator;
         }
 
-        /// <summary>
-        /// Creates a new property with optional initial rooms.
-        /// </summary>
         [HttpPost]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(StatusCodes.Status201Created)]
@@ -51,9 +45,6 @@ namespace Aquri.API.Controllers
             return BadRequest(result.Error);
         }
 
-        /// <summary>
-        /// Gets a property by Id.
-        /// </summary>
         [HttpGet("{id}")]
         [Authorize(Roles = "admin,manager,front_desk,housekeeping,maintenance,auditor")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -72,9 +63,6 @@ namespace Aquri.API.Controllers
             return Ok(property);
         }
 
-        /// <summary>
-        /// Gets all properties.
-        /// </summary>
         [HttpGet]
         [Authorize(Roles = "admin,manager,front_desk,housekeeping,maintenance,auditor")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -86,9 +74,6 @@ namespace Aquri.API.Controllers
             return Ok(properties);
         }
 
-        /// <summary>
-        /// Updates a property status by Id.
-        /// </summary>
         [HttpPut("{id}")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -114,9 +99,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>
-        /// Deletes a property by Id.
-        /// </summary>
         [HttpDelete("{id}")]
         [Authorize(Roles = "admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -135,9 +117,6 @@ namespace Aquri.API.Controllers
             return NoContent();
         }
 
-        /// <summary>
-        /// Gets property status by Id.
-        /// </summary>
         [HttpGet("{id}/status")]
         [Authorize(Roles = "admin,manager,front_desk,housekeeping,maintenance,auditor")]
         [ProducesResponseType(StatusCodes.Status200OK)]

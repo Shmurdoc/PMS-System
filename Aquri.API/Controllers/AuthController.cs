@@ -8,10 +8,7 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace Aquri.API.Controllers
 {
-    /// <summary>
-    /// Authentication endpoints: login and current-user profile.
-    /// Login is anonymous; /me requires a valid Bearer token.
-    /// </summary>
+    /// <summary>Authentication endpoints: login and current-user profile. Login is anonymous; /me requires a valid Bearer token.</summary>
     [ApiVersion("1.0")]
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
@@ -24,9 +21,7 @@ namespace Aquri.API.Controllers
             _mediator = mediator;
         }
 
-        /// <summary>
-        /// Authenticates email + password and returns a signed JWT.
-        /// </summary>
+        /// <summary>Authenticates email + password and returns a signed JWT.</summary>
         [HttpPost("login")]
         [AllowAnonymous]
         [EnableRateLimiting("auth")]
@@ -45,9 +40,7 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>
-        /// Returns the profile for the authenticated user (from the JWT).
-        /// </summary>
+        /// <summary>Returns the profile for the authenticated user (from the JWT).</summary>
         [HttpGet("me")]
         [Authorize]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]

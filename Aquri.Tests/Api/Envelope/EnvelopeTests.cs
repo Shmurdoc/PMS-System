@@ -5,12 +5,7 @@ using System.Text.Json;
 
 namespace Aquri.Tests.Api.Envelope
 {
-    /// <summary>
-    /// Contract tests for the ApiResponse envelope produced by
-    /// ApiResponseMiddleware: shape, error-code taxonomy, X-Request-ID echo,
-    /// and the excluded paths (/health, /swagger). One case per outcome in the
-    /// 200/201/400/401/403/404 matrix — the template for every future controller.
-    /// </summary>
+    /// <summary>Contract tests for the ApiResponse envelope produced by ApiResponseMiddleware: shape, error-code taxonomy, X-Request-ID echo, and the excluded paths (/health, /swagger). One case per outcome in the 200/201/400/401/403/404 matrix — the template for every future controller.</summary>
     public class EnvelopeTests : IClassFixture<AquriApiFactory>
     {
         private readonly AquriApiFactory _factory;

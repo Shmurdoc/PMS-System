@@ -16,7 +16,6 @@ namespace Aquri.API.Controllers
 
         public TaxConfigsController(IMediator mediator) => _mediator = mediator;
 
-        /// <summary>Creates a tax or levy rule.</summary>
         [HttpPost]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(typeof(TaxConfigDto), StatusCodes.Status201Created)]
@@ -30,7 +29,6 @@ namespace Aquri.API.Controllers
             return CreatedAtAction(nameof(Get), new { id = result.Data!.Id, version = "1.0" }, result.Data);
         }
 
-        /// <summary>Fetches one tax config by id.</summary>
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(TaxConfigDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -44,7 +42,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Lists tax configs, optionally filtered by property, type, and active state.</summary>
         [HttpGet]
         [ProducesResponseType(typeof(List<TaxConfigDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<TaxConfigDto>>> List(
@@ -72,7 +69,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Deletes a tax config.</summary>
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

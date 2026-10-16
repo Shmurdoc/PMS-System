@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Guests
 {
-    /// <summary>Fetches one guest by id.</summary>
     public record GetGuestQuery(int Id) : IRequest<Result<GuestDto>>;
 
     public class GetGuestHandler : IRequestHandler<GetGuestQuery, Result<GuestDto>>
@@ -26,7 +25,6 @@ namespace Aquri.Application.Guests
         }
     }
 
-    /// <summary>Lists guests, optionally filtered by name/email search term.</summary>
     public record GetGuestsQuery(string? Search) : IRequest<List<GuestDto>>;
 
     public class GetGuestsHandler : IRequestHandler<GetGuestsQuery, List<GuestDto>>

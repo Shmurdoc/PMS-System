@@ -3,11 +3,7 @@ using Aquri.Domain.Exceptions;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// A staff-submitted expense (cleaning supplies, a contractor invoice).
-    /// Flows pending → approved/rejected; approvals are one-way — once decided,
-    /// only an admin can reopen it.
-    /// </summary>
+    /// <summary>A staff-submitted expense (cleaning supplies, a contractor invoice). Flows pending → approved/rejected; approvals are one-way — once decided, only an admin can reopen it.</summary>
     public class Expense
     {
         public static readonly string[] ValidStatuses = { "pending", "approved", "rejected" };
@@ -58,7 +54,6 @@ namespace Aquri.Domain.Entities
             LastModified = DateTime.UtcNow;
         }
 
-        /// <summary>Edits the expense details while it is still pending a decision.</summary>
         public void UpdateDetails(string category, decimal amount, string description, DateTime date, string? vendor, string? notes)
         {
             if (Status != "pending")
@@ -79,7 +74,6 @@ namespace Aquri.Domain.Entities
             LastModified = DateTime.UtcNow;
         }
 
-        /// <summary>Approves the expense and stamps who signed it off.</summary>
         public void Approve(string approvedBy)
         {
             if (Status != "pending")

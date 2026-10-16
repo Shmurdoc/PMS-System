@@ -6,13 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Bookings
 {
-    /// <summary>
-    /// Deletes a booking. Nothing references a booking with Restrict — invoices
-    /// and payments detach (FK SetNull, the payment/money records are preserved)
-    /// — so no conflict guard is needed. The room status is recomputed so the
-    /// room does not stay "occupied" after its booking is removed, matching the
-    /// occupied/available transitions in <see cref="ChangeBookingStatusHandler"/>.
-    /// </summary>
+    /// <summary>Deletes a booking. Nothing references a booking with Restrict — invoices and payments detach (FK SetNull, the payment/money records are preserved) — so no conflict guard is needed. The room status is recomputed so the room does not stay "occupied" after its booking is removed, matching the occupied/available transitions in <see cref="ChangeBookingStatusHandler"/>.</summary>
     public record DeleteBookingCommand(int Id) : IRequest<Result>;
 
     public class DeleteBookingHandler : IRequestHandler<DeleteBookingCommand, Result>

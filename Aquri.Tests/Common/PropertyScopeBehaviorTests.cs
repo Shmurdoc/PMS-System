@@ -9,11 +9,7 @@ using Xunit;
 
 namespace Aquri.Tests.Common
 {
-    /// <summary>
-    /// Property-scope pipeline behavior: a user assigned to a property may only
-    /// send requests targeting that property. Unrestricted users, and requests
-    /// that carry no property scope at all, pass through untouched.
-    /// </summary>
+    /// <summary>Property-scope pipeline behavior: a user assigned to a property may only send requests targeting that property. Unrestricted users, and requests that carry no property scope at all, pass through untouched.</summary>
     public class PropertyScopeBehaviorTests
     {
         private sealed record ScopedRequest(int PropertyId) : IRequest<string>;

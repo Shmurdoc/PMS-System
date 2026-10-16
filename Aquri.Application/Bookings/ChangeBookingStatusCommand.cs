@@ -56,7 +56,6 @@ namespace Aquri.Application.Bookings
         }
     }
 
-    /// <summary>Records a deposit payment against a booking.</summary>
     public record RecordBookingDepositCommand(int Id, decimal Amount) : IRequest<Result<BookingDto>>;
 
     public class RecordBookingDepositHandler : IRequestHandler<RecordBookingDepositCommand, Result<BookingDto>>

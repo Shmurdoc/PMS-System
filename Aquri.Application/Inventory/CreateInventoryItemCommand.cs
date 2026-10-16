@@ -5,7 +5,6 @@ using MediatR;
 
 namespace Aquri.Application.Inventory
 {
-    /// <summary>Adds a new stock item.</summary>
     public record CreateInventoryItemCommand(
         int PropertyId,
         string Name,

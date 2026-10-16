@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Attendance
 {
-    /// <summary>Fetches one attendance record by id.</summary>
     public record GetAttendanceRecordQuery(int Id) : IRequest<Result<AttendanceDto>>;
 
     public class GetAttendanceRecordHandler : IRequestHandler<GetAttendanceRecordQuery, Result<AttendanceDto>>

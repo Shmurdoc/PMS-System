@@ -2,11 +2,7 @@ using System;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// A tax or levy rule — South African VAT (15%), tourism levy (1%),
-    /// city tax, service charge. Has a validity window so historical
-    /// invoices keep the rate that applied when they were issued.
-    /// </summary>
+    /// <summary>A tax or levy rule — South African VAT (15%), tourism levy (1%), city tax, service charge. Has a validity window so historical invoices keep the rate that applied when they were issued.</summary>
     public class TaxConfig
     {
         public static readonly string[] ValidTypes = { "vat", "sales_tax", "tourism_levy", "city_tax", "service_charge" };

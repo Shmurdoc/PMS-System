@@ -12,10 +12,7 @@ namespace Aquri.Application.Users
         public const int MinPasswordLength = 8;
     }
 
-    /// <summary>
-    /// Creates a staff account (admin only), optionally scoped to a property.
-    /// The plaintext password is hashed before storage.
-    /// </summary>
+    /// <summary>Creates a staff account (admin only), optionally scoped to a property. The plaintext password is hashed before storage.</summary>
     public record CreateUserCommand(
         string Email,
         string Name,

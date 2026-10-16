@@ -3,11 +3,7 @@ using Aquri.Domain.Exceptions;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// A stock-kept consumable — towels, minibar sodas, cleaning chemicals.
-    /// Tracks quantity against a reorder level so housekeeping knows what to
-    /// order before something runs out.
-    /// </summary>
+    /// <summary>A stock-kept consumable — towels, minibar sodas, cleaning chemicals. Tracks quantity against a reorder level so housekeeping knows what to order before something runs out.</summary>
     public class InventoryItem
     {
         public int Id { get; private set; }

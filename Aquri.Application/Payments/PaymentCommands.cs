@@ -67,7 +67,6 @@ namespace Aquri.Application.Payments
         }
     }
 
-    /// <summary>Lists payments for a property, optionally filtered by status.</summary>
     public record GetPaymentsQuery(int PropertyId, string? Status) : IRequest<List<PaymentDto>>;
 
     public class GetPaymentsHandler : IRequestHandler<GetPaymentsQuery, List<PaymentDto>>

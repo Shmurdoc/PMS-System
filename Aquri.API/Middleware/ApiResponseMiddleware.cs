@@ -5,22 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.API.Middleware
 {
-    /// <summary>
-        /// Wraps every JSON API response in the <see cref="ApiResponse{T}"/> envelope
-        /// and manages the X-Request-ID correlation header. Paths under /health and
-        /// /swagger pass through untouched (load balancers and Swagger UI read raw
-        /// payloads). 3xx redirects and body-forbidden statuses (204/304) also pass
-        /// through so clients keep working.
-    ///
-    /// Controllers keep returning bare DTOs / strings via Result — the envelope
-    /// is applied here once, so every current and future endpoint conforms.
-    /// ForbiddenException (a property-assigned account operating outside its
-    /// scope) is emitted as an envelope-shaped 403 FORBIDDEN. DbUpdateException
-    /// below (unique-constraint races: duplicate e-mails, colliding business
-    /// numbers) is emitted as an envelope-shaped 409 CONFLICT; any other
-    /// unhandled exception is emitted as an envelope-shaped 500
-    /// (UseExceptionHandler remains as a backstop for failures above it).
-    /// </summary>
+    /// <summary>Wraps every JSON API response in the <see cref="ApiResponse{T}"/> envelope and manages the X-Request-ID correlation header. Paths under /health and /swagger pass through untouched (load balancers and Swagger UI read raw payloads). 3xx redirects and body-forbidden statuses (204/304) also pass through so clients keep working.  Controllers keep returning bare DTOs / strings via Result — the envelope is applied here once, so every current and future endpoint conforms. ForbiddenException (a property-assigned account operating outside its scope) is emitted as an envelope-shaped 403 FORBIDDEN. DbUpdateException below (unique-constraint races: duplicate e-mails, colliding business numbers) is emitted as an envelope-shaped 409 CONFLICT; any other unhandled exception is emitted as an envelope-shaped 500 (UseExceptionHandler remains as a backstop for failures above it).</summary>
     public class ApiResponseMiddleware
     {
         public const string RequestIdItemKey = "RequestId";

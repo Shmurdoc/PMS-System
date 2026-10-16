@@ -2,11 +2,7 @@ using System;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// A rules-based automation from the AI tab: something happens (Trigger),
-    /// these steps run (Actions). Actions is stored as serialized JSON and
-    /// handed to clients as a string array.
-    /// </summary>
+    /// <summary>A rules-based automation from the AI tab: something happens (Trigger), these steps run (Actions). Actions is stored as serialized JSON and handed to clients as a string array.</summary>
     public class Workflow
     {
         public static readonly string[] ValidStatuses = { "active", "inactive" };

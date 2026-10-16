@@ -6,10 +6,7 @@ using MediatR;
 
 namespace Aquri.Application.Properties.Status
 {
-    /// <summary>
-    /// Loads a property by primary key, updates its status, and persists.
-    /// Returns NotFound (not an exception) when the property does not exist.
-    /// </summary>
+    /// <summary>Loads a property by primary key, updates its status, and persists. Returns NotFound (not an exception) when the property does not exist.</summary>
     public class UpdatePropertyStatusHandler : IRequestHandler<UpdatePropertyStatusCommand, Result<PropertyDto>>
     {
         private readonly IApplicationDbContext _context;

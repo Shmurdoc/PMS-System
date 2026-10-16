@@ -8,10 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.RfidTags
 {
-    /// <summary>
-    /// Staff badge tap: toggles today's attendance — opens a record if none is
-    /// running, clocks out the latest open one if there is.
-    /// </summary>
+    /// <summary>Staff badge tap: toggles today's attendance — opens a record if none is running, clocks out the latest open one if there is.</summary>
     public record RecordStaffTapCommand(
         int PropertyId,
         string TagNumber,

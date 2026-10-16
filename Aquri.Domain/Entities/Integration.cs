@@ -2,11 +2,7 @@ using System;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// A third-party system wired into the property — payment gateway, channel
-    /// manager, POS. The API key is a secret: surface it to admins through the
-    /// DTO for configuration, never write it to logs.
-    /// </summary>
+    /// <summary>A third-party system wired into the property — payment gateway, channel manager, POS. The API key is a secret: surface it to admins through the DTO for configuration, never write it to logs.</summary>
     public class Integration
     {
         public static readonly string[] ValidStatuses = { "connected", "disconnected", "error", "syncing" };

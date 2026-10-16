@@ -2,10 +2,7 @@ using FluentValidation;
 
 namespace Aquri.Application.Attendance
 {
-    /// <summary>
-    /// Shape checks for attendance creation — status vocabulary stays in the handler,
-    /// which owns AttendanceRecord.ValidStatuses.
-    /// </summary>
+    /// <summary>Shape checks for attendance creation — status vocabulary stays in the handler, which owns AttendanceRecord.ValidStatuses.</summary>
     public class CreateAttendanceCommandValidator : AbstractValidator<CreateAttendanceCommand>
     {
         public CreateAttendanceCommandValidator()

@@ -1,11 +1,6 @@
 namespace Aquri.API.Common
 {
-    /// <summary>
-    /// Standard response envelope for every API endpoint. Matches the frontend
-    /// contract in employee2/app/src/lib/api.ts (ApiResponse&lt;T&gt;): the client
-    /// unwraps { success, data, error, timestamp, requestId } on every response,
-    /// including 401/403/404/500.
-    /// </summary>
+    /// <summary>Standard response envelope for every API endpoint. Matches the frontend contract in employee2/app/src/lib/api.ts (ApiResponse&lt;T&gt;): the client unwraps { success, data, error, timestamp, requestId } on every response, including 401/403/404/500.</summary>
     public class ApiResponse<T>
     {
         public bool Success { get; set; }
@@ -28,10 +23,7 @@ namespace Aquri.API.Common
         public string? Details { get; set; }
     }
 
-    /// <summary>
-    /// Stable machine-readable error codes returned in <see cref="ApiError.Code"/>.
-    /// The frontend maps these to user-facing copy — never rename without a version bump.
-    /// </summary>
+    /// <summary>Stable machine-readable error codes returned in <see cref="ApiError.Code"/>. The frontend maps these to user-facing copy — never rename without a version bump.</summary>
     public static class ErrorCodes
     {
         public const string Validation = "VALIDATION";

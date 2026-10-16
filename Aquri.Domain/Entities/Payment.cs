@@ -4,11 +4,7 @@ using Aquri.Domain.Exceptions;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// Money received (or attempted) from a guest. Can settle an invoice, a
-    /// booking deposit, or stand alone. Status moves forward only — a completed
-    /// payment can be refunded, but never edited in place.
-    /// </summary>
+    /// <summary>Money received (or attempted) from a guest. Can settle an invoice, a booking deposit, or stand alone. Status moves forward only — a completed payment can be refunded, but never edited in place.</summary>
     public class Payment
     {
         public static readonly string[] ValidMethods =
@@ -97,7 +93,6 @@ namespace Aquri.Domain.Entities
             Status = PaymentStatus.Processing;
         }
 
-        /// <summary>Completes the payment and stamps when it landed.</summary>
         public void Complete(string? transactionId)
         {
             if (Status is not (PaymentStatus.Pending or PaymentStatus.Processing))

@@ -2,10 +2,7 @@ using FluentValidation;
 
 namespace Aquri.Application.MaintenanceRequests
 {
-    /// <summary>
-    /// Shape checks for maintenance creation — status and priority vocabulary
-    /// checks stay in the handler, which owns MaintenanceRequestVocabulary.
-    /// </summary>
+    /// <summary>Shape checks for maintenance creation — status and priority vocabulary checks stay in the handler, which owns MaintenanceRequestVocabulary.</summary>
     public class CreateMaintenanceRequestCommandValidator : AbstractValidator<CreateMaintenanceRequestCommand>
     {
         public CreateMaintenanceRequestCommandValidator()

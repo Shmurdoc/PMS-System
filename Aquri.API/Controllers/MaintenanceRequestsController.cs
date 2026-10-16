@@ -30,7 +30,6 @@ namespace Aquri.API.Controllers
             return CreatedAtAction(nameof(Get), new { id = result.Data!.Id, version = "1.0" }, result.Data);
         }
 
-        /// <summary>Fetches one maintenance request by id.</summary>
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(MaintenanceRequestDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -72,7 +71,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Deletes a maintenance request.</summary>
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "admin,manager,front_desk,maintenance")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

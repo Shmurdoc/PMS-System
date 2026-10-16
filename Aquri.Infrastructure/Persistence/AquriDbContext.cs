@@ -5,11 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Infrastructure.Persistence
 {
-    /// <summary>
-    /// EF Core DbContext for the Aquri PMS. Owns all entity mappings and the
-    /// change tracking that backs the Unit of Work pattern.
-    /// Implements IApplicationDbContext so the Application layer depends only on abstractions.
-    /// </summary>
+    /// <summary>EF Core DbContext for the Aquri PMS. Owns all entity mappings and the change tracking that backs the Unit of Work pattern. Implements IApplicationDbContext so the Application layer depends only on abstractions.</summary>
     public class AquriDbContext : DbContext, IApplicationDbContext
     {
         public AquriDbContext(DbContextOptions<AquriDbContext> options)

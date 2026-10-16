@@ -5,10 +5,7 @@ using Xunit;
 
 namespace Aquri.Tests.Users
 {
-    /// <summary>
-    /// Covers User entity invariants: constructor validation, role whitelist,
-    /// email matching, and domain-method guards.
-    /// </summary>
+    /// <summary>Covers User entity invariants: constructor validation, role whitelist, email matching, and domain-method guards.</summary>
     public class UserTests
     {
         [Fact]

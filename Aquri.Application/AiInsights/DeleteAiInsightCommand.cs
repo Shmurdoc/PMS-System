@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.AiInsights
 {
-    /// <summary>Deletes an AI insight.</summary>
     public record DeleteAiInsightCommand(int Id) : IRequest<Result>;
 
     public class DeleteAiInsightHandler : IRequestHandler<DeleteAiInsightCommand, Result>

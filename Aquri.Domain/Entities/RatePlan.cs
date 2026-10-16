@@ -2,10 +2,7 @@ using System;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// A pricing plan — base rate for a set of room types in a season, with
-    /// stay restrictions (e.g. "high season, min 2 nights, no same-day").
-    /// </summary>
+    /// <summary>A pricing plan — base rate for a set of room types in a season, with stay restrictions (e.g. "high season, min 2 nights, no same-day").</summary>
     public class RatePlan
     {
         public static readonly string[] ValidSeasons = { "low", "shoulder", "high", "peak" };

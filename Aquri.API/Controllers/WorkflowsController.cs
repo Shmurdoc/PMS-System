@@ -16,7 +16,6 @@ namespace Aquri.API.Controllers
 
         public WorkflowsController(IMediator mediator) => _mediator = mediator;
 
-        /// <summary>Lists all workflows, newest first.</summary>
         [HttpGet]
         [ProducesResponseType(typeof(List<WorkflowDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<WorkflowDto>>> List()
@@ -25,7 +24,6 @@ namespace Aquri.API.Controllers
             return Ok(workflows);
         }
 
-        /// <summary>Creates a workflow.</summary>
         [HttpPost]
         [ProducesResponseType(typeof(WorkflowDto), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -52,7 +50,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Deletes a workflow.</summary>
         [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

@@ -1,9 +1,6 @@
 namespace Aquri.Application.RfidTags
 {
-    /// <summary>
-    /// Read-only context returned for a guest tag tap: who they are, where they
-    /// are staying, and whether the booking is still valid. Writes nothing.
-    /// </summary>
+    /// <summary>Read-only context returned for a guest tag tap: who they are, where they are staying, and whether the booking is still valid. Writes nothing.</summary>
     public class GuestTapContextDto
     {
         public int TagId { get; init; }

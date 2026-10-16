@@ -5,10 +5,7 @@ using Xunit;
 
 namespace Aquri.Tests.Auth
 {
-    /// <summary>
-    /// Covers the PBKDF2 password hasher: hash format, verify round-trip,
-    /// tamper rejection, and null/empty safety.
-    /// </summary>
+    /// <summary>Covers the PBKDF2 password hasher: hash format, verify round-trip, tamper rejection, and null/empty safety.</summary>
     public class Pbkdf2PasswordHasherTests
     {
         private readonly Pbkdf2PasswordHasher _hasher = new();

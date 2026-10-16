@@ -2,10 +2,7 @@ using System;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// One billable line on an invoice — a night, a minibar charge, a late checkout fee.
-    /// Amount is derived (quantity × unit price), so it's never set directly.
-    /// </summary>
+    /// <summary>One billable line on an invoice — a night, a minibar charge, a late checkout fee. Amount is derived (quantity × unit price), so it's never set directly.</summary>
     public class InvoiceItem
     {
         public int Id { get; private set; }

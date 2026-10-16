@@ -16,7 +16,6 @@ namespace Aquri.API.Controllers
 
         public TicketsController(IMediator mediator) => _mediator = mediator;
 
-        /// <summary>Opens a new ticket.</summary>
         [HttpPost]
         [Authorize(Roles = "admin,manager,front_desk,housekeeping,maintenance")]
         [ProducesResponseType(typeof(TicketDto), StatusCodes.Status201Created)]
@@ -44,7 +43,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Lists tickets for a property, optionally filtered by status/priority.</summary>
         [HttpGet]
         [ProducesResponseType(typeof(List<TicketDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<TicketDto>>> List(
@@ -54,7 +52,6 @@ namespace Aquri.API.Controllers
             return Ok(tickets);
         }
 
-        /// <summary>Transitions a ticket through its workflow.</summary>
         [HttpPatch("{id:int}/status")]
         [Authorize(Roles = "admin,manager,front_desk,housekeeping,maintenance")]
         [ProducesResponseType(typeof(TicketDto), StatusCodes.Status200OK)]
@@ -70,7 +67,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Assigns a ticket to a staff member.</summary>
         [HttpPost("{id:int}/assign")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(typeof(TicketDto), StatusCodes.Status200OK)]
@@ -86,7 +82,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Adds a comment to a ticket thread.</summary>
         [HttpPost("{id:int}/comments")]
         [Authorize(Roles = "admin,manager,front_desk,housekeeping,maintenance")]
         [ProducesResponseType(typeof(TicketDto), StatusCodes.Status200OK)]

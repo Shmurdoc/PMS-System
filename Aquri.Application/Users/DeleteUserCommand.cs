@@ -6,16 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Users
 {
-    /// <summary>
-    /// Deletes a staff account (admin only). Guards three invariants the
-    /// database's Restrict FKs would otherwise reject at runtime (or the
-    /// InMemory test provider would silently allow):
-    /// 1. You cannot delete the account you are signed in as.
-    /// 2. The system can never lose its last admin (lockout).
-    /// 3. Accounts referenced by shifts, attendance records, or sent messages
-    ///    are protected (409 CONFLICT) — those rows keep their audit trail.
-    /// DeletedByUserId is stamped by the controller from the auth claims.
-    /// </summary>
+    /// <summary>Deletes a staff account (admin only). Guards three invariants the database's Restrict FKs would otherwise reject at runtime (or the InMemory test provider would silently allow): 1. You cannot delete the account you are signed in as. 2. The system can never lose its last admin (lockout). 3. Accounts referenced by shifts, attendance records, or sent messages are protected (409 CONFLICT) — those rows keep their audit trail. DeletedByUserId is stamped by the controller from the auth claims.</summary>
     public record DeleteUserCommand(int Id, int? DeletedByUserId) : IRequest<Result>;
 
     public class DeleteUserHandler : IRequestHandler<DeleteUserCommand, Result>

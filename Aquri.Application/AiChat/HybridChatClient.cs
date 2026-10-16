@@ -4,11 +4,7 @@ using Microsoft.Extensions.Options;
 
 namespace Aquri.Application.AiChat
 {
-    /// <summary>
-    /// Deterministic first: an empty key answers straight from ChatStats with no network call.
-    /// With a key, the LLM gets the same stats as context — any failure quietly drops back to
-    /// the deterministic answer so chat never surfaces a transport error.
-    /// </summary>
+    /// <summary>Deterministic first: an empty key answers straight from ChatStats with no network call. With a key, the LLM gets the same stats as context — any failure quietly drops back to the deterministic answer so chat never surfaces a transport error.</summary>
     public class HybridChatClient : IAiChatClient
     {
         private readonly DeterministicChatClient _deterministic;

@@ -50,11 +50,7 @@ namespace Aquri.Application.TaxConfigs
         }
     }
 
-    /// <summary>
-    /// Sparse update: rate, included flag, applicable codes, window end, and deactivation.
-    /// Name, type, and window start are immutable — they identify the rule; end the window
-    /// and create a successor instead. Reactivation is not supported.
-    /// </summary>
+    /// <summary>Sparse update: rate, included flag, applicable codes, window end, and deactivation. Name, type, and window start are immutable — they identify the rule; end the window and create a successor instead. Reactivation is not supported.</summary>
     public record UpdateTaxConfigCommand(
         int Id,
         string? Name,
@@ -104,7 +100,6 @@ namespace Aquri.Application.TaxConfigs
         }
     }
 
-    /// <summary>Deletes a tax config.</summary>
     public record DeleteTaxConfigCommand(int Id) : IRequest<Result>;
 
     public class DeleteTaxConfigHandler : IRequestHandler<DeleteTaxConfigCommand, Result>

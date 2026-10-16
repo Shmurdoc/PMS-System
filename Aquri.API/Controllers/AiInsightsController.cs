@@ -16,7 +16,6 @@ namespace Aquri.API.Controllers
 
         public AiInsightsController(IMediator mediator) => _mediator = mediator;
 
-        /// <summary>Lists AI insights, optionally filtered by property.</summary>
         [HttpGet]
         [ProducesResponseType(typeof(List<AiInsightDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<AiInsightDto>>> List([FromQuery] int? propertyId)
@@ -53,7 +52,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Deletes an AI insight.</summary>
         [HttpDelete("{id:int}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

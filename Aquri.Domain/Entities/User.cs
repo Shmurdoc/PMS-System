@@ -2,10 +2,7 @@ using System;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// Application role. Values match the strings used in [Authorize(Roles = "...")]
-    /// attributes on API controllers and the frontend's demo role names.
-    /// </summary>
+    /// <summary>Application role. Values match the strings used in [Authorize(Roles = "...")] attributes on API controllers and the frontend's demo role names.</summary>
     public static class AppRoles
     {
         public const string Admin = "admin";
@@ -23,12 +20,7 @@ namespace Aquri.Domain.Entities
         public static bool IsValid(string role) => Array.IndexOf(All, role) >= 0;
     }
 
-    /// <summary>
-    /// User account for authentication and authorization.
-    /// Password is stored only as a PBKDF2 hash (never plaintext) — the hash
-    /// is produced by the Application layer's IPasswordHasher abstraction.
-    /// All mutation goes through methods; no public setters.
-    /// </summary>
+    /// <summary>User account for authentication and authorization. Password is stored only as a PBKDF2 hash (never plaintext) — the hash is produced by the Application layer's IPasswordHasher abstraction. All mutation goes through methods; no public setters.</summary>
     public class User
     {
         public int Id { get; private set; }
@@ -49,16 +41,7 @@ namespace Aquri.Domain.Entities
 
         public string? Phone { get; private set; }
 
-        /// <summary>
-        /// Property scope for this account: when set, every property-scoped
-        /// request it sends must target this property (enforced centrally by
-        /// PropertyScopeBehavior). Null = unrestricted — the security default;
-        /// demo users and unrestricted admins stay null. Holds the same tenant
-        /// id the rest of the system passes as PropertyId (bookings, stock,
-        /// tickets). No FK to Properties on purpose: that id is a tenant id in
-        /// the shared id space, not a row reference — nothing guarantees a
-        /// matching Properties row exists or ever will.
-        /// </summary>
+        /// <summary>Property scope for this account: when set, every property-scoped request it sends must target this property (enforced centrally by PropertyScopeBehavior). Null = unrestricted — the security default; demo users and unrestricted admins stay null. Holds the same tenant id the rest of the system passes as PropertyId (bookings, stock, tickets). No FK to Properties on purpose: that id is a tenant id in the shared id space, not a row reference — nothing guarantees a matching Properties row exists or ever will.</summary>
         public int? PropertyId { get; private set; }
 
         public DateTime Created { get; private set; }
@@ -68,9 +51,6 @@ namespace Aquri.Domain.Entities
         /// <summary>EF Core parameterless constructor.</summary>
         public User() { }
 
-        /// <summary>
-        /// Creates a new user with a pre-computed password hash.
-        /// </summary>
         /// <exception cref="ArgumentException">Thrown when email, name, role, or passwordHash is invalid.</exception>
         public User(string email, string name, string role, string passwordHash)
         {
@@ -115,7 +95,6 @@ namespace Aquri.Domain.Entities
             LastModified = DateTime.UtcNow;
         }
 
-        /// <summary>Assigns a new role after validating it is a known role.</summary>
         public void ChangeRole(string newRole)
         {
             if (!AppRoles.IsValid(newRole))
@@ -125,10 +104,7 @@ namespace Aquri.Domain.Entities
             LastModified = DateTime.UtcNow;
         }
 
-        /// <summary>
-        /// Assigns (or clears, with null) the account's property scope — the
-        /// single mutation point so no code path sets it without validation.
-        /// </summary>
+        /// <summary>Assigns (or clears, with null) the account's property scope — the single mutation point so no code path sets it without validation.</summary>
         /// <exception cref="ArgumentException">Thrown when propertyId is supplied but not positive.</exception>
         public void AssignProperty(int? propertyId)
         {

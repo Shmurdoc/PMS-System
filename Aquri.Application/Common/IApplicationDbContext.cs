@@ -4,14 +4,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 namespace Aquri.Application.Common.Interfaces
 {
-    /// <summary>
-    /// Single data-access abstraction for the Application layer.
-    /// Implemented by Infrastructure's AquriDbContext.
-    ///
-    /// This DbContext IS the unit of work: mutate tracked entities, then call
-    /// SaveChangesAsync once to commit every pending change in a single transaction.
-    /// Handlers use this directly (CQRS) — there is no separate repository layer.
-    /// </summary>
+    /// <summary>Single data-access abstraction for the Application layer. Implemented by Infrastructure's AquriDbContext.  This DbContext IS the unit of work: mutate tracked entities, then call SaveChangesAsync once to commit every pending change in a single transaction. Handlers use this directly (CQRS) — there is no separate repository layer.</summary>
     public interface IApplicationDbContext
     {
         DbSet<Property> Properties { get; }
@@ -42,11 +35,7 @@ namespace Aquri.Application.Common.Interfaces
         DbSet<ElectricityRecord> ElectricityRecords { get; }
         DbSet<Integration> Integrations { get; }
 
-        /// <summary>
-        /// Change tracker of the underlying DbContext (exposed for retry loops
-        /// that need to detach stale entities — e.g. NumberGenerator's
-        /// conflict-reload). Satisfied automatically by EF's DbContext.
-        /// </summary>
+        /// <summary>Change tracker of the underlying DbContext (exposed for retry loops that need to detach stale entities — e.g. NumberGenerator's conflict-reload). Satisfied automatically by EF's DbContext.</summary>
         ChangeTracker ChangeTracker { get; }
 
         Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

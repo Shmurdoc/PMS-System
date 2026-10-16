@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Shifts
 {
-    /// <summary>Fetches one shift by id.</summary>
     public record GetShiftQuery(int Id) : IRequest<Result<ShiftDto>>;
 
     public class GetShiftHandler : IRequestHandler<GetShiftQuery, Result<ShiftDto>>

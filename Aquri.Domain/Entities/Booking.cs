@@ -6,12 +6,7 @@ using Aquri.Domain.Exceptions;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// A reservation: who is staying, in which room, on which dates, and what
-    /// the money situation is. Status moves through a fixed lifecycle — see
-    /// <see cref="CanTransitionTo"/> — so handlers can't put a booking in a
-    /// nonsense state.
-    /// </summary>
+    /// <summary>A reservation: who is staying, in which room, on which dates, and what the money situation is. Status moves through a fixed lifecycle — see <see cref="CanTransitionTo"/> — so handlers can't put a booking in a nonsense state.</summary>
     public class Booking
     {
         private static readonly IReadOnlyDictionary<BookingStatus, BookingStatus[]> AllowedTransitions =
@@ -95,10 +90,7 @@ namespace Aquri.Domain.Entities
         public static bool CanTransitionTo(BookingStatus from, BookingStatus to) =>
             AllowedTransitions.TryGetValue(from, out var allowed) && Array.Exists(allowed, s => s == to);
 
-        /// <summary>
-        /// Moves the booking to its next lifecycle state, refusing jumps that
-        /// don't make sense (e.g. checked-out without checking in first).
-        /// </summary>
+        /// <summary>Moves the booking to its next lifecycle state, refusing jumps that don't make sense (e.g. checked-out without checking in first).</summary>
         public void ChangeStatus(BookingStatus newStatus)
         {
             if (!CanTransitionTo(Status, newStatus))
@@ -114,7 +106,6 @@ namespace Aquri.Domain.Entities
             LastModified = DateTime.UtcNow;
         }
 
-        /// <summary>Records money received against this booking. Cannot exceed the total.</summary>
         public void RecordDeposit(decimal amount)
         {
             if (amount <= 0)

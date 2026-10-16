@@ -5,11 +5,7 @@ using MediatR;
 
 namespace Aquri.Application.AuditLogs
 {
-    /// <summary>
-    /// Records an audit trail entry. UserId/UserName/UserRole are stamped by the
-    /// controller from the authenticated claims; IpAddress from the request context.
-    /// Entries are immutable — there is no update or delete.
-    /// </summary>
+    /// <summary>Records an audit trail entry. UserId/UserName/UserRole are stamped by the controller from the authenticated claims; IpAddress from the request context. Entries are immutable — there is no update or delete.</summary>
     public record CreateAuditLogCommand(
         int PropertyId,
         string Action,

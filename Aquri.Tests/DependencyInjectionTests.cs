@@ -12,11 +12,7 @@ using Xunit;
 
 namespace Aquri.Tests
 {
-    /// <summary>
-    /// Boots the real API host and verifies the DbContext (the unit of work),
-    /// the application abstraction over it, and MediatR handlers are all
-    /// registered and resolvable from DI.
-    /// </summary>
+    /// <summary>Boots the real API host and verifies the DbContext (the unit of work), the application abstraction over it, and MediatR handlers are all registered and resolvable from DI.</summary>
     public class DependencyInjectionTests
     {
         [Fact]

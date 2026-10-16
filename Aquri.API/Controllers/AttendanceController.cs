@@ -30,7 +30,6 @@ namespace Aquri.API.Controllers
             return CreatedAtAction(nameof(Get), new { id = result.Data!.Id, version = "1.0" }, result.Data);
         }
 
-        /// <summary>Fetches one attendance record by id.</summary>
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(AttendanceDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

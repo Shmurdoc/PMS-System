@@ -3,11 +3,7 @@ using Aquri.Application.Common.Interfaces;
 
 namespace Aquri.Infrastructure.Security
 {
-    /// <summary>
-    /// PBKDF2 password hasher using HMAC-SHA256.
-    /// Format: PBKDF2|{iterations}|{saltBase64}|{hashBase64}
-    /// 600,000 iterations, 16-byte salt, 32-byte hash — OWASP-recommended range.
-    /// </summary>
+    /// <summary>PBKDF2 password hasher using HMAC-SHA256. Format: PBKDF2|{iterations}|{saltBase64}|{hashBase64} 600,000 iterations, 16-byte salt, 32-byte hash — OWASP-recommended range.</summary>
     public class Pbkdf2PasswordHasher : IPasswordHasher
     {
         private const string Prefix = "PBKDF2";

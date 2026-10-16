@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.AiWorkflows
 {
-    /// <summary>Deletes a workflow.</summary>
     public record DeleteWorkflowCommand(int Id) : IRequest<Result>;
 
     public class DeleteWorkflowHandler : IRequestHandler<DeleteWorkflowCommand, Result>

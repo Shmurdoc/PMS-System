@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Expenses
 {
-    /// <summary>Fetches one expense by id.</summary>
     public record GetExpenseQuery(int Id) : IRequest<Result<ExpenseDto>>;
 
     public class GetExpenseHandler : IRequestHandler<GetExpenseQuery, Result<ExpenseDto>>
@@ -26,7 +25,6 @@ namespace Aquri.Application.Expenses
         }
     }
 
-    /// <summary>Lists expenses, optionally filtered by property, status, and category.</summary>
     public record GetExpensesQuery(int? PropertyId, string? Status, string? Category) : IRequest<List<ExpenseDto>>;
 
     public class GetExpensesHandler : IRequestHandler<GetExpensesQuery, List<ExpenseDto>>

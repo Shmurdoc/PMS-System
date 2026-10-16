@@ -5,7 +5,6 @@ using MediatR;
 
 namespace Aquri.Application.RatePlans
 {
-    /// <summary>Creates a new pricing plan for a property.</summary>
     public record CreateRatePlanCommand(
         int PropertyId,
         string Name,

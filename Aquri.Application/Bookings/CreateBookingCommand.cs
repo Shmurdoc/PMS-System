@@ -9,7 +9,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Bookings
 {
-    /// <summary>Creates a new booking after validating room availability.</summary>
     public record CreateBookingCommand(
         int PropertyId,
         int GuestId,

@@ -7,14 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Aquri.Infrastructure.Persistence
 {
-    /// <summary>
-    /// Idempotent database seeding — safe to call on every startup. Each table
-    /// guards itself, so a half-seeded database finishes converging on the next
-    /// boot instead of being skipped wholesale. Demo logins are created only
-    /// when the caller asks (Seed:DemoUsers); the AI layer mirrors the store's
-    /// mock insights, workflows, and the six agent definitions from
-    /// AIEnhancements.tsx and always runs.
-    /// </summary>
+    /// <summary>Idempotent database seeding — safe to call on every startup. Each table guards itself, so a half-seeded database finishes converging on the next boot instead of being skipped wholesale. Demo logins are created only when the caller asks (Seed:DemoUsers); the AI layer mirrors the store's mock insights, workflows, and the six agent definitions from AIEnhancements.tsx and always runs.</summary>
     public static class DbSeeder
     {
         public static async Task SeedAsync(IServiceProvider services, bool seedDemoUsers)

@@ -2,11 +2,7 @@ using System;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// A meter reading for one zone of a property on a given day — kilowatt
-    /// hours consumed, the cost, and the peak demand. Costs are in the
-    /// property's reporting currency, not converted.
-    /// </summary>
+    /// <summary>A meter reading for one zone of a property on a given day — kilowatt hours consumed, the cost, and the peak demand. Costs are in the property's reporting currency, not converted.</summary>
     public class ElectricityRecord
     {
         public int Id { get; private set; }

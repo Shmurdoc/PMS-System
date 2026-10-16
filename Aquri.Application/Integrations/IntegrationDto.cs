@@ -3,10 +3,7 @@ using Aquri.Domain.Entities;
 
 namespace Aquri.Application.Integrations
 {
-    /// <summary>
-    /// A third-party integration as returned by the API. The API key is
-    /// included so admins can view what they configured; it is never logged.
-    /// </summary>
+    /// <summary>A third-party integration as returned by the API. The API key is included so admins can view what they configured; it is never logged.</summary>
     public class IntegrationDto
     {
         public int Id { get; init; }

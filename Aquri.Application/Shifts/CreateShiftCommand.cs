@@ -5,7 +5,6 @@ using MediatR;
 
 namespace Aquri.Application.Shifts
 {
-    /// <summary>Schedules a new shift for a staff member.</summary>
     public record CreateShiftCommand(
         int PropertyId,
         int UserId,

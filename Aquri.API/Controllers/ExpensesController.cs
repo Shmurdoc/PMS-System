@@ -31,7 +31,6 @@ namespace Aquri.API.Controllers
             return CreatedAtAction(nameof(Get), new { id = result.Data!.Id, version = "1.0" }, result.Data);
         }
 
-        /// <summary>Fetches one expense by id.</summary>
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(ExpenseDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -45,7 +44,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Lists expenses, optionally filtered by property, status, and category.</summary>
         [HttpGet]
         [ProducesResponseType(typeof(List<ExpenseDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<ExpenseDto>>> List(
@@ -55,7 +53,6 @@ namespace Aquri.API.Controllers
             return Ok(expenses);
         }
 
-        /// <summary>Edits a pending expense.</summary>
         [HttpPut("{id:int}")]
         [Authorize(Roles = "admin,manager,front_desk")]
         [ProducesResponseType(typeof(ExpenseDto), StatusCodes.Status200OK)]
@@ -71,7 +68,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Approves a pending expense.</summary>
         [HttpPost("{id:int}/approve")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(typeof(ExpenseDto), StatusCodes.Status200OK)]
@@ -87,7 +83,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Rejects a pending expense.</summary>
         [HttpPost("{id:int}/reject")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(typeof(ExpenseDto), StatusCodes.Status200OK)]
@@ -103,7 +98,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Deletes an expense.</summary>
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

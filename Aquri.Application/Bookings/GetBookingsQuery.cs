@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Bookings
 {
-    /// <summary>Fetches one booking by id.</summary>
     public record GetBookingQuery(int Id) : IRequest<Result<BookingDto>>;
 
     public class GetBookingHandler : IRequestHandler<GetBookingQuery, Result<BookingDto>>
@@ -29,7 +28,6 @@ namespace Aquri.Application.Bookings
         }
     }
 
-    /// <summary>Lists bookings for a property with optional status filter.</summary>
     public record GetBookingsQuery(int PropertyId, string? Status) : IRequest<List<BookingDto>>;
 
     public class GetBookingsHandler : IRequestHandler<GetBookingsQuery, List<BookingDto>>

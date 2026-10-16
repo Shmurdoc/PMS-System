@@ -4,11 +4,7 @@ using Aquri.Application.Common.Interfaces;
 
 namespace Aquri.API.Common
 {
-    /// <summary>
-    /// Reads the caller's identity from the current HTTP request's JWT
-    /// principal. The property scope claim survives inbound mapping because
-    /// "property_id" is not part of the JWT bearer handler's inbound claim map.
-    /// </summary>
+    /// <summary>Reads the caller's identity from the current HTTP request's JWT principal. The property scope claim survives inbound mapping because "property_id" is not part of the JWT bearer handler's inbound claim map.</summary>
     public sealed class HttpCurrentUser : ICurrentUser
     {
         private readonly IHttpContextAccessor _accessor;

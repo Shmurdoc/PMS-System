@@ -2,10 +2,7 @@ using System.Globalization;
 
 namespace Aquri.Application.AiChat
 {
-    /// <summary>
-    /// Keyword intent router ported from the AI tab's original client-side answers —
-    /// every number comes from ChatStats, so replies reflect the seeded database.
-    /// </summary>
+    /// <summary>Keyword intent router ported from the AI tab's original client-side answers — every number comes from ChatStats, so replies reflect the seeded database.</summary>
     public class DeterministicChatClient : IAiChatClient
     {
         private readonly ChatStatsProvider _stats;

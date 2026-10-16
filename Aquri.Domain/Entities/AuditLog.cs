@@ -2,11 +2,7 @@ using System;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// An immutable audit trail entry — who did what to which entity, when,
-    /// and what changed. Write-only: nothing in the system ever edits or
-    /// deletes an audit record.
-    /// </summary>
+    /// <summary>An immutable audit trail entry — who did what to which entity, when, and what changed. Write-only: nothing in the system ever edits or deletes an audit record.</summary>
     public class AuditLog
     {
         public static readonly string[] ValidEntityTypes =

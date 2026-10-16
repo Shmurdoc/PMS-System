@@ -4,12 +4,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace Aquri.Infrastructure.Persistence
 {
-    /// <summary>
-    /// Design-time factory so `dotnet ef migrations` works without a running host.
-    /// Resolution order: ConnectionStrings__DefaultConnection env var, then the API
-    /// project's appsettings files (located by walking up from the compiled assembly,
-    /// so it works from any working directory), else throw.
-    /// </summary>
+    /// <summary>Design-time factory so `dotnet ef migrations` works without a running host. Resolution order: ConnectionStrings__DefaultConnection env var, then the API project's appsettings files (located by walking up from the compiled assembly, so it works from any working directory), else throw.</summary>
     public class AquriDbContextFactory : IDesignTimeDbContextFactory<AquriDbContext>
     {
         public AquriDbContext CreateDbContext(string[] args)

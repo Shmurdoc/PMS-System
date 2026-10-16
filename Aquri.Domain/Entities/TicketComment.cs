@@ -2,10 +2,7 @@ using System;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// A staff comment on a ticket. Internal comments (e.g. "guest is a VIP,
-    /// comp the breakfast") stay off the guest-facing view.
-    /// </summary>
+    /// <summary>A staff comment on a ticket. Internal comments (e.g. "guest is a VIP, comp the breakfast") stay off the guest-facing view.</summary>
     public class TicketComment
     {
         public int Id { get; private set; }

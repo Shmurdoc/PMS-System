@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Inventory
 {
-    /// <summary>Removes a stock item.</summary>
     public record DeleteInventoryItemCommand(int Id) : IRequest<Result<bool>>;
 
     public class DeleteInventoryItemHandler : IRequestHandler<DeleteInventoryItemCommand, Result<bool>>

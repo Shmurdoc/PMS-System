@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Expenses
 {
-    /// <summary>Edits a pending expense. Omitted optional fields keep their current values.</summary>
     public record UpdateExpenseCommand(
         int Id,
         string Category,

@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.AiInsights
 {
-    /// <summary>Lists AI insights, optionally filtered by property.</summary>
     public record GetAiInsightsQuery(int? PropertyId) : IRequest<List<AiInsightDto>>;
 
     public class GetAiInsightsHandler : IRequestHandler<GetAiInsightsQuery, List<AiInsightDto>>

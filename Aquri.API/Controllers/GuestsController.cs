@@ -30,7 +30,6 @@ namespace Aquri.API.Controllers
             return CreatedAtAction(nameof(Get), new { id = result.Data!.Id, version = "1.0" }, result.Data);
         }
 
-        /// <summary>Fetches one guest by id.</summary>
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(GuestDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -44,7 +43,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Lists guests, optionally filtered by name/email search term.</summary>
         [HttpGet]
         [ProducesResponseType(typeof(List<GuestDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<GuestDto>>> List([FromQuery] string? search)
@@ -53,7 +51,6 @@ namespace Aquri.API.Controllers
             return Ok(guests);
         }
 
-        /// <summary>Edits a guest's profile.</summary>
         [HttpPut("{id:int}")]
         [Authorize(Roles = "admin,manager,front_desk")]
         [ProducesResponseType(typeof(GuestDto), StatusCodes.Status200OK)]
@@ -69,10 +66,7 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>
-        /// Deletes a guest (admin,manager only). Conflicts (409) protect guests
-        /// referenced by bookings, invoices, or payments.
-        /// </summary>
+        /// <summary>Deletes a guest (admin,manager only). Conflicts (409) protect guests referenced by bookings, invoices, or payments.</summary>
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

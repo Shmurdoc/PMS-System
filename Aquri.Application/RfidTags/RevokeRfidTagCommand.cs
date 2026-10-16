@@ -6,10 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.RfidTags
 {
-    /// <summary>
-    /// Revokes a tag by marking it blocked: taps stop resolving immediately,
-    /// but the record and its history stay for audit.
-    /// </summary>
+    /// <summary>Revokes a tag by marking it blocked: taps stop resolving immediately, but the record and its history stay for audit.</summary>
     public record RevokeRfidTagCommand(int Id, string? Notes) : IRequest<Result<RfidTagDto>>;
 
     public class RevokeRfidTagHandler : IRequestHandler<RevokeRfidTagCommand, Result<RfidTagDto>>

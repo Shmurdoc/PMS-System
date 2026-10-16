@@ -100,7 +100,6 @@ namespace Aquri.Application.MaintenanceRequests
         }
     }
 
-    /// <summary>Deletes a maintenance request.</summary>
     public record DeleteMaintenanceRequestCommand(int Id) : IRequest<Result>;
 
     public class DeleteMaintenanceRequestHandler : IRequestHandler<DeleteMaintenanceRequestCommand, Result>

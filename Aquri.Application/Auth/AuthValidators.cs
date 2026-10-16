@@ -2,10 +2,7 @@ using FluentValidation;
 
 namespace Aquri.Application.Auth
 {
-    /// <summary>
-    /// Shape checks for login — credential verification and the timing decoy
-    /// stay in the handler, which must see both failure paths.
-    /// </summary>
+    /// <summary>Shape checks for login — credential verification and the timing decoy stay in the handler, which must see both failure paths.</summary>
     public class LoginCommandValidator : AbstractValidator<LoginCommand>
     {
         public LoginCommandValidator()

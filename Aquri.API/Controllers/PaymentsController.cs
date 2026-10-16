@@ -16,7 +16,6 @@ namespace Aquri.API.Controllers
 
         public PaymentsController(IMediator mediator) => _mediator = mediator;
 
-        /// <summary>Creates a pending payment.</summary>
         [HttpPost]
         [Authorize(Roles = "admin,manager,front_desk")]
         [ProducesResponseType(typeof(PaymentDto), StatusCodes.Status201Created)]
@@ -30,7 +29,6 @@ namespace Aquri.API.Controllers
             return CreatedAtAction(nameof(List), new { propertyId = command.PropertyId, version = "1.0" }, result.Data);
         }
 
-        /// <summary>Completes a pending/processing payment.</summary>
         [HttpPost("{id:int}/complete")]
         [Authorize(Roles = "admin,manager,front_desk")]
         [ProducesResponseType(typeof(PaymentDto), StatusCodes.Status200OK)]
@@ -62,7 +60,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Lists payments for a property, optionally filtered by status.</summary>
         [HttpGet]
         [ProducesResponseType(typeof(List<PaymentDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<PaymentDto>>> List([FromQuery] int propertyId, [FromQuery] string? status)

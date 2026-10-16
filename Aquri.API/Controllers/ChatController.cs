@@ -16,7 +16,6 @@ namespace Aquri.API.Controllers
 
         public ChatController(IMediator mediator) => _mediator = mediator;
 
-        /// <summary>Answers a chat message.</summary>
         [HttpPost]
         [ProducesResponseType(typeof(ChatResponse), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

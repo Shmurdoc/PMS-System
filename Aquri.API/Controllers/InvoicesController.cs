@@ -44,7 +44,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Lists invoices for a property, optionally filtered by status.</summary>
         [HttpGet]
         [ProducesResponseType(typeof(List<InvoiceDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<InvoiceDto>>> List([FromQuery] int propertyId, [FromQuery] string? status)

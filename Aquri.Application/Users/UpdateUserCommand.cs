@@ -6,16 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Users
 {
-    /// <summary>
-    /// Updates a staff account (admin only). Sparse semantics: Role, Password,
-    /// and the property scope are applied only when supplied (non-null);
-    /// Name/Department/Phone are always applied. Email is the login identity and
-    /// is immutable — a new address means a new account. An empty Password string
-    /// is ignored (never clears a password). ClearProperty unscopes the account
-    /// (null wins only when PropertyId is not also supplied). The pipeline
-    /// confines scoped admins to accounts within their own property — an
-    /// unrestricted account cannot be minted or unscoped by a scoped caller.
-    /// </summary>
+    /// <summary>Updates a staff account (admin only). Sparse semantics: Role, Password, and the property scope are applied only when supplied (non-null); Name/Department/Phone are always applied. Email is the login identity and is immutable — a new address means a new account. An empty Password string is ignored (never clears a password). ClearProperty unscopes the account (null wins only when PropertyId is not also supplied). The pipeline confines scoped admins to accounts within their own property — an unrestricted account cannot be minted or unscoped by a scoped caller.</summary>
     public record UpdateUserCommand(
         int Id,
         string Name,

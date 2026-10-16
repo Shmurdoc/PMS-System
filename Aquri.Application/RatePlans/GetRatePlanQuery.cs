@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.RatePlans
 {
-    /// <summary>Fetches one rate plan by id.</summary>
     public record GetRatePlanQuery(int Id) : IRequest<Result<RatePlanDto>>;
 
     public class GetRatePlanHandler : IRequestHandler<GetRatePlanQuery, Result<RatePlanDto>>
@@ -26,7 +25,6 @@ namespace Aquri.Application.RatePlans
         }
     }
 
-    /// <summary>Lists rate plans, optionally filtered by property and active flag.</summary>
     public record GetRatePlansQuery(int? PropertyId, bool? Active) : IRequest<List<RatePlanDto>>;
 
     public class GetRatePlansHandler : IRequestHandler<GetRatePlansQuery, List<RatePlanDto>>

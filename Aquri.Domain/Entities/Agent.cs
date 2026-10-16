@@ -3,10 +3,7 @@ using System.Linq;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// One of the six workers behind the AI tab. Key is the stable slug the
-    /// frontend maps to an icon; Status gates whether a run is allowed.
-    /// </summary>
+    /// <summary>One of the six workers behind the AI tab. Key is the stable slug the frontend maps to an icon; Status gates whether a run is allowed.</summary>
     public class Agent
     {
         public static readonly string[] ValidStatuses = { "running", "paused", "stopped" };

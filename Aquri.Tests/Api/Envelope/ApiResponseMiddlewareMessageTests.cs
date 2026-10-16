@@ -11,11 +11,7 @@ using Xunit;
 
 namespace Aquri.Tests.Api.Envelope
 {
-    /// <summary>
-    /// Controllers surface handler failures as BadRequest("message") strings;
-    /// the middleware must carry that text into error.message instead of the
-    /// generic status default.
-    /// </summary>
+    /// <summary>Controllers surface handler failures as BadRequest("message") strings; the middleware must carry that text into error.message instead of the generic status default.</summary>
     public class ApiResponseMiddlewareMessageTests
     {
         private static async Task<JsonElement> RunWithBody(int statusCode, string body)

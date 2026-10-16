@@ -7,12 +7,7 @@ using Xunit;
 
 namespace Aquri.Tests.Persistence
 {
-    /// <summary>
-    /// The InMemory test provider enforces neither unique indexes nor partial
-    /// filters, so these assertions pin the PostgreSQL model directly from EF
-    /// metadata: invariants that exist only at the database level must still be
-    /// visible here, or a regression would ship silently.
-    /// </summary>
+    /// <summary>The InMemory test provider enforces neither unique indexes nor partial filters, so these assertions pin the PostgreSQL model directly from EF metadata: invariants that exist only at the database level must still be visible here, or a regression would ship silently.</summary>
     public class ModelMetadataTests
     {
         private static AquriDbContext CreateContext()

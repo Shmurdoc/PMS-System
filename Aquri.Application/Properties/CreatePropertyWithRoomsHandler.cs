@@ -11,9 +11,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Properties.Commands
 {
-    /// <summary>
-    /// Creates a new Property and, optionally, its initial rooms in one save.
-    /// </summary>
     public class CreatePropertyWithRoomsHandler : IRequestHandler<CreatePropertyWithRoomsCommand, Result<PropertyDto>>
     {
         private readonly IApplicationDbContext _context;

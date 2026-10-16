@@ -17,7 +17,6 @@ namespace Aquri.API.Controllers
 
         public AuditLogsController(IMediator mediator) => _mediator = mediator;
 
-        /// <summary>Records an audit trail entry. The acting user comes from claims.</summary>
         [HttpPost]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(typeof(AuditLogDto), StatusCodes.Status201Created)]
@@ -39,7 +38,6 @@ namespace Aquri.API.Controllers
             return CreatedAtAction(nameof(Get), new { id = result.Data!.Id, version = "1.0" }, result.Data);
         }
 
-        /// <summary>Fetches one audit log entry by id.</summary>
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(AuditLogDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -53,7 +51,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Lists audit log entries, newest first, optionally filtered.</summary>
         [HttpGet]
         [ProducesResponseType(typeof(List<AuditLogDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<AuditLogDto>>> List(

@@ -5,14 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Guests
 {
-    /// <summary>
-    /// Deletes a guest. Referential invariants are guarded here rather than
-    /// left to the database: guests referenced by bookings, invoices, or
-    /// payments are protected (409 CONFLICT) — mirroring the Restrict FK
-    /// behaviour PostgreSQL enforces, and verifiable on the InMemory test
-    /// provider which does not enforce FKs. Tickets referencing the guest
-    /// are detached by the database (FK SetNull) and need no guard.
-    /// </summary>
+    /// <summary>Deletes a guest. Referential invariants are guarded here rather than left to the database: guests referenced by bookings, invoices, or payments are protected (409 CONFLICT) — mirroring the Restrict FK behaviour PostgreSQL enforces, and verifiable on the InMemory test provider which does not enforce FKs. Tickets referencing the guest are detached by the database (FK SetNull) and need no guard.</summary>
     public record DeleteGuestCommand(int Id) : IRequest<Result>;
 
     public class DeleteGuestHandler : IRequestHandler<DeleteGuestCommand, Result>
