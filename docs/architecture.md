@@ -55,7 +55,7 @@ Password hashing and token issuance are interfaces in Application (`IPasswordHas
 
 ## The AI layer
 
-Four AI features sit on the same vertical-slice pattern: insights (`AiInsights\`), workflows (`AiWorkflows\`), agents (`AiAgents\`), and chat (`AiChat\`), behind `api/v1/{aiInsights,workflows,agents,chat}` with `[Authorize(Roles = "admin,manager")]` and the WS3 envelope like everything else.
+Four AI features sit on the same vertical-slice pattern: insights (`AiInsights\`), workflows (`AiWorkflows\`), agents (`AiAgents\`), and chat (`AiChat\`), behind `api/v1/{aiInsights,workflows,agents,chat}` with `[Authorize(Roles = "admin,manager")]` and the standard envelope like everything else.
 
 Chat is hybrid. `HybridChatClient` computes stats from the DbContext (occupancy, revenue, bookings — the numbers the frontend's AI tab shows) and answers through `DeterministicChatClient`, an intent router over those stats. When `AI:ApiKey` is set it first tries `{BaseUrl}/chat/completions` through the named `"ai"` HttpClient; a clean reply comes back as `source: "llm"`, anything else (timeout, 5xx, malformed JSON) drops to the deterministic answer. Empty key — the default — never opens a network call, so a fresh checkout and the whole test suite need no AI account. The key stays server-side: not logged, not in DTOs, not sent to the browser.
 
