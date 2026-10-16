@@ -15,6 +15,11 @@ pnpm-debug.log*
 # Logs
 logs
 *.log
+# Playwright — session storage and run output
+.auth/
+test-results/
+qa-audits/
+playwright-report/
 # OS
 .DS_Store
 Thumbs.db

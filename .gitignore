@@ -6,6 +6,7 @@ Aquri.API/appsettings.Development.json
 **/bin/
 **/obj/
 logs/
+*.log
 
 # IDE and tooling caches
 .vs/
