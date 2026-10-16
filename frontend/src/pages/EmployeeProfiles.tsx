@@ -9,6 +9,7 @@ import { useAppStore } from '../store/useAppStore';
 import type { User } from '../store/useAppStore';
 import toastHelpers from '../lib/toast';
 import { exportToCsv } from '../utils/exportCsv';
+import { PermissionGate } from '../components/demo/DemoControls';
 
 const statusColors: Record<User['status'], string> = {
   active: 'bg-success/15 text-success',
@@ -297,13 +298,15 @@ export default function EmployeeProfiles() {
             <Download className="w-4 h-4" />
             Export CSV
           </button>
-          <button
-            onClick={() => { resetForm(); setShowAddModal(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Employee
-          </button>
+          <PermissionGate permission="manageUsers">
+            <button
+              onClick={() => { resetForm(); setShowAddModal(true); }}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Employee
+            </button>
+          </PermissionGate>
         </div>
       </div>
 
@@ -432,22 +435,24 @@ export default function EmployeeProfiles() {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); openEditModal(user); }}
-                          className="p-1.5 hover:bg-muted rounded transition-colors"
-                          title="Edit employee"
-                        >
-                          <Edit className="w-4 h-4 text-muted-foreground" />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(user.id); }}
-                          className="p-1.5 hover:bg-danger/10 rounded transition-colors"
-                          title="Delete employee"
-                        >
-                          <Trash2 className="w-4 h-4 text-danger" />
-                        </button>
-                      </div>
+                      <PermissionGate permission="manageUsers">
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={(e) => { e.stopPropagation(); openEditModal(user); }}
+                            className="p-1.5 hover:bg-muted rounded transition-colors"
+                            title="Edit employee"
+                          >
+                            <Edit className="w-4 h-4 text-muted-foreground" />
+                          </button>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(user.id); }}
+                            className="p-1.5 hover:bg-danger/10 rounded transition-colors"
+                            title="Delete employee"
+                          >
+                            <Trash2 className="w-4 h-4 text-danger" />
+                          </button>
+                        </div>
+                      </PermissionGate>
                     </td>
                   </tr>
                 );
@@ -500,22 +505,24 @@ export default function EmployeeProfiles() {
                       <span className="text-sm text-muted-foreground">- {selectedUser.department}</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => { openEditModal(selectedUser); setSelectedEmployee(null); }}
-                      className="p-2 hover:bg-muted rounded-lg transition-colors"
-                      title="Edit employee"
-                    >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setShowDeleteConfirm(selectedUser.id)}
-                      className="p-2 hover:bg-danger/10 rounded-lg transition-colors"
-                      title="Delete employee"
-                    >
-                      <Trash2 className="w-4 h-4 text-danger" />
-                    </button>
-                  </div>
+                  <PermissionGate permission="manageUsers">
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => { openEditModal(selectedUser); setSelectedEmployee(null); }}
+                        className="p-2 hover:bg-muted rounded-lg transition-colors"
+                        title="Edit employee"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setShowDeleteConfirm(selectedUser.id)}
+                        className="p-2 hover:bg-danger/10 rounded-lg transition-colors"
+                        title="Delete employee"
+                      >
+                        <Trash2 className="w-4 h-4 text-danger" />
+                      </button>
+                    </div>
+                  </PermissionGate>
                 </div>
 
                 {/* Contact Information */}
