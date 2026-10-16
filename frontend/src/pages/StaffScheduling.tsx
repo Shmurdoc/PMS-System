@@ -8,6 +8,7 @@ import {
 import { useAppStore } from '../store/useAppStore';
 import { toast } from 'sonner';
 import type { Shift } from '../store/useAppStore';
+import { newId } from '../utils/id';
 
 const statusColors: Record<string, string> = {
   scheduled: 'bg-info/15 text-info',
@@ -209,7 +210,7 @@ export default function StaffScheduling() {
 
     const userName = getUserName(formData.userId);
     const newShift: Shift = {
-      id: `SHIFT-${Date.now()}`,
+      id: newId('SHIFT'),
       userId: formData.userId,
       userName,
       startTime: formData.startTime,
@@ -225,7 +226,7 @@ export default function StaffScheduling() {
 
     addShift(newShift);
     addAuditLog({
-      id: `LOG-${Date.now()}`,
+      id: newId('LOG'),
       action: 'create',
       entityType: 'user',
       entityId: newShift.id,
@@ -261,7 +262,7 @@ export default function StaffScheduling() {
 
     updateShift(editingShift.id, updates);
     addAuditLog({
-      id: `LOG-${Date.now()}`,
+      id: newId('LOG'),
       action: 'update',
       entityType: 'user',
       entityId: editingShift.id,

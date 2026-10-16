@@ -1,5 +1,16 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 
+export type SummaryItem = {
+  label: string;
+  value: string | number;
+};
+
+export type ReportData = {
+  title?: string;
+  period?: string;
+  summary?: SummaryItem[];
+};
+
 const styles = StyleSheet.create({
   page: {
     padding: 32,
@@ -34,7 +45,7 @@ const styles = StyleSheet.create({
   }
 });
 
-const ReportTemplate = ({ data }: { data: Record<string, any> }) => {
+const ReportTemplate = ({ data }: { data: ReportData }) => {
   const { title, period, summary } = data;
 
   return (
@@ -49,7 +60,7 @@ const ReportTemplate = ({ data }: { data: Record<string, any> }) => {
 
         <View>
           <Text style={styles.sectionTitle}>Summary</Text>
-          {summary?.map((item: any, index: number) => (
+          {summary?.map((item, index) => (
             <View key={index} style={styles.row}>
               <Text style={styles.muted}>{item.label}</Text>
               <Text>{item.value}</Text>

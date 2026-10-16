@@ -1,4 +1,11 @@
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import type { SummaryItem } from './Report';
+
+export type TaxSummaryData = {
+  title?: string;
+  period?: string;
+  summary?: SummaryItem[];
+};
 
 const styles = StyleSheet.create({
   page: {
@@ -34,7 +41,7 @@ const styles = StyleSheet.create({
   }
 });
 
-const TaxSummaryTemplate = ({ data }: { data: Record<string, any> }) => {
+const TaxSummaryTemplate = ({ data }: { data: TaxSummaryData }) => {
   const { title, period, summary } = data;
 
   return (
@@ -49,7 +56,7 @@ const TaxSummaryTemplate = ({ data }: { data: Record<string, any> }) => {
 
         <View>
           <Text style={styles.sectionTitle}>Tax Summary</Text>
-          {summary?.map((item: any, index: number) => (
+          {summary?.map((item, index) => (
             <View key={index} style={styles.row}>
               <Text style={styles.muted}>{item.label}</Text>
               <Text>{item.value}</Text>

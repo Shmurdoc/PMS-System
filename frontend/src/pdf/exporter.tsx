@@ -2,6 +2,9 @@ import { pdf } from '@react-pdf/renderer';
 import ReceiptTemplate from './templates/Receipt';
 import ReportTemplate from './templates/Report';
 import TaxSummaryTemplate from './templates/TaxSummary';
+import type { ReceiptData } from './templates/Receipt';
+import type { ReportData } from './templates/Report';
+import type { TaxSummaryData } from './templates/TaxSummary';
 
 export type PdfExportType = 'receipt' | 'report' | 'tax-summary';
 
@@ -24,9 +27,9 @@ const buildFileName = (type: PdfExportType) => {
 
 export const exportPdf = async ({ type, data }: PdfExportInput): Promise<PdfExportResult> => {
   const templateMap = {
-    receipt: <ReceiptTemplate data={data} />,
-    report: <ReportTemplate data={data} />,
-    'tax-summary': <TaxSummaryTemplate data={data} />,
+    receipt: <ReceiptTemplate data={data as ReceiptData} />,
+    report: <ReportTemplate data={data as ReportData} />,
+    'tax-summary': <TaxSummaryTemplate data={data as TaxSummaryData} />,
   };
 
   const doc = templateMap[type];

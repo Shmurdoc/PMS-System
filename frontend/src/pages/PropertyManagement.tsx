@@ -126,7 +126,10 @@ export default function PropertyManagement() {
 
   // ── derived data ──────────────────────────────────────────────────────────
   const currentProperty = selectedPropertyId ? properties.find(p => p.id === selectedPropertyId) : properties[0];
-  const propertyRooms = currentProperty ? rooms.filter(r => r.propertyId === currentProperty.id) : [];
+  const propertyRooms = useMemo(
+    () => currentProperty ? rooms.filter(r => r.propertyId === currentProperty.id) : [],
+    [currentProperty, rooms]
+  );
 
   const filteredRooms = useMemo(() => {
     return propertyRooms.filter(room => {

@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
 import toastHelpers from '../lib/toast';
+import { newId } from '../utils/id';
 
 const segmentColors = {
   VIP: { bg: 'bg-warning/15', text: 'text-warning', border: 'border-warning/30' },
@@ -91,7 +92,7 @@ export default function Guests() {
     } else {
       const newGuest = {
         ...formData,
-        id: `G${Date.now()}`,
+        id: newId('G'),
         totalStays: 0,
         loyaltyPoints: 0,
         createdAt: new Date().toISOString().split('T')[0],
@@ -512,7 +513,7 @@ export default function Guests() {
                     <label className="text-sm font-medium mb-2 block">Segment</label>
                     <select
                       value={formData.segment}
-                      onChange={(e) => setFormData({ ...formData, segment: e.target.value as any })}
+                      onChange={(e) => setFormData({ ...formData, segment: e.target.value as typeof formData.segment })}
                       className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
                     >
                       <option value="New">New Guest</option>
