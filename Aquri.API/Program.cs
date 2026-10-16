@@ -14,6 +14,7 @@ using Aquri.Application.Rooms.Commands;
 using Aquri.Infrastructure.Persistence;
 using Aquri.Infrastructure.Security;
 using MediatR;
+using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -163,6 +164,10 @@ builder.Services.AddMediatR(cfg =>
     cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
     cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PropertyScopeBehavior<,>));
 });
+
+// FluentValidation: resolve IValidator<TRequest> for commands as they flow
+// through ValidationBehavior (shape rules only — business rules stay in handlers)
+builder.Services.AddValidatorsFromAssembly(typeof(CreatePropertyCommand).Assembly);
 
 // AutoMapper configuration (manual — deterministic, no assembly scanning)
 var mappingConfig = new MapperConfiguration(mc => mc.AddProfile<MappingProfile>());
