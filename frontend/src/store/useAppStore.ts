@@ -15,8 +15,10 @@ import {
   createAttendance,
   createAuditLog,
   createBooking,
+  createElectricity,
   createExpense,
   createGuest,
+  createIntegration,
   createInventoryItem,
   createInvoice,
   createMaintenanceRequest,
@@ -33,8 +35,10 @@ import {
   deleteAiInsight as apiDeleteAiInsight,
   deleteAttendance as apiDeleteAttendance,
   deleteBooking as apiDeleteBooking,
+  deleteElectricity as apiDeleteElectricity,
   deleteExpense,
   deleteGuest as apiDeleteGuest,
+  deleteIntegration as apiDeleteIntegration,
   deleteInventoryItem,
   deleteInvoice as apiDeleteInvoice,
   deleteMaintenanceRequest as apiDeleteMaintenanceRequest,
@@ -56,12 +60,15 @@ import {
   revokeRfidTag as apiRevokeRfidTag,
   restockInventoryItem,
   swapShift,
+  syncIntegration as apiSyncIntegration,
   tapGuestTag,
   tapStaffTag,
   updateAiInsight as apiUpdateAiInsight,
   updateAttendance as apiUpdateAttendance,
+  updateElectricity as apiUpdateElectricity,
   updateExpense,
   updateGuest as apiUpdateGuest,
+  updateIntegration as apiUpdateIntegration,
   updateInventoryItem,
   updateMaintenanceRequest,
   updatePropertyStatus,
@@ -81,8 +88,10 @@ import type {
   CreateAttendanceInput,
   CreateAuditLogInput,
   CreateBookingInput,
+  CreateElectricityInput,
   CreateExpenseInput,
   CreateGuestInput,
+  CreateIntegrationInput,
   CreateInventoryItemInput,
   CreateInvoiceInput,
   CreateMessageInput,
@@ -98,8 +107,10 @@ import type {
   IssueRfidTagInput,
   UpdateAiInsightInput,
   UpdateAttendanceInput,
+  UpdateElectricityInput,
   UpdateExpenseInput,
   UpdateGuestInput,
+  UpdateIntegrationInput,
   UpdateInventoryItemInput,
   UpdateMaintenanceInput,
   UpdateRatePlanInput,
@@ -112,8 +123,10 @@ import type {
   ApiAiInsight,
   ApiAttendance,
   ApiBooking,
+  ApiElectricityRecord,
   ApiExpense,
   ApiGuest,
+  ApiIntegration,
   ApiInventoryItem,
   ApiInvoice,
   ApiMessage,
@@ -713,9 +726,12 @@ export interface AppState {
 
   // Electricity CRUD
   electricity: ElectricityRecord[];
+  setElectricity: (records: ElectricityRecord[]) => void;
   addElectricity: (record: ElectricityRecord) => void;
   updateElectricity: (id: string, updates: Partial<ElectricityRecord>) => void;
   deleteElectricity: (id: string) => void;
+  /** Swaps a just-created row's local id for the one the API assigned. */
+  reconcileElectricity: (localId: string, serverId: string) => void;
 
   // Maintenance Tickets CRUD
   maintenanceTickets: MaintenanceTicket[];
@@ -812,9 +828,14 @@ export interface AppState {
 
   // Integrations CRUD
   integrations: Integration[];
+  setIntegrations: (integrations: Integration[]) => void;
   addIntegration: (integration: Integration) => void;
   updateIntegration: (id: string, updates: Partial<Integration>) => void;
   deleteIntegration: (id: string) => void;
+  /** Stamps LastSync and flips status to connected. */
+  syncIntegration: (id: string) => void;
+  /** Swaps a just-created row's local id for the one the API assigned. */
+  reconcileIntegration: (localId: string, serverId: string) => void;
 
   // Settings
   settings: AppSettings;
@@ -1660,13 +1681,53 @@ export const useAppStore = create<AppState>()(
 
       // Electricity CRUD
       electricity: mockElectricity,
-      addElectricity: (record) => set((state) => ({ electricity: [...state.electricity, record] })),
-      updateElectricity: (id, updates) => set((state) => ({
-        electricity: state.electricity.map((e) => e.id === id ? { ...e, ...updates } : e)
+      setElectricity: (electricity) => set({ electricity }),
+      reconcileElectricity: (localId, serverId) => set((state) => ({
+        electricity: state.electricity.map((e) => e.id === localId ? { ...e, id: serverId } : e)
       })),
-      deleteElectricity: (id) => set((state) => ({
-        electricity: state.electricity.filter((e) => e.id !== id)
-      })),
+      addElectricity: (record) => {
+        set((state) => ({ electricity: [...state.electricity, record] }));
+        // A numeric id means the row already lives server-side — only local ids create.
+        if (toNumericId(record.id) !== null) return;
+        const propertyId = toNumericId(get().properties[0]?.id ?? '') ?? 1;
+        const input: CreateElectricityInput = {
+          propertyId,
+          date: record.date,
+          consumption: record.consumption,
+          cost: record.cost,
+          peakDemand: record.peakDemand,
+          zone: record.zone,
+        };
+        syncToApi(`createElectricity(${record.id})`, () => createElectricity(input), (data) => {
+          const dto = data as ApiElectricityRecord;
+          get().reconcileElectricity(record.id, String(dto.id));
+        });
+      },
+      updateElectricity: (id, updates) => {
+        set((state) => ({
+          electricity: state.electricity.map((e) => e.id === id ? { ...e, ...updates } : e)
+        }));
+        const numericId = toNumericId(id);
+        if (numericId === null) return;
+        const input: UpdateElectricityInput = {};
+        if (updates.date !== undefined) input.date = updates.date;
+        if (updates.consumption !== undefined) input.consumption = updates.consumption;
+        if (updates.cost !== undefined) input.cost = updates.cost;
+        if (updates.peakDemand !== undefined) input.peakDemand = updates.peakDemand;
+        if (updates.zone !== undefined) input.zone = updates.zone;
+        if (Object.keys(input).length > 0) {
+          syncToApi(`updateElectricity(${id})`, () => apiUpdateElectricity(numericId, input));
+        }
+      },
+      deleteElectricity: (id) => {
+        set((state) => ({
+          electricity: state.electricity.filter((e) => e.id !== id)
+        }));
+        const numericId = toNumericId(id);
+        if (numericId !== null) {
+          syncToApi(`deleteElectricity(${id})`, () => apiDeleteElectricity(numericId));
+        }
+      },
 
       // Maintenance Tickets CRUD
       maintenanceTickets: mockMaintenanceTickets,
@@ -1978,13 +2039,67 @@ export const useAppStore = create<AppState>()(
 
       // Integrations CRUD
       integrations: mockIntegrations,
-      addIntegration: (integration) => set((state) => ({ integrations: [...state.integrations, integration] })),
-      updateIntegration: (id, updates) => set((state) => ({
-        integrations: state.integrations.map((i) => i.id === id ? { ...i, ...updates } : i)
+      setIntegrations: (integrations) => set({ integrations }),
+      reconcileIntegration: (localId, serverId) => set((state) => ({
+        integrations: state.integrations.map((i) => i.id === localId ? { ...i, id: serverId } : i)
       })),
-      deleteIntegration: (id) => set((state) => ({
-        integrations: state.integrations.filter((i) => i.id !== id)
-      })),
+      addIntegration: (integration) => {
+        set((state) => ({ integrations: [...state.integrations, integration] }));
+        // A numeric id means the row already lives server-side — only local ids create.
+        if (toNumericId(integration.id) !== null) return;
+        const propertyId = toNumericId(get().properties[0]?.id ?? '') ?? 1;
+        const input: CreateIntegrationInput = {
+          propertyId,
+          name: integration.name,
+          category: integration.category,
+          description: integration.description || undefined,
+          icon: integration.icon || undefined,
+          apiKey: integration.apiKey,
+          webhookUrl: integration.webhookUrl,
+        };
+        syncToApi(`createIntegration(${integration.id})`, () => createIntegration(input), (data) => {
+          const dto = data as ApiIntegration;
+          get().reconcileIntegration(integration.id, String(dto.id));
+        });
+      },
+      updateIntegration: (id, updates) => {
+        set((state) => ({
+          integrations: state.integrations.map((i) => i.id === id ? { ...i, ...updates } : i)
+        }));
+        const numericId = toNumericId(id);
+        if (numericId === null) return;
+        const input: UpdateIntegrationInput = {};
+        if (updates.name !== undefined) input.name = updates.name;
+        if (updates.category !== undefined) input.category = updates.category;
+        if (updates.description !== undefined) input.description = updates.description;
+        if (updates.icon !== undefined) input.icon = updates.icon;
+        if (updates.apiKey !== undefined) input.apiKey = updates.apiKey;
+        if (updates.webhookUrl !== undefined) input.webhookUrl = updates.webhookUrl;
+        if (Object.keys(input).length > 0) {
+          syncToApi(`updateIntegration(${id})`, () => apiUpdateIntegration(numericId, input));
+        }
+      },
+      syncIntegration: (id) => {
+        const numericId = toNumericId(id);
+        if (numericId === null) return;
+        syncToApi(`syncIntegration(${id})`, () => apiSyncIntegration(numericId), (data) => {
+          const dto = data as ApiIntegration;
+          // Stamp locally from the response — no follow-up PUT (the sync endpoint already wrote it).
+          set((state) => ({
+            integrations: state.integrations.map((i) =>
+              i.id === id ? { ...i, status: 'connected', lastSync: dto.lastSync ?? '' } : i)
+          }));
+        });
+      },
+      deleteIntegration: (id) => {
+        set((state) => ({
+          integrations: state.integrations.filter((i) => i.id !== id)
+        }));
+        const numericId = toNumericId(id);
+        if (numericId !== null) {
+          syncToApi(`deleteIntegration(${id})`, () => apiDeleteIntegration(numericId));
+        }
+      },
 
       // Settings
       settings: defaultSettings,

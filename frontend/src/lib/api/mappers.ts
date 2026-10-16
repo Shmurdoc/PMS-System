@@ -18,8 +18,10 @@ import type {
   AttendanceRecord,
   AuditLog,
   Booking,
+  ElectricityRecord,
   Expense,
   Guest,
+  Integration,
   InventoryItem,
   Invoice,
   MaintenanceTicket,
@@ -455,6 +457,35 @@ export interface ApiRfidTag {
   expiresAt?: string | null;
   lastUsed?: string | null;
   notes?: string | null;
+  created: string;
+  lastModified: string;
+}
+
+export interface ApiElectricityRecord {
+  id: number;
+  propertyId: number;
+  date: string;
+  consumption: number;
+  cost: number;
+  peakDemand: number;
+  zone: string;
+  created: string;
+  lastModified: string;
+}
+
+export interface ApiIntegration {
+  id: number;
+  propertyId: number;
+  name: string;
+  category: string;
+  status: string;
+  lastSync?: string | null;
+  icon?: string | null;
+  description: string;
+  apiKey?: string | null;
+  webhookUrl?: string | null;
+  configuredBy?: string | null;
+  configuredAt?: string | null;
   created: string;
   lastModified: string;
 }
@@ -1002,5 +1033,32 @@ export function mapAgent(dto: ApiAgent): AgentCard {
     lastRun: dto.lastRun ?? undefined,
     totalRuns: dto.totalRuns,
     logs: (dto.logs ?? []).map(mapAgentLog),
+  };
+}
+
+export function mapElectricity(dto: ApiElectricityRecord): ElectricityRecord {
+  return {
+    id: String(dto.id),
+    date: dateOnly(dto.date),
+    consumption: num(dto.consumption),
+    cost: num(dto.cost),
+    peakDemand: num(dto.peakDemand),
+    zone: dto.zone,
+  };
+}
+
+export function mapIntegration(dto: ApiIntegration): Integration {
+  return {
+    id: String(dto.id),
+    name: dto.name,
+    category: dto.category,
+    status: oneOf(dto.status, ['connected', 'disconnected', 'error', 'syncing'] as const, 'disconnected'),
+    lastSync: dto.lastSync ?? '',
+    icon: dto.icon ?? '',
+    description: dto.description,
+    apiKey: dto.apiKey ?? undefined,
+    webhookUrl: dto.webhookUrl ?? undefined,
+    configuredBy: dto.configuredBy ?? undefined,
+    configuredAt: dto.configuredAt ?? undefined,
   };
 }
