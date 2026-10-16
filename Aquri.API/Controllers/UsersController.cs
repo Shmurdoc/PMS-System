@@ -6,11 +6,7 @@ using System.Security.Claims;
 
 namespace Aquri.API.Controllers
 {
-    /// <summary>
-    /// Staff account administration. Reads are available to admin and manager;
-    /// every write (create, update, delete) is admin only. The password hash
-    /// never appears in any response — <see cref="UserDto"/> does not project it.
-    /// </summary>
+    /// <summary>Staff account administration. Reads are available to admin and manager; every write (create, update, delete) is admin only. The password hash never appears in any response — <see cref="UserDto"/> does not project it.</summary>
     [ApiVersion("1.0")]
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
@@ -21,7 +17,6 @@ namespace Aquri.API.Controllers
 
         public UsersController(IMediator mediator) => _mediator = mediator;
 
-        /// <summary>Lists staff accounts, optionally filtered by name/email/role.</summary>
         [HttpGet]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
@@ -31,7 +26,6 @@ namespace Aquri.API.Controllers
             return Ok(users);
         }
 
-        /// <summary>Fetches one account by id.</summary>
         [HttpGet("{id:int}")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
@@ -61,10 +55,7 @@ namespace Aquri.API.Controllers
             return CreatedAtAction(nameof(Get), new { id = result.Data!.Id, version = "1.0" }, result.Data);
         }
 
-        /// <summary>
-        /// Updates a profile and optionally role/password (admin only).
-        /// Email is the login identity and cannot be changed.
-        /// </summary>
+        /// <summary>Updates a profile and optionally role/password (admin only). Email is the login identity and cannot be changed.</summary>
         [HttpPut("{id:int}")]
         [Authorize(Roles = "admin")]
         [ProducesResponseType(typeof(UserDto), StatusCodes.Status200OK)]
@@ -80,10 +71,7 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>
-        /// Deletes an account (admin only). Conflicts (409) protect the
-        /// signed-in account, the last admin, and accounts with dependent records.
-        /// </summary>
+        /// <summary>Deletes an account (admin only). Conflicts (409) protect the signed-in account, the last admin, and accounts with dependent records.</summary>
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

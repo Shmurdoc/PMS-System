@@ -5,10 +5,7 @@ using System.Text.Json;
 
 namespace Aquri.Tests.Api
 {
-    /// <summary>
-    /// Shared helpers for HTTP-level API tests: envelope parsing, JSON bodies,
-    /// and login as the seeded demo users (see <see cref="AquriApiFactory"/>).
-    /// </summary>
+    /// <summary>Shared helpers for HTTP-level API tests: envelope parsing, JSON bodies, and login as the seeded demo users (see <see cref="AquriApiFactory"/>).</summary>
     public abstract class ApiTestBase
     {
         protected readonly AquriApiFactory Factory;

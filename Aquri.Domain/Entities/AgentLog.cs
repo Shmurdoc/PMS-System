@@ -2,10 +2,7 @@ using System;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// A single entry in an agent's run history — what it did, when.
-    /// Append-only; the API exposes the latest 20 per agent.
-    /// </summary>
+    /// <summary>A single entry in an agent's run history — what it did, when. Append-only; the API exposes the latest 20 per agent.</summary>
     public class AgentLog
     {
         public int Id { get; private set; }

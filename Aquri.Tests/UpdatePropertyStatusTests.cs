@@ -13,10 +13,7 @@ using Xunit;
 
 namespace Aquri.Tests
 {
-    /// <summary>
-    /// In-memory test harness for UpdatePropertyStatusHandler.
-    /// Exercises the real EF Core lookup-by-primary-key + status update path.
-    /// </summary>
+    /// <summary>In-memory test harness for UpdatePropertyStatusHandler. Exercises the real EF Core lookup-by-primary-key + status update path.</summary>
     public class UpdatePropertyStatusCommandHandler_Should : IDisposable
     {
         private readonly AquriDbContext _context;

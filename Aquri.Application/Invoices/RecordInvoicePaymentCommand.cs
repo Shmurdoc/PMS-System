@@ -64,7 +64,6 @@ namespace Aquri.Application.Invoices
         }
     }
 
-    /// <summary>Lists invoices for a property, optionally filtered by status.</summary>
     public record GetInvoicesQuery(int PropertyId, string? Status) : IRequest<List<InvoiceDto>>;
 
     public class GetInvoicesHandler : IRequestHandler<GetInvoicesQuery, List<InvoiceDto>>

@@ -3,11 +3,7 @@ using Aquri.Domain.Entities;
 
 namespace Aquri.Application.Users
 {
-    /// <summary>
-    /// User account as returned by the API. The PBKDF2 password hash is
-    /// intentionally never projected — authentication material never
-    /// crosses the application boundary.
-    /// </summary>
+    /// <summary>User account as returned by the API. The PBKDF2 password hash is intentionally never projected — authentication material never crosses the application boundary.</summary>
     public class UserDto
     {
         public int Id { get; init; }

@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Users
 {
-    /// <summary>Fetches one user account by id.</summary>
     public record GetUserQuery(int Id) : IRequest<Result<UserDto>>;
 
     public class GetUserHandler : IRequestHandler<GetUserQuery, Result<UserDto>>
@@ -26,7 +25,6 @@ namespace Aquri.Application.Users
         }
     }
 
-    /// <summary>Lists user accounts, optionally filtered by name/email/role search term.</summary>
     public record GetUsersQuery(string? Search) : IRequest<List<UserDto>>;
 
     public class GetUsersHandler : IRequestHandler<GetUsersQuery, List<UserDto>>

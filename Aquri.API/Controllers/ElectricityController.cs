@@ -16,7 +16,6 @@ namespace Aquri.API.Controllers
 
         public ElectricityController(IMediator mediator) => _mediator = mediator;
 
-        /// <summary>Records a new meter reading.</summary>
         [HttpPost]
         [Authorize(Roles = "admin,manager,front_desk,housekeeping,maintenance")]
         [ProducesResponseType(typeof(ElectricityRecordDto), StatusCodes.Status201Created)]
@@ -30,7 +29,6 @@ namespace Aquri.API.Controllers
             return CreatedAtAction(nameof(Get), new { id = result.Data!.Id, version = "1.0" }, result.Data);
         }
 
-        /// <summary>Fetches one meter reading by id.</summary>
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(ElectricityRecordDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -44,7 +42,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Lists meter readings, optionally filtered by property and zone.</summary>
         [HttpGet]
         [ProducesResponseType(typeof(List<ElectricityRecordDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<ElectricityRecordDto>>> List(
@@ -54,7 +51,6 @@ namespace Aquri.API.Controllers
             return Ok(records);
         }
 
-        /// <summary>Edits a meter reading. Omitted fields keep their current values.</summary>
         [HttpPut("{id:int}")]
         [Authorize(Roles = "admin,manager,front_desk")]
         [ProducesResponseType(typeof(ElectricityRecordDto), StatusCodes.Status200OK)]
@@ -70,7 +66,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Deletes a meter reading.</summary>
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

@@ -5,10 +5,7 @@ using MediatR;
 
 namespace Aquri.Application.Auth
 {
-    /// <summary>
-    /// Fetches the profile for the currently authenticated user
-    /// (id taken from the JWT's NameIdentifier claim by the controller).
-    /// </summary>
+    /// <summary>Fetches the profile for the currently authenticated user (id taken from the JWT's NameIdentifier claim by the controller).</summary>
     public record GetCurrentUserQuery(int UserId) : IRequest<Result<UserDto>>;
 
     public class GetCurrentUserHandler : IRequestHandler<GetCurrentUserQuery, Result<UserDto>>

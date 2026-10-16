@@ -5,10 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Aquri.API.Controllers
 {
-    /// <summary>
-    /// Dual NFC tag system: guest tags resolve stay context, staff badges punch
-    /// attendance. Issuance and revocation are admin/manager operations.
-    /// </summary>
+    /// <summary>Dual NFC tag system: guest tags resolve stay context, staff badges punch attendance. Issuance and revocation are admin/manager operations.</summary>
     [ApiVersion("1.0")]
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
@@ -19,7 +16,6 @@ namespace Aquri.API.Controllers
 
         public RfidTagsController(IMediator mediator) => _mediator = mediator;
 
-        /// <summary>Lists a property's tags, optionally filtered by kind.</summary>
         [HttpGet]
         [ProducesResponseType(typeof(List<RfidTagDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<RfidTagDto>>> List(
@@ -68,11 +64,7 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>
-        /// Staff badge tap: toggles today's attendance in/out. Timestamps are
-        /// stamped server-side; a re-read within 3s reports the current punch
-        /// instead of toggling.
-        /// </summary>
+        /// <summary>Staff badge tap: toggles today's attendance in/out. Timestamps are stamped server-side; a re-read within 3s reports the current punch instead of toggling.</summary>
         [HttpPost("tap/staff")]
         [Authorize(Roles = "admin,manager,front_desk,housekeeping,maintenance")]
         [ProducesResponseType(typeof(StaffTapResultDto), StatusCodes.Status200OK)]
@@ -90,10 +82,7 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>
-        /// Guest tag tap: resolves guest, room, and booking status and stamps
-        /// the tag's last-used time. No attendance is written.
-        /// </summary>
+        /// <summary>Guest tag tap: resolves guest, room, and booking status and stamps the tag's last-used time. No attendance is written.</summary>
         [HttpPost("tap/guest")]
         [Authorize(Roles = "admin,manager,front_desk,housekeeping,maintenance")]
         [ProducesResponseType(typeof(GuestTapContextDto), StatusCodes.Status200OK)]
@@ -129,9 +118,6 @@ namespace Aquri.API.Controllers
 
     public record RevokeRfidTagRequest(string? Notes);
 
-    /// <summary>
-    /// Tap wire shape. Deliberately has no timestamp field — clients cannot
-    /// backdate punches; the controller stamps every tap with server time.
-    /// </summary>
+    /// <summary>Tap wire shape. Deliberately has no timestamp field — clients cannot backdate punches; the controller stamps every tap with server time.</summary>
     public record TapRequest(int PropertyId, string TagNumber);
 }

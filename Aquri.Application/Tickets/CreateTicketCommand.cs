@@ -8,7 +8,6 @@ using MediatR;
 
 namespace Aquri.Application.Tickets
 {
-    /// <summary>Opens a new ticket.</summary>
     public record CreateTicketCommand(
         int PropertyId,
         int ReporterId,

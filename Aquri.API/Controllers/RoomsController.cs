@@ -9,10 +9,7 @@ using MediatR;
 
 namespace Aquri.API.Controllers
 {
-    /// <summary>
-    /// Room management endpoints.
-    /// Access controlled by role-based authorization.
-    /// </summary>
+    /// <summary>Room management endpoints. Access controlled by role-based authorization.</summary>
     [ApiVersion("1.0")]
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
@@ -26,9 +23,6 @@ namespace Aquri.API.Controllers
             _mediator = mediator;
         }
 
-        /// <summary>
-        /// Creates a new room in a property.
-        /// </summary>
         [HttpPost]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(StatusCodes.Status201Created)]
@@ -50,9 +44,6 @@ namespace Aquri.API.Controllers
             return BadRequest(result.Error);
         }
 
-        /// <summary>
-        /// Gets a room by ID.
-        /// </summary>
         [HttpGet("{id}")]
         [Authorize(Roles = "admin,manager,front_desk,housekeeping,maintenance,auditor")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -71,9 +62,6 @@ namespace Aquri.API.Controllers
             return Ok(room);
         }
 
-        /// <summary>
-        /// Gets all rooms for a property.
-        /// </summary>
         [HttpGet("property/{propertyId}")]
         [Authorize(Roles = "admin,manager,front_desk,housekeeping,maintenance,auditor")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -85,9 +73,6 @@ namespace Aquri.API.Controllers
             return Ok(rooms);
         }
 
-        /// <summary>
-        /// Updates room status.
-        /// </summary>
         [HttpPut("status")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -107,9 +92,6 @@ namespace Aquri.API.Controllers
             return BadRequest(result.Error);
         }
 
-        /// <summary>
-        /// Updates room price.
-        /// </summary>
         [HttpPut("price")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -129,9 +111,6 @@ namespace Aquri.API.Controllers
             return BadRequest(result.Error);
         }
 
-        /// <summary>
-        /// Updates room max occupancy.
-        /// </summary>
         [HttpPut("max-occupancy")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -151,9 +130,6 @@ namespace Aquri.API.Controllers
             return BadRequest(result.Error);
         }
 
-        /// <summary>
-        /// Updates room amenities.
-        /// </summary>
         [HttpPut("amenities")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -173,9 +149,6 @@ namespace Aquri.API.Controllers
             return BadRequest(result.Error);
         }
 
-        /// <summary>
-        /// Updates room view.
-        /// </summary>
         [HttpPut("view")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -195,9 +168,6 @@ namespace Aquri.API.Controllers
             return BadRequest(result.Error);
         }
 
-        /// <summary>
-        /// Deletes a room.
-        /// </summary>
         [HttpDelete("{id}")]
         [Authorize(Roles = "admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

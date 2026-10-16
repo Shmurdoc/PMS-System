@@ -19,11 +19,7 @@ using Xunit;
 
 namespace Aquri.Tests.Rooms
 {
-    /// <summary>
-    /// In-memory test harness for Room handlers.
-    /// Uses a real AquriDbContext (InMemory provider) + real AutoMapper MappingProfile
-    /// so tests exercise the actual EF Core change-tracking + mapping paths.
-    /// </summary>
+    /// <summary>In-memory test harness for Room handlers. Uses a real AquriDbContext (InMemory provider) + real AutoMapper MappingProfile so tests exercise the actual EF Core change-tracking + mapping paths.</summary>
     public class RoomHandlerTestBase : IDisposable
     {
         protected readonly AquriDbContext Context;

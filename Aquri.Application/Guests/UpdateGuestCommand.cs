@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Guests
 {
-    /// <summary>Edits a guest's contact details and preferences.</summary>
     public record UpdateGuestCommand(
         int Id,
         string Name,

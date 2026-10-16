@@ -9,12 +9,7 @@ using Xunit;
 
 namespace Aquri.Tests.Api
 {
-    /// <summary>
-    /// End-to-end property scope: a JWT minted for a property-assigned user can
-    /// only read its own property (403 FORBIDDEN envelope otherwise), while an
-    /// unrestricted admin reaches any property. Also covers admin assignment of
-    /// a property scope when creating an account.
-    /// </summary>
+    /// <summary>End-to-end property scope: a JWT minted for a property-assigned user can only read its own property (403 FORBIDDEN envelope otherwise), while an unrestricted admin reaches any property. Also covers admin assignment of a property scope when creating an account.</summary>
     public class PropertyScopeApiTests : ApiTestBase, IClassFixture<AquriApiFactory>
     {
         public PropertyScopeApiTests(AquriApiFactory factory) : base(factory) { }

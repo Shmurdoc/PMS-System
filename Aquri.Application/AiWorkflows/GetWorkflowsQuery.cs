@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.AiWorkflows
 {
-    /// <summary>Lists all workflows, newest first.</summary>
     public record GetWorkflowsQuery : IRequest<List<WorkflowDto>>;
 
     public class GetWorkflowsHandler : IRequestHandler<GetWorkflowsQuery, List<WorkflowDto>>

@@ -7,12 +7,7 @@ using Microsoft.Extensions.DependencyInjection.Extensions;
 
 namespace Aquri.Tests.Api
 {
-    /// <summary>
-    /// Boots the real API host against an isolated EF InMemory database so
-    /// HTTP-level tests can hit controllers end-to-end (envelope, auth, DI).
-    /// DbSeeder runs on boot (Program.cs) against the same database — tests
-    /// authenticate with the documented demo credentials.
-    /// </summary>
+    /// <summary>Boots the real API host against an isolated EF InMemory database so HTTP-level tests can hit controllers end-to-end (envelope, auth, DI). DbSeeder runs on boot (Program.cs) against the same database — tests authenticate with the documented demo credentials.</summary>
     public class AquriApiFactory : WebApplicationFactory<Program>
     {
         private readonly string _databaseName = $"aquri-api-tests-{Guid.NewGuid():N}";

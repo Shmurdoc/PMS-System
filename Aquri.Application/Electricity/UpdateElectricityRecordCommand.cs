@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Electricity
 {
-    /// <summary>Edits a meter reading. Omitted fields keep their current values.</summary>
     public record UpdateElectricityRecordCommand(
         int Id,
         DateTime? Date,

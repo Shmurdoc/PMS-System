@@ -103,13 +103,7 @@ namespace Aquri.Application.Invoices
         }
     }
 
-    /// <summary>
-    /// Resolves the effective line tax rate from a property's TaxConfig rules.
-    /// Percentage taxes (vat, sales_tax, tourism_levy, city_tax) that apply to the
-    /// line's category are summed; service charges and price-included (Included)
-    /// rules are excluded. When no rule covers the line the client-sent rate is
-    /// honoured, so properties without configured taxes keep existing behaviour.
-    /// </summary>
+    /// <summary>Resolves the effective line tax rate from a property's TaxConfig rules. Percentage taxes (vat, sales_tax, tourism_levy, city_tax) that apply to the line's category are summed; service charges and price-included (Included) rules are excluded. When no rule covers the line the client-sent rate is honoured, so properties without configured taxes keep existing behaviour.</summary>
     internal static class InvoiceTaxResolver
     {
         public static decimal ResolveLineTaxRate(

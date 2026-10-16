@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Integrations
 {
-    /// <summary>Fetches one integration by id.</summary>
     public record GetIntegrationQuery(int Id) : IRequest<Result<IntegrationDto>>;
 
     public class GetIntegrationHandler : IRequestHandler<GetIntegrationQuery, Result<IntegrationDto>>
@@ -26,7 +25,6 @@ namespace Aquri.Application.Integrations
         }
     }
 
-    /// <summary>Lists integrations, optionally filtered by property, category, and status.</summary>
     public record GetIntegrationsQuery(int? PropertyId, string? Category, string? Status) : IRequest<List<IntegrationDto>>;
 
     public class GetIntegrationsHandler : IRequestHandler<GetIntegrationsQuery, List<IntegrationDto>>

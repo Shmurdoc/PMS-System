@@ -12,12 +12,7 @@ using Xunit;
 
 namespace Aquri.Tests.Api.Envelope
 {
-    /// <summary>
-    /// ApiResponseMiddleware unit tests for paths the HTTP-level EnvelopeTests
-    /// cannot reach on the InMemory provider (which does not enforce unique
-    /// indexes): a DbUpdateException bubbling up from a handler must surface
-    /// as an envelope-shaped 409 CONFLICT, never a raw 500.
-    /// </summary>
+    /// <summary>ApiResponseMiddleware unit tests for paths the HTTP-level EnvelopeTests cannot reach on the InMemory provider (which does not enforce unique indexes): a DbUpdateException bubbling up from a handler must surface as an envelope-shaped 409 CONFLICT, never a raw 500.</summary>
     public class ApiResponseMiddlewareConflictTests
     {
         [Fact]

@@ -9,13 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Aquri.Infrastructure.Security
 {
-    /// <summary>
-    /// Issues signed JWTs using the symmetric key from configuration ("Jwt" section).
-    /// Claims carry the user id, email, display name, and role — the same role
-    /// strings matched by [Authorize(Roles = "...")] on API controllers — plus
-    /// a property_id scope claim when the account is assigned to a property
-    /// (absent for unrestricted accounts: the security default).
-    /// </summary>
+    /// <summary>Issues signed JWTs using the symmetric key from configuration ("Jwt" section). Claims carry the user id, email, display name, and role — the same role strings matched by [Authorize(Roles = "...")] on API controllers — plus a property_id scope claim when the account is assigned to a property (absent for unrestricted accounts: the security default).</summary>
     public class JwtTokenService : ITokenService
     {
         private readonly string _key;

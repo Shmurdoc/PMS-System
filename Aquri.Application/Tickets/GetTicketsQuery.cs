@@ -24,7 +24,6 @@ namespace Aquri.Application.Tickets
         }
     }
 
-    /// <summary>Lists tickets for a property with optional status/priority filters.</summary>
     public record GetTicketsQuery(int PropertyId, string? Status, string? Priority) : IRequest<List<TicketDto>>;
 
     public class GetTicketsHandler : IRequestHandler<GetTicketsQuery, List<TicketDto>>

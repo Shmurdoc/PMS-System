@@ -16,7 +16,6 @@ namespace Aquri.API.Controllers
 
         public ShiftsController(IMediator mediator) => _mediator = mediator;
 
-        /// <summary>Schedules a new shift for a staff member.</summary>
         [HttpPost]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(typeof(ShiftDto), StatusCodes.Status201Created)]
@@ -30,7 +29,6 @@ namespace Aquri.API.Controllers
             return CreatedAtAction(nameof(Get), new { id = result.Data!.Id, version = "1.0" }, result.Data);
         }
 
-        /// <summary>Fetches one shift by id.</summary>
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(ShiftDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -105,7 +103,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Removes a shift from the roster.</summary>
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

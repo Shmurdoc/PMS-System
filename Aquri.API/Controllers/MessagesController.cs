@@ -17,7 +17,6 @@ namespace Aquri.API.Controllers
 
         public MessagesController(IMediator mediator) => _mediator = mediator;
 
-        /// <summary>Sends a staff chat message. The sender is always the authenticated caller.</summary>
         [HttpPost]
         [ProducesResponseType(typeof(MessageDto), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -36,7 +35,6 @@ namespace Aquri.API.Controllers
             return CreatedAtAction(nameof(Get), new { id = result.Data!.Id, version = "1.0" }, result.Data);
         }
 
-        /// <summary>Fetches one message by id.</summary>
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(MessageDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -77,7 +75,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Deletes a message.</summary>
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

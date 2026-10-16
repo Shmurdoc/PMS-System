@@ -9,9 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Rooms.Queries
 {
-    /// <summary>
-    /// Query to get a room by its ID.
-    /// </summary>
+    /// <summary>Query to get a room by its ID.</summary>
     public class GetRoomQuery : IRequest<RoomDto?>
     {
         public int Id { get; set; }
@@ -22,9 +20,7 @@ namespace Aquri.Application.Rooms.Queries
         }
     }
 
-    /// <summary>
-    /// Handler for getting a room by ID.
-    /// </summary>
+    /// <summary>Handler for getting a room by ID.</summary>
     public class GetRoomHandler : IRequestHandler<GetRoomQuery, RoomDto?>
     {
         private readonly IApplicationDbContext _context;
@@ -45,9 +41,7 @@ namespace Aquri.Application.Rooms.Queries
         }
     }
 
-    /// <summary>
-    /// Query to get all rooms for a specific property.
-    /// </summary>
+    /// <summary>Query to get all rooms for a specific property.</summary>
     public class GetRoomsByPropertyQuery : IRequest<List<RoomDto>>
     {
         public int PropertyId { get; set; }
@@ -58,9 +52,7 @@ namespace Aquri.Application.Rooms.Queries
         }
     }
 
-    /// <summary>
-    /// Handler for getting all rooms for a property.
-    /// </summary>
+    /// <summary>Handler for getting all rooms for a property.</summary>
     public class GetRoomsByPropertyHandler : IRequestHandler<GetRoomsByPropertyQuery, List<RoomDto>>
     {
         private readonly IApplicationDbContext _context;

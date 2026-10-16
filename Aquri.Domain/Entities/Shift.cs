@@ -3,10 +3,7 @@ using Aquri.Domain.Exceptions;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// A scheduled work shift for one staff member on one day. Can be swapped
-    /// to another person, which keeps who-covered-what on the record.
-    /// </summary>
+    /// <summary>A scheduled work shift for one staff member on one day. Can be swapped to another person, which keeps who-covered-what on the record.</summary>
     public class Shift
     {
         public static readonly string[] ValidStatuses = { "scheduled", "completed", "cancelled", "swapped" };
@@ -65,7 +62,6 @@ namespace Aquri.Domain.Entities
             LastModified = DateTime.UtcNow;
         }
 
-        /// <summary>Moves the shift onto someone else's roster.</summary>
         public void Swap(string newStaffName)
         {
             if (string.IsNullOrWhiteSpace(newStaffName))
@@ -89,7 +85,6 @@ namespace Aquri.Domain.Entities
             LastModified = DateTime.UtcNow;
         }
 
-        /// <summary>Records overtime in hours worked beyond the scheduled end.</summary>
         public void RecordOvertime(decimal hours)
         {
             if (hours < 0)

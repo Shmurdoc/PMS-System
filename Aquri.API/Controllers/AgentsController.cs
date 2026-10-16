@@ -16,7 +16,6 @@ namespace Aquri.API.Controllers
 
         public AgentsController(IMediator mediator) => _mediator = mediator;
 
-        /// <summary>Lists all agents with their latest 20 log entries.</summary>
         [HttpGet]
         [ProducesResponseType(typeof(List<AgentDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<AgentDto>>> List()
@@ -40,7 +39,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Runs an agent against live data and returns the new insight.</summary>
         [HttpPost("{id:int}/run")]
         [ProducesResponseType(typeof(RunAgentResultDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

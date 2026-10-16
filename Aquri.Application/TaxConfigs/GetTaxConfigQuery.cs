@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.TaxConfigs
 {
-    /// <summary>Fetches one tax config by id.</summary>
     public record GetTaxConfigQuery(int Id) : IRequest<Result<TaxConfigDto>>;
 
     public class GetTaxConfigHandler : IRequestHandler<GetTaxConfigQuery, Result<TaxConfigDto>>
@@ -26,7 +25,6 @@ namespace Aquri.Application.TaxConfigs
         }
     }
 
-    /// <summary>Lists tax configs, optionally filtered by property, type, and active state.</summary>
     public record GetTaxConfigsQuery(int? PropertyId, string? Type, bool? Active) : IRequest<List<TaxConfigDto>>;
 
     public class GetTaxConfigsHandler : IRequestHandler<GetTaxConfigsQuery, List<TaxConfigDto>>

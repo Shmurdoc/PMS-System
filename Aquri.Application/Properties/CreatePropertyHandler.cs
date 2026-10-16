@@ -8,9 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Properties.Commands
 {
-    /// <summary>
-    /// Creates a new Property and persists it via the DbContext (the unit of work).
-    /// </summary>
+    /// <summary>Creates a new Property and persists it via the DbContext (the unit of work).</summary>
     public class CreatePropertyHandler : IRequestHandler<CreatePropertyCommand, Result<PropertyDto>>
     {
         private readonly IApplicationDbContext _context;

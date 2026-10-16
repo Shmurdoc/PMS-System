@@ -5,11 +5,7 @@ using Aquri.Domain.Enums;
 
 namespace Aquri.Application.MappingProfiles
 {
-    /// <summary>
-    /// AutoMapper profile for Domain → DTO mappings only.
-    /// Entities are constructed via domain methods, never mapped into —
-    /// so only one-way (entity → dto) maps exist.
-    /// </summary>
+    /// <summary>AutoMapper profile for Domain → DTO mappings only. Entities are constructed via domain methods, never mapped into — so only one-way (entity → dto) maps exist.</summary>
     public class MappingProfile : Profile
     {
         public MappingProfile()

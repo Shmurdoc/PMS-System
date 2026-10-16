@@ -31,7 +31,6 @@ namespace Aquri.API.Controllers
             return CreatedAtAction(nameof(Get), new { id = result.Data!.Id, version = "1.0" }, result.Data);
         }
 
-        /// <summary>Fetches one integration by id.</summary>
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(IntegrationDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -45,7 +44,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Lists integrations, optionally filtered by property, category, and status.</summary>
         [HttpGet]
         [ProducesResponseType(typeof(List<IntegrationDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<IntegrationDto>>> List(
@@ -55,7 +53,6 @@ namespace Aquri.API.Controllers
             return Ok(integrations);
         }
 
-        /// <summary>Edits an integration's details.</summary>
         [HttpPut("{id:int}")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(typeof(IntegrationDto), StatusCodes.Status200OK)]
@@ -86,7 +83,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Deletes an integration.</summary>
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

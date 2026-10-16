@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Inventory
 {
-    /// <summary>Fetches one stock item by id.</summary>
     public record GetInventoryItemQuery(int Id) : IRequest<Result<InventoryItemDto>>;
 
     public class GetInventoryItemHandler : IRequestHandler<GetInventoryItemQuery, Result<InventoryItemDto>>
@@ -26,7 +25,6 @@ namespace Aquri.Application.Inventory
         }
     }
 
-    /// <summary>Lists stock items, optionally filtered by property, category, or name.</summary>
     public record GetInventoryItemsQuery(int? PropertyId, string? Category, string? Search) : IRequest<List<InventoryItemDto>>;
 
     public class GetInventoryItemsHandler : IRequestHandler<GetInventoryItemsQuery, List<InventoryItemDto>>

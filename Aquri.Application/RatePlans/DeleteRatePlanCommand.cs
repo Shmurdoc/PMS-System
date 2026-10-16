@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.RatePlans
 {
-    /// <summary>Removes a pricing plan.</summary>
     public record DeleteRatePlanCommand(int Id) : IRequest<Result<bool>>;
 
     public class DeleteRatePlanHandler : IRequestHandler<DeleteRatePlanCommand, Result<bool>>

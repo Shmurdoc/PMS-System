@@ -2,10 +2,7 @@ using FluentValidation;
 
 namespace Aquri.Application.Messages
 {
-    /// <summary>
-    /// Shape checks for message creation — sender presence (id or name) is a
-    /// cross-field rule the handler owns ("Sender is required.").
-    /// </summary>
+    /// <summary>Shape checks for message creation — sender presence (id or name) is a cross-field rule the handler owns ("Sender is required.").</summary>
     public class CreateMessageCommandValidator : AbstractValidator<CreateMessageCommand>
     {
         public CreateMessageCommandValidator()

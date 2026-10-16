@@ -2,12 +2,7 @@ using FluentValidation;
 
 namespace Aquri.Application.Electricity
 {
-    /// <summary>
-    /// Shape checks for meter-reading creation. Negative readings are rejected
-    /// here and again in the domain entity — the validator fails fast with the
-    /// VALIDATION envelope before the handler runs. Edits are sparse (all
-    /// fields optional, empty-means-omit) so they carry no shape validator.
-    /// </summary>
+    /// <summary>Shape checks for meter-reading creation. Negative readings are rejected here and again in the domain entity — the validator fails fast with the VALIDATION envelope before the handler runs. Edits are sparse (all fields optional, empty-means-omit) so they carry no shape validator.</summary>
     public class CreateElectricityRecordCommandValidator : AbstractValidator<CreateElectricityRecordCommand>
     {
         public CreateElectricityRecordCommandValidator()

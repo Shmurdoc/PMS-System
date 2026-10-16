@@ -4,11 +4,7 @@ using Aquri.Domain.Exceptions;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// An issued NFC/RFID tag. One entity covers both kinds: a guest tag is bound to
-    /// a booking for the length of a stay, a staff badge is bound to a user. Exactly
-    /// one binding is set, driven by <see cref="Kind"/>.
-    /// </summary>
+    /// <summary>An issued NFC/RFID tag. One entity covers both kinds: a guest tag is bound to a booking for the length of a stay, a staff badge is bound to a user. Exactly one binding is set, driven by <see cref="Kind"/>.</summary>
     public class RfidTag
     {
         public int Id { get; private set; }

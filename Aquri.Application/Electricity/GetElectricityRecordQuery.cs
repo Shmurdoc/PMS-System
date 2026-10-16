@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Electricity
 {
-    /// <summary>Fetches one meter reading by id.</summary>
     public record GetElectricityRecordQuery(int Id) : IRequest<Result<ElectricityRecordDto>>;
 
     public class GetElectricityRecordHandler : IRequestHandler<GetElectricityRecordQuery, Result<ElectricityRecordDto>>
@@ -26,7 +25,6 @@ namespace Aquri.Application.Electricity
         }
     }
 
-    /// <summary>Lists meter readings, optionally filtered by property and zone.</summary>
     public record GetElectricityRecordsQuery(int? PropertyId, string? Zone) : IRequest<List<ElectricityRecordDto>>;
 
     public class GetElectricityRecordsHandler : IRequestHandler<GetElectricityRecordsQuery, List<ElectricityRecordDto>>

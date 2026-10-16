@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Messages
 {
-    /// <summary>Fetches one message by id.</summary>
     public record GetMessageQuery(int Id) : IRequest<Result<MessageDto>>;
 
     public class GetMessageHandler : IRequestHandler<GetMessageQuery, Result<MessageDto>>

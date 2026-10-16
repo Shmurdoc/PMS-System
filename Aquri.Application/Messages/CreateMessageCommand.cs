@@ -6,10 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Messages
 {
-    /// <summary>
-    /// Sends a staff chat message. SenderId/SenderName are stamped by the controller
-    /// from the authenticated claims — any body values are ignored.
-    /// </summary>
+    /// <summary>Sends a staff chat message. SenderId/SenderName are stamped by the controller from the authenticated claims — any body values are ignored.</summary>
     public record CreateMessageCommand(
         int PropertyId,
         int? SenderId,
@@ -89,7 +86,6 @@ namespace Aquri.Application.Messages
         }
     }
 
-    /// <summary>Deletes a message.</summary>
     public record DeleteMessageCommand(int Id) : IRequest<Result>;
 
     public class DeleteMessageHandler : IRequestHandler<DeleteMessageCommand, Result>

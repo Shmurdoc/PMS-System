@@ -9,12 +9,7 @@ using Xunit;
 
 namespace Aquri.Tests.Common
 {
-    /// <summary>
-    /// FluentValidation pipeline behavior: validators registered for a request
-    /// run before the handler. Failures on Result-returning responses come back
-    /// as Result.Failure (the shape controllers already surface); requests with
-    /// no validator pass through untouched.
-    /// </summary>
+    /// <summary>FluentValidation pipeline behavior: validators registered for a request run before the handler. Failures on Result-returning responses come back as Result.Failure (the shape controllers already surface); requests with no validator pass through untouched.</summary>
     public class ValidationBehaviorTests
     {
         private sealed record SampleRequest(string? Name, string? Email) : IRequest<Result<SampleDto>>;

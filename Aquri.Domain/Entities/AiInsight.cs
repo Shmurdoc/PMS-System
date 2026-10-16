@@ -2,12 +2,7 @@ using System;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// A recommendation surfaced on the AI tab — revenue nudges, staffing
-    /// warnings, maintenance flags. PropertyId null means it applies everywhere.
-    /// Dismissal is three-state: null = not acted on, false = acknowledged,
-    /// true = dismissed.
-    /// </summary>
+    /// <summary>A recommendation surfaced on the AI tab — revenue nudges, staffing warnings, maintenance flags. PropertyId null means it applies everywhere. Dismissal is three-state: null = not acted on, false = acknowledged, true = dismissed.</summary>
     public class AiInsight
     {
         public static readonly string[] ValidTypes =

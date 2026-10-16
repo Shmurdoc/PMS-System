@@ -12,10 +12,7 @@ using Xunit;
 
 namespace Aquri.Tests.Auth
 {
-    /// <summary>
-    /// In-memory harness for auth handlers: real AquriDbContext + real PBKDF2 hasher.
-    /// ITokenService is faked so tests do not depend on JWT config.
-    /// </summary>
+    /// <summary>In-memory harness for auth handlers: real AquriDbContext + real PBKDF2 hasher. ITokenService is faked so tests do not depend on JWT config.</summary>
     public class AuthHandlerTestBase : IDisposable
     {
         protected readonly AquriDbContext Context;

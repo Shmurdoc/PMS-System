@@ -10,9 +10,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Properties.Queries
 {
-    /// <summary>
-    /// Query to get a property by its primary key Id.
-    /// </summary>
+    /// <summary>Query to get a property by its primary key Id.</summary>
     public class GetPropertyQuery : IRequest<PropertyDto?>
     {
         public int Id { get; set; }
@@ -23,9 +21,7 @@ namespace Aquri.Application.Properties.Queries
         }
     }
 
-    /// <summary>
-    /// Handler for getting a property by Id.
-    /// </summary>
+    /// <summary>Handler for getting a property by Id.</summary>
     public class GetPropertyHandler : IRequestHandler<GetPropertyQuery, PropertyDto?>
     {
         private readonly IApplicationDbContext _context;
@@ -46,16 +42,12 @@ namespace Aquri.Application.Properties.Queries
         }
     }
 
-    /// <summary>
-    /// Query to get all properties.
-    /// </summary>
+    /// <summary>Query to get all properties.</summary>
     public class GetAllPropertiesQuery : IRequest<List<PropertyDto>>
     {
     }
 
-    /// <summary>
-    /// Handler for getting all properties.
-    /// </summary>
+    /// <summary>Handler for getting all properties.</summary>
     public class GetAllPropertiesHandler : IRequestHandler<GetAllPropertiesQuery, List<PropertyDto>>
     {
         private readonly IApplicationDbContext _context;
@@ -76,9 +68,7 @@ namespace Aquri.Application.Properties.Queries
         }
     }
 
-    /// <summary>
-    /// Command to delete a property by primary key Id.
-    /// </summary>
+    /// <summary>Command to delete a property by primary key Id.</summary>
     public class DeletePropertyCommand : IRequest<Result<bool>>
     {
         public int Id { get; set; }
@@ -89,9 +79,7 @@ namespace Aquri.Application.Properties.Queries
         }
     }
 
-    /// <summary>
-    /// Handler for deleting a property.
-    /// </summary>
+    /// <summary>Handler for deleting a property.</summary>
     public class DeletePropertyHandler : IRequestHandler<DeletePropertyCommand, Result<bool>>
     {
         private readonly IApplicationDbContext _context;

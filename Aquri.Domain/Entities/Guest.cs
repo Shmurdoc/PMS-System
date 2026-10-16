@@ -3,10 +3,7 @@ using Aquri.Domain.Exceptions;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// A hotel guest — the person a booking is made for. Segments and VIP levels
-    /// drive pricing and service decisions downstream, so they're validated here.
-    /// </summary>
+    /// <summary>A hotel guest — the person a booking is made for. Segments and VIP levels drive pricing and service decisions downstream, so they're validated here.</summary>
     public class Guest
     {
         public static readonly string[] ValidSegments = { "VIP", "Frequent", "New", "Corporate" };
@@ -63,7 +60,6 @@ namespace Aquri.Domain.Entities
             LastModified = DateTime.UtcNow;
         }
 
-        /// <summary>Records a completed stay and awards loyalty points for it.</summary>
         public void RecordStay(int pointsEarned)
         {
             if (pointsEarned < 0)

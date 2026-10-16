@@ -8,11 +8,7 @@ using Xunit;
 
 namespace Aquri.Tests.Auth
 {
-    /// <summary>
-    /// The JWT carries the caller's property scope so downstream requests can
-    /// be confined to that property: assigned users get a property_id claim,
-    /// unrestricted users do not.
-    /// </summary>
+    /// <summary>The JWT carries the caller's property scope so downstream requests can be confined to that property: assigned users get a property_id claim, unrestricted users do not.</summary>
     public class JwtTokenServiceTests
     {
         private const string PropertyClaim = "property_id";

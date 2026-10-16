@@ -4,20 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Infrastructure.Persistence
 {
-    /// <summary>
-    /// Issues unique business numbers (TKT-2026-00001, INV-…, PAY-…) from
-    /// NumberSequence rows — one row per prefix+year. The increment is persisted
-    /// immediately (before the caller's SaveChanges) so a concurrent racer is
-    /// detected here via the CurrentValue optimistic-concurrency token and
-    /// resolved by reloading and retrying, instead of both requests silently
-    /// receiving the same number and the loser failing later with a 409.
-    ///
-    /// Because the bump commits independently, a caller whose own insert
-    /// subsequently fails leaves a gap in the number series — gaps are
-    /// acceptable for business numbering; duplicates are not. The unique
-    /// indexes on TicketNumber/InvoiceNumber/PaymentNumber remain the final
-    /// backstop against any residual race.
-    /// </summary>
+    /// <summary>Issues unique business numbers (TKT-2026-00001, INV-…, PAY-…) from NumberSequence rows — one row per prefix+year. The increment is persisted immediately (before the caller's SaveChanges) so a concurrent racer is detected here via the CurrentValue optimistic-concurrency token and resolved by reloading and retrying, instead of both requests silently receiving the same number and the loser failing later with a 409.  Because the bump commits independently, a caller whose own insert subsequently fails leaves a gap in the number series — gaps are acceptable for business numbering; duplicates are not. The unique indexes on TicketNumber/InvoiceNumber/PaymentNumber remain the final backstop against any residual race.</summary>
     public class NumberGenerator : INumberGenerator
     {
         private const int MaxAttempts = 5;
@@ -72,11 +59,7 @@ namespace Aquri.Infrastructure.Persistence
             }
         }
 
-        /// <summary>
-        /// Highest suffix among numbers already issued for this prefix+year
-        /// (legacy clock-ticks numbers share the same PREFIX-year-##### shape).
-        /// Runs once per key, when the counter row is first created.
-        /// </summary>
+        /// <summary>Highest suffix among numbers already issued for this prefix+year (legacy clock-ticks numbers share the same PREFIX-year-##### shape). Runs once per key, when the counter row is first created.</summary>
         private static async Task<long> SeedFromExistingNumbersAsync(string key, IQueryable<string> existingNumbers, CancellationToken cancellationToken)
         {
             var needle = key + "-";

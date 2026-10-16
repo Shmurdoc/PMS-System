@@ -12,10 +12,7 @@ using Xunit;
 
 namespace Aquri.Tests.RfidTags
 {
-    /// <summary>
-    /// In-memory harness for the RFID handlers — real AquriDbContext, no
-    /// AutoMapper (the tag DTOs map themselves).
-    /// </summary>
+    /// <summary>In-memory harness for the RFID handlers — real AquriDbContext, no AutoMapper (the tag DTOs map themselves).</summary>
     public class RfidTagTestBase : IDisposable
     {
         protected readonly AquriDbContext Context;

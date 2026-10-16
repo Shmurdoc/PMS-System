@@ -5,7 +5,6 @@ using MediatR;
 
 namespace Aquri.Application.Electricity
 {
-    /// <summary>Records a new meter reading for a zone.</summary>
     public record CreateElectricityRecordCommand(
         int PropertyId,
         DateTime Date,

@@ -82,10 +82,7 @@ namespace Aquri.Tests.Api
             throw new InvalidOperationException("Seeded front desk user not found.");
         }
 
-        /// <summary>
-        /// Mints a per-test badge holder so attendance records (keyed by user
-        /// and day) never leak between tests that punch with server stamps.
-        /// </summary>
+        /// <summary>Mints a per-test badge holder so attendance records (keyed by user and day) never leak between tests that punch with server stamps.</summary>
         private async Task<int> CreateBadgeUserAsync(HttpClient client, string email)
         {
             var response = await client.PostAsync("/api/v1/users", JsonBody(new

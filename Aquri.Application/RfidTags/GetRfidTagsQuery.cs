@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.RfidTags
 {
-    /// <summary>Lists a property's tags, newest first, with binding names resolved.</summary>
     public record GetRfidTagsQuery(int PropertyId, string? Kind) : IRequest<List<RfidTagDto>>;
 
     public class GetRfidTagsHandler : IRequestHandler<GetRfidTagsQuery, List<RfidTagDto>>

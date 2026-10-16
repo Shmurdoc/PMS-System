@@ -2,10 +2,7 @@ using FluentValidation;
 
 namespace Aquri.Application.AiInsights
 {
-    /// <summary>
-    /// Shape checks for insight creation — type vocabulary stays in the handler,
-    /// which owns AiInsight.ValidTypes.
-    /// </summary>
+    /// <summary>Shape checks for insight creation — type vocabulary stays in the handler, which owns AiInsight.ValidTypes.</summary>
     public class CreateAiInsightCommandValidator : AbstractValidator<CreateAiInsightCommand>
     {
         public CreateAiInsightCommandValidator()

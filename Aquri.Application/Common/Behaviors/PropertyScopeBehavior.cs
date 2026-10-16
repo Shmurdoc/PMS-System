@@ -5,15 +5,7 @@ using MediatR;
 
 namespace Aquri.Application.Common.Behaviors
 {
-    /// <summary>
-    /// Confines property-assigned accounts to their property. Requests exposing
-    /// a public int/int? PropertyId member are checked against
-    /// <see cref="ICurrentUser.PropertyId"/>: a mismatch, or a null scope on the
-    /// request, is rejected with <see cref="ForbiddenException"/> (403) before
-    /// the handler runs. Unrestricted accounts and requests without a
-    /// PropertyId member pass through untouched — endpoint authentication and
-    /// role checks stay with [Authorize] on controllers.
-    /// </summary>
+    /// <summary>Confines property-assigned accounts to their property. Requests exposing a public int/int? PropertyId member are checked against <see cref="ICurrentUser.PropertyId"/>: a mismatch, or a null scope on the request, is rejected with <see cref="ForbiddenException"/> (403) before the handler runs. Unrestricted accounts and requests without a PropertyId member pass through untouched — endpoint authentication and role checks stay with [Authorize] on controllers.</summary>
     public sealed class PropertyScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : notnull
     {

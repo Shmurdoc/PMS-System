@@ -2,10 +2,7 @@ using System;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// A staff chat message — desk-to-maintenance, channel posts, system alerts.
-    /// Read receipts drive the unread badge in the frontend.
-    /// </summary>
+    /// <summary>A staff chat message — desk-to-maintenance, channel posts, system alerts. Read receipts drive the unread badge in the frontend.</summary>
     public class Message
     {
         public static readonly string[] ValidTypes = { "text", "system", "alert" };

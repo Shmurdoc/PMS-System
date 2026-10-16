@@ -6,11 +6,7 @@ using Aquri.Domain.Exceptions;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// An operational ticket — a broken AC, a guest complaint, a lost passport.
-    /// Replaces the older MaintenanceRequest for day-to-day work; that entity
-    /// stays for backward compatibility until its callers are migrated.
-    /// </summary>
+    /// <summary>An operational ticket — a broken AC, a guest complaint, a lost passport. Replaces the older MaintenanceRequest for day-to-day work; that entity stays for backward compatibility until its callers are migrated.</summary>
     public class Ticket
     {
         public static readonly string[] ValidCategories =

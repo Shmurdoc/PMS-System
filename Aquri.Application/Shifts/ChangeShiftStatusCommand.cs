@@ -70,7 +70,6 @@ namespace Aquri.Application.Shifts
         }
     }
 
-    /// <summary>Removes a shift from the roster.</summary>
     public record DeleteShiftCommand(int Id) : IRequest<Result>;
 
     public class DeleteShiftHandler : IRequestHandler<DeleteShiftCommand, Result>

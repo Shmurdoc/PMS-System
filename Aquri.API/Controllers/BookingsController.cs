@@ -30,7 +30,6 @@ namespace Aquri.API.Controllers
             return CreatedAtAction(nameof(Get), new { id = result.Data!.Id, version = "1.0" }, result.Data);
         }
 
-        /// <summary>Fetches one booking by id.</summary>
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(BookingDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -44,7 +43,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Lists bookings for a property, optionally filtered by status.</summary>
         [HttpGet]
         [ProducesResponseType(typeof(List<BookingDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<BookingDto>>> List([FromQuery] int propertyId, [FromQuery] string? status)
@@ -53,7 +51,6 @@ namespace Aquri.API.Controllers
             return Ok(bookings);
         }
 
-        /// <summary>Transitions a booking to a new status.</summary>
         [HttpPatch("{id:int}/status")]
         [Authorize(Roles = "admin,manager,front_desk")]
         [ProducesResponseType(typeof(BookingDto), StatusCodes.Status200OK)]
@@ -69,7 +66,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Records a deposit against a booking.</summary>
         [HttpPost("{id:int}/deposit")]
         [Authorize(Roles = "admin,manager,front_desk")]
         [ProducesResponseType(typeof(BookingDto), StatusCodes.Status200OK)]

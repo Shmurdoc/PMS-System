@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.MaintenanceRequests
 {
-    /// <summary>Fetches one maintenance request by id.</summary>
     public record GetMaintenanceRequestQuery(int Id) : IRequest<Result<MaintenanceRequestDto>>;
 
     public class GetMaintenanceRequestHandler : IRequestHandler<GetMaintenanceRequestQuery, Result<MaintenanceRequestDto>>

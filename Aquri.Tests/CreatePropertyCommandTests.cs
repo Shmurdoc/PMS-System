@@ -11,11 +11,7 @@ using Xunit;
 
 namespace Aquri.Tests
 {
-    /// <summary>
-    /// In-memory test harness for CreatePropertyHandler.
-    /// Uses a real AquriDbContext (InMemory) + real MappingProfile so the
-    /// EF change-tracking and mapping paths are exercised end-to-end.
-    /// </summary>
+    /// <summary>In-memory test harness for CreatePropertyHandler. Uses a real AquriDbContext (InMemory) + real MappingProfile so the EF change-tracking and mapping paths are exercised end-to-end.</summary>
     public class CreatePropertyCommandHandler_Should : IDisposable
     {
         private readonly AquriDbContext _context;

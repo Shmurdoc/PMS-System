@@ -11,9 +11,7 @@ using MediatR;
 
 namespace Aquri.Application.Rooms.Handlers
 {
-    /// <summary>
-    /// Handler for creating a new room.
-    /// </summary>
+    /// <summary>Handler for creating a new room.</summary>
     public class CreateRoomHandler : IRequestHandler<CreateRoomCommand, Result<RoomDto>>
     {
         private readonly IApplicationDbContext _context;
@@ -67,9 +65,7 @@ namespace Aquri.Application.Rooms.Handlers
         }
     }
 
-    /// <summary>
-    /// Handler for renaming a room (updates the room number).
-    /// </summary>
+    /// <summary>Handler for renaming a room (updates the room number).</summary>
     public class RenameRoomHandler : IRequestHandler<RenameRoomCommand, Result<RoomDto>>
     {
         private readonly IApplicationDbContext _context;
@@ -103,9 +99,7 @@ namespace Aquri.Application.Rooms.Handlers
         }
     }
 
-    /// <summary>
-    /// Handler for deleting a room.
-    /// </summary>
+    /// <summary>Handler for deleting a room.</summary>
     public class DeleteRoomHandler : IRequestHandler<DeleteRoomCommand, Result<bool>>
     {
         private readonly IApplicationDbContext _context;

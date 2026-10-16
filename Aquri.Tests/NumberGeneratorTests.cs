@@ -10,12 +10,7 @@ using Xunit;
 
 namespace Aquri.Tests
 {
-    /// <summary>
-    /// NumberGenerator allocates TKT-/INV-/PAY- numbers from NumberSequence
-    /// rows. Verifies monotonic allocation, per-prefix/per-year keying, that the
-    /// first reservation never reissues a legacy clock-ticks number, and that
-    /// the counter persists across DbContext instances.
-    /// </summary>
+    /// <summary>NumberGenerator allocates TKT-/INV-/PAY- numbers from NumberSequence rows. Verifies monotonic allocation, per-prefix/per-year keying, that the first reservation never reissues a legacy clock-ticks number, and that the counter persists across DbContext instances.</summary>
     public class NumberGeneratorTests : IDisposable
     {
         private readonly string _databaseName = $"number-generator-{Guid.NewGuid():N}";

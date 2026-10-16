@@ -5,7 +5,6 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.AuditLogs
 {
-    /// <summary>Fetches one audit log entry by id.</summary>
     public record GetAuditLogQuery(int Id) : IRequest<Result<AuditLogDto>>;
 
     public class GetAuditLogHandler : IRequestHandler<GetAuditLogQuery, Result<AuditLogDto>>
@@ -26,7 +25,6 @@ namespace Aquri.Application.AuditLogs
         }
     }
 
-    /// <summary>Lists audit log entries, newest first, optionally filtered.</summary>
     public record GetAuditLogsQuery(
         int? PropertyId,
         string? EntityType,

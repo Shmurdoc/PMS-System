@@ -6,10 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Attendance
 {
-    /// <summary>
-    /// Edits an attendance record: clocks out, transitions status, and updates notes.
-    /// Omitted fields keep their current values.
-    /// </summary>
+    /// <summary>Edits an attendance record: clocks out, transitions status, and updates notes. Omitted fields keep their current values.</summary>
     public record UpdateAttendanceCommand(
         int Id,
         DateTime? CheckOut,

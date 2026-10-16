@@ -6,10 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Auth
 {
-    /// <summary>
-    /// Authenticates a user by email + password and returns a signed JWT
-    /// plus the basic profile. Never reveals which credential was wrong.
-    /// </summary>
+    /// <summary>Authenticates a user by email + password and returns a signed JWT plus the basic profile. Never reveals which credential was wrong.</summary>
     public record LoginCommand(string Email, string Password) : IRequest<Result<LoginResponseDto>>;
 
     public class LoginHandler : IRequestHandler<LoginCommand, Result<LoginResponseDto>>

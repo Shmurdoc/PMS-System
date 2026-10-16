@@ -2,12 +2,7 @@ using FluentValidation;
 
 namespace Aquri.Application.Integrations
 {
-    /// <summary>
-    /// Shape checks for integration creation — the status vocabulary
-    /// (connected/disconnected/error/syncing) lives in the domain entity, not
-    /// here. Edits are sparse (all fields optional, empty-means-omit) so they
-    /// carry no shape validator; sync is id-only.
-    /// </summary>
+    /// <summary>Shape checks for integration creation — the status vocabulary (connected/disconnected/error/syncing) lives in the domain entity, not here. Edits are sparse (all fields optional, empty-means-omit) so they carry no shape validator; sync is id-only.</summary>
     public class CreateIntegrationCommandValidator : AbstractValidator<CreateIntegrationCommand>
     {
         public CreateIntegrationCommandValidator()

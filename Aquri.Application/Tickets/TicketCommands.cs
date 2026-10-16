@@ -39,7 +39,6 @@ namespace Aquri.Application.Tickets
         }
     }
 
-    /// <summary>Assigns a ticket to a staff member.</summary>
     public record AssignTicketCommand(int Id, int AssigneeId) : IRequest<Result<TicketDto>>;
 
     public class AssignTicketHandler : IRequestHandler<AssignTicketCommand, Result<TicketDto>>
@@ -71,7 +70,6 @@ namespace Aquri.Application.Tickets
         }
     }
 
-    /// <summary>Adds a comment to a ticket thread.</summary>
     public record AddTicketCommentCommand(int Id, int UserId, string Content, bool IsInternal) : IRequest<Result<TicketDto>>;
 
     public class AddTicketCommentHandler : IRequestHandler<AddTicketCommentCommand, Result<TicketDto>>

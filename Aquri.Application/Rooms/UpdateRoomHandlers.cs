@@ -11,9 +11,7 @@ using MediatR;
 
 namespace Aquri.Application.Rooms.Handlers
 {
-    /// <summary>
-    /// Handler for updating room status.
-    /// </summary>
+    /// <summary>Handler for updating room status.</summary>
     public class UpdateRoomStatusHandler : IRequestHandler<UpdateRoomStatusCommand, Result<RoomDto>>
     {
         private readonly IApplicationDbContext _context;
@@ -53,9 +51,7 @@ namespace Aquri.Application.Rooms.Handlers
         }
     }
 
-    /// <summary>
-    /// Handler for updating room price.
-    /// </summary>
+    /// <summary>Handler for updating room price.</summary>
     public class UpdateRoomPriceHandler : IRequestHandler<UpdateRoomPriceCommand, Result<RoomDto>>
     {
         private readonly IApplicationDbContext _context;
@@ -92,9 +88,7 @@ namespace Aquri.Application.Rooms.Handlers
         }
     }
 
-    /// <summary>
-    /// Handler for updating room max occupancy.
-    /// </summary>
+    /// <summary>Handler for updating room max occupancy.</summary>
     public class UpdateRoomMaxOccupancyHandler : IRequestHandler<UpdateRoomMaxOccupancyCommand, Result<RoomDto>>
     {
         private readonly IApplicationDbContext _context;
@@ -131,9 +125,7 @@ namespace Aquri.Application.Rooms.Handlers
         }
     }
 
-    /// <summary>
-    /// Handler for updating room amenities.
-    /// </summary>
+    /// <summary>Handler for updating room amenities.</summary>
     public class UpdateRoomAmenitiesHandler : IRequestHandler<UpdateRoomAmenitiesCommand, Result<RoomDto>>
     {
         private readonly IApplicationDbContext _context;
@@ -182,9 +174,7 @@ namespace Aquri.Application.Rooms.Handlers
         }
     }
 
-    /// <summary>
-    /// Handler for updating room view.
-    /// </summary>
+    /// <summary>Handler for updating room view.</summary>
     public class UpdateRoomViewHandler : IRequestHandler<UpdateRoomViewCommand, Result<RoomDto>>
     {
         private readonly IApplicationDbContext _context;

@@ -16,7 +16,6 @@ namespace Aquri.API.Controllers
 
         public InventoryItemsController(IMediator mediator) => _mediator = mediator;
 
-        /// <summary>Adds a new stock item.</summary>
         [HttpPost]
         [Authorize(Roles = "admin,manager,housekeeping")]
         [ProducesResponseType(typeof(InventoryItemDto), StatusCodes.Status201Created)]
@@ -30,7 +29,6 @@ namespace Aquri.API.Controllers
             return CreatedAtAction(nameof(Get), new { id = result.Data!.Id, version = "1.0" }, result.Data);
         }
 
-        /// <summary>Fetches one stock item by id.</summary>
         [HttpGet("{id:int}")]
         [ProducesResponseType(typeof(InventoryItemDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -44,7 +42,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Lists stock items, optionally filtered by property, category, or name.</summary>
         [HttpGet]
         [ProducesResponseType(typeof(List<InventoryItemDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<InventoryItemDto>>> List(
@@ -54,7 +51,6 @@ namespace Aquri.API.Controllers
             return Ok(items);
         }
 
-        /// <summary>Edits a stock item's details.</summary>
         [HttpPut("{id:int}")]
         [Authorize(Roles = "admin,manager,housekeeping")]
         [ProducesResponseType(typeof(InventoryItemDto), StatusCodes.Status200OK)]
@@ -102,7 +98,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Removes a stock item.</summary>
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

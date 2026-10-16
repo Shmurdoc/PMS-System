@@ -8,10 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Aquri.Tests.Seeding
 {
-    /// <summary>
-    /// Boots DbSeeder against an isolated InMemory database — covers the granular
-    /// per-table guards and the mirrored AI demo data.
-    /// </summary>
+    /// <summary>Boots DbSeeder against an isolated InMemory database — covers the granular per-table guards and the mirrored AI demo data.</summary>
     public class DbSeederAiTests
     {
         private static ServiceProvider BuildServices()

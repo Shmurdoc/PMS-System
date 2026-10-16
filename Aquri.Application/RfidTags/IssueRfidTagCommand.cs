@@ -7,10 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.RfidTags
 {
-    /// <summary>
-    /// Issues a tag: staff badges bind to a user, guest tags bind to a booking.
-    /// Exactly one binding is set; the other is derived or rejected.
-    /// </summary>
+    /// <summary>Issues a tag: staff badges bind to a user, guest tags bind to a booking. Exactly one binding is set; the other is derived or rejected.</summary>
     public record IssueRfidTagCommand(
         int PropertyId,
         string Kind,

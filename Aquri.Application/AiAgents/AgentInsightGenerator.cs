@@ -14,10 +14,7 @@ namespace Aquri.Application.AiAgents
         string Impact,
         string LogMessage);
 
-    /// <summary>
-    /// One deterministic generator per agent key (spec §6). Each reads the tables it
-    /// owns and frames a single recommendation — no LLM in v1, so runs stay testable offline.
-    /// </summary>
+    /// <summary>One deterministic generator per agent key (spec §6). Each reads the tables it owns and frames a single recommendation — no LLM in v1, so runs stay testable offline.</summary>
     public class AgentInsightGenerator
     {
         private readonly IApplicationDbContext _context;

@@ -3,10 +3,7 @@ using Aquri.Domain.Exceptions;
 
 namespace Aquri.Domain.Entities
 {
-    /// <summary>
-    /// One clock-in/clock-out pair for a staff member on a given day.
-    /// Hours worked are derived when the shift is clocked out.
-    /// </summary>
+    /// <summary>One clock-in/clock-out pair for a staff member on a given day. Hours worked are derived when the shift is clocked out.</summary>
     public class AttendanceRecord
     {
         public static readonly string[] ValidStatuses = { "present", "late", "absent", "on_leave" };

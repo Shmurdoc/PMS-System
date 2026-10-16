@@ -7,10 +7,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.RfidTags
 {
-    /// <summary>
-    /// Guest tag tap: resolves who is tapping and where they are staying.
-    /// Read-only apart from stamping the tag's last-used time.
-    /// </summary>
+    /// <summary>Guest tag tap: resolves who is tapping and where they are staying. Read-only apart from stamping the tag's last-used time.</summary>
     public record ResolveGuestTapCommand(
         int PropertyId,
         string TagNumber,

@@ -3,10 +3,7 @@ using Microsoft.Extensions.Options;
 
 namespace Aquri.Application.AiChat
 {
-    /// <summary>
-    /// Minimal chat-completions caller — DeepSeek and Nemotron share the same wire format,
-    /// so BaseUrl/Model alone pick the provider. Returns null on any transport or parse failure.
-    /// </summary>
+    /// <summary>Minimal chat-completions caller — DeepSeek and Nemotron share the same wire format, so BaseUrl/Model alone pick the provider. Returns null on any transport or parse failure.</summary>
     public class OpenAiCompatibleClient
     {
         public const string HttpClientName = "ai";

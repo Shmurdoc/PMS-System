@@ -2,11 +2,7 @@
 
 namespace Aquri.Tests
 {
-    /// <summary>
-    /// Runs before any test code: appsettings.json no longer ships secrets,
-    /// so the suite provides its own config through environment variables.
-    /// Set unconditionally so tests behave the same on every machine.
-    /// </summary>
+    /// <summary>Runs before any test code: appsettings.json no longer ships secrets, so the suite provides its own config through environment variables. Set unconditionally so tests behave the same on every machine.</summary>
     internal static class TestEnvironment
     {
         [ModuleInitializer]
