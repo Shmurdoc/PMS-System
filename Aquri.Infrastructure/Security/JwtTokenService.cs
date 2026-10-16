@@ -1,6 +1,7 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using Aquri.Application.Common;
 using Aquri.Application.Common.Interfaces;
 using Aquri.Domain.Entities;
 using Microsoft.Extensions.Configuration;
@@ -11,7 +12,9 @@ namespace Aquri.Infrastructure.Security
     /// <summary>
     /// Issues signed JWTs using the symmetric key from configuration ("Jwt" section).
     /// Claims carry the user id, email, display name, and role — the same role
-    /// strings matched by [Authorize(Roles = "...")] on API controllers.
+    /// strings matched by [Authorize(Roles = "...")] on API controllers — plus
+    /// a property_id scope claim when the account is assigned to a property
+    /// (absent for unrestricted accounts: the security default).
     /// </summary>
     public class JwtTokenService : ITokenService
     {
@@ -42,6 +45,9 @@ namespace Aquri.Infrastructure.Security
                 new(ClaimTypes.Role, user.Role),
                 new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
             };
+
+            if (user.PropertyId.HasValue)
+                claims.Add(new Claim(AuthClaims.PropertyId, user.PropertyId.Value.ToString()));
 
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);

@@ -12,14 +12,18 @@ namespace Aquri.Application.Users
         public const int MinPasswordLength = 8;
     }
 
-    /// <summary>Creates a staff account (admin only). The plaintext password is hashed before storage.</summary>
+    /// <summary>
+    /// Creates a staff account (admin only), optionally scoped to a property.
+    /// The plaintext password is hashed before storage.
+    /// </summary>
     public record CreateUserCommand(
         string Email,
         string Name,
         string Password,
         string Role,
         string? Department,
-        string? Phone) : IRequest<Result<UserDto>>;
+        string? Phone,
+        int? PropertyId = null) : IRequest<Result<UserDto>>;
 
     public class CreateUserHandler : IRequestHandler<CreateUserCommand, Result<UserDto>>
     {
@@ -61,6 +65,9 @@ namespace Aquri.Application.Users
 
                 if (!string.IsNullOrWhiteSpace(request.Department) || !string.IsNullOrWhiteSpace(request.Phone))
                     user.UpdateProfile(request.Name, request.Department, request.Phone);
+
+                if (request.PropertyId.HasValue)
+                    user.AssignProperty(request.PropertyId.Value);
 
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync(cancellationToken);

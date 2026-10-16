@@ -4,6 +4,8 @@ using System.Reflection;
 using System.Text;
 using System.Linq;
 using AutoMapper;
+using Aquri.API.Common;
+using Aquri.Application.Common.Behaviors;
 using Aquri.Application.Common.Interfaces;
 using Aquri.Application.DTOs;
 using Aquri.Application.MappingProfiles;
@@ -11,6 +13,7 @@ using Aquri.Application.Properties.Commands;
 using Aquri.Application.Rooms.Commands;
 using Aquri.Infrastructure.Persistence;
 using Aquri.Infrastructure.Security;
+using MediatR;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
@@ -128,6 +131,11 @@ builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequir
 builder.Services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
 
+// Current caller from the JWT principal — drives the property-scope behavior
+// below (null scope = unrestricted, the security default)
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ICurrentUser, HttpCurrentUser>();
+
 // Unique business numbers (TKT-/INV-/PAY-) allocated from NumberSequence rows
 builder.Services.AddScoped<INumberGenerator, NumberGenerator>();
 
@@ -146,8 +154,13 @@ builder.Services.AddHttpClient(Aquri.Application.AiChat.OpenAiCompatibleClient.H
 // Agent run generator: one deterministic recipe per agent key (spec §6)
 builder.Services.AddScoped<Aquri.Application.AiAgents.AgentInsightGenerator>();
 
-// MediatR application service layer (command/query handlers)
-builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(CreatePropertyCommand).Assembly));
+// MediatR application service layer (command/query handlers); the behavior
+// confines property-assigned accounts to their own property (403 otherwise)
+builder.Services.AddMediatR(cfg =>
+{
+    cfg.RegisterServicesFromAssembly(typeof(CreatePropertyCommand).Assembly);
+    cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PropertyScopeBehavior<,>));
+});
 
 // AutoMapper configuration (manual — deterministic, no assembly scanning)
 var mappingConfig = new MapperConfiguration(mc => mc.AddProfile<MappingProfile>());

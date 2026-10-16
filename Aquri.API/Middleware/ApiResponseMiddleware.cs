@@ -14,11 +14,12 @@ namespace Aquri.API.Middleware
     ///
     /// Controllers keep returning bare DTOs / strings via Result — the envelope
     /// is applied here once, so every current and future endpoint conforms.
-    /// DbUpdateException below (unique-constraint races: duplicate e-mails,
-    /// colliding business numbers) is emitted as an envelope-shaped
-    /// 409 CONFLICT; any other unhandled exception is emitted as an
-    /// envelope-shaped 500 (UseExceptionHandler remains as a backstop for
-    /// failures above it).
+    /// ForbiddenException (a property-assigned account operating outside its
+    /// scope) is emitted as an envelope-shaped 403 FORBIDDEN. DbUpdateException
+    /// below (unique-constraint races: duplicate e-mails, colliding business
+    /// numbers) is emitted as an envelope-shaped 409 CONFLICT; any other
+    /// unhandled exception is emitted as an envelope-shaped 500
+    /// (UseExceptionHandler remains as a backstop for failures above it).
     /// </summary>
     public class ApiResponseMiddleware
     {
@@ -82,6 +83,32 @@ namespace Aquri.API.Middleware
                 context.Response.ContentType = "application/json; charset=utf-8";
 
                 var envelope = BuildEnvelope(statusCode, bodyBytes, requestId);
+                await context.Response.WriteAsJsonAsync(envelope);
+            }
+            catch (ForbiddenException ex)
+            {
+                // If the response already started streaming, we cannot rewrite it —
+                // rethrow and let the host log the failure.
+                if (context.Response.HasStarted) throw;
+
+                // Caller is known but outside its property scope — 403 FORBIDDEN
+                // (not 401: authenticated; not 400: the request shape is fine).
+                context.Response.Body = originalBody;
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+                context.Response.ContentType = "application/json; charset=utf-8";
+                context.Response.Headers.ContentLength = null;
+
+                var envelope = new ApiResponse<object>
+                {
+                    Success = false,
+                    Error = new ApiError
+                    {
+                        Code = ErrorCodes.Forbidden,
+                        Message = ex.Message
+                    },
+                    Timestamp = _timeProvider.GetUtcNow().UtcDateTime,
+                    RequestId = requestId
+                };
                 await context.Response.WriteAsJsonAsync(envelope);
             }
             catch (DomainException ex)
