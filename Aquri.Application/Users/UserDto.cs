@@ -16,6 +16,10 @@ namespace Aquri.Application.Users
         public string Role { get; init; } = string.Empty;
         public string? Department { get; init; }
         public string? Phone { get; init; }
+
+        /// <summary>Property scope of the account; null = unrestricted.</summary>
+        public int? PropertyId { get; init; }
+
         public DateTime Created { get; init; }
         public DateTime LastModified { get; init; }
 
@@ -27,6 +31,7 @@ namespace Aquri.Application.Users
             Role = user.Role,
             Department = user.Department,
             Phone = user.Phone,
+            PropertyId = user.PropertyId,
             Created = user.Created,
             LastModified = user.LastModified
         };

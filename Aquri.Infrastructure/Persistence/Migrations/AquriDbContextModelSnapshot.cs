@@ -852,6 +852,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(20)");
 
                     b.Property<long>("CurrentValue")
+                        .IsConcurrencyToken()
                         .HasColumnType("bigint");
 
                     b.HasKey("Key");
@@ -1495,6 +1496,9 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.Property<string>("Phone")
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<int?>("PropertyId")
+                        .HasColumnType("integer");
 
                     b.Property<string>("Role")
                         .IsRequired()

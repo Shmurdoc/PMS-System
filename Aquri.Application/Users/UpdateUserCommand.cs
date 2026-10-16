@@ -7,10 +7,14 @@ using Microsoft.EntityFrameworkCore;
 namespace Aquri.Application.Users
 {
     /// <summary>
-    /// Updates a staff account (admin only). Sparse semantics: Role and Password
-    /// are applied only when supplied (non-null); Name/Department/Phone are always
-    /// applied. Email is the login identity and is immutable — a new address means
-    /// a new account. An empty Password string is ignored (never clears a password).
+    /// Updates a staff account (admin only). Sparse semantics: Role, Password,
+    /// and the property scope are applied only when supplied (non-null);
+    /// Name/Department/Phone are always applied. Email is the login identity and
+    /// is immutable — a new address means a new account. An empty Password string
+    /// is ignored (never clears a password). ClearProperty unscopes the account
+    /// (null wins only when PropertyId is not also supplied). The pipeline
+    /// confines scoped admins to accounts within their own property — an
+    /// unrestricted account cannot be minted or unscoped by a scoped caller.
     /// </summary>
     public record UpdateUserCommand(
         int Id,
@@ -18,7 +22,9 @@ namespace Aquri.Application.Users
         string? Department,
         string? Phone,
         string? Role,
-        string? Password) : IRequest<Result<UserDto>>;
+        string? Password,
+        int? PropertyId = null,
+        bool ClearProperty = false) : IRequest<Result<UserDto>>;
 
     public class UpdateUserHandler : IRequestHandler<UpdateUserCommand, Result<UserDto>>
     {
@@ -46,6 +52,8 @@ namespace Aquri.Application.Users
                 return Result<UserDto>.Failure($"Password must be at least {UserRules.MinPasswordLength} characters.");
             if (!string.IsNullOrEmpty(request.Role) && !AppRoles.IsValid(request.Role))
                 return Result<UserDto>.Failure($"Role must be one of: {string.Join(", ", AppRoles.All)}.");
+            if (request.ClearProperty && request.PropertyId.HasValue)
+                return Result<UserDto>.Failure("Supply a PropertyId or ClearProperty, not both.");
 
             try
             {
@@ -53,6 +61,11 @@ namespace Aquri.Application.Users
                     user.SetPasswordHash(_passwordHasher.Hash(request.Password));
                 if (!string.IsNullOrEmpty(request.Role) && user.Role != request.Role)
                     user.ChangeRole(request.Role);
+
+                if (request.ClearProperty)
+                    user.AssignProperty(null);
+                else if (request.PropertyId.HasValue)
+                    user.AssignProperty(request.PropertyId.Value);
 
                 user.UpdateProfile(request.Name, request.Department, request.Phone);
                 await _context.SaveChangesAsync(cancellationToken);

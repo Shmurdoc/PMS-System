@@ -49,6 +49,18 @@ namespace Aquri.Domain.Entities
 
         public string? Phone { get; private set; }
 
+        /// <summary>
+        /// Property scope for this account: when set, every property-scoped
+        /// request it sends must target this property (enforced centrally by
+        /// PropertyScopeBehavior). Null = unrestricted — the security default;
+        /// demo users and unrestricted admins stay null. Holds the same tenant
+        /// id the rest of the system passes as PropertyId (bookings, stock,
+        /// tickets). No FK to Properties on purpose: that id is a tenant id in
+        /// the shared id space, not a row reference — nothing guarantees a
+        /// matching Properties row exists or ever will.
+        /// </summary>
+        public int? PropertyId { get; private set; }
+
         public DateTime Created { get; private set; }
 
         public DateTime LastModified { get; private set; }
@@ -110,6 +122,20 @@ namespace Aquri.Domain.Entities
                 throw new ArgumentException($"Role must be one of: {string.Join(", ", AppRoles.All)}.", nameof(newRole));
 
             Role = newRole;
+            LastModified = DateTime.UtcNow;
+        }
+
+        /// <summary>
+        /// Assigns (or clears, with null) the account's property scope — the
+        /// single mutation point so no code path sets it without validation.
+        /// </summary>
+        /// <exception cref="ArgumentException">Thrown when propertyId is supplied but not positive.</exception>
+        public void AssignProperty(int? propertyId)
+        {
+            if (propertyId.HasValue && propertyId.Value <= 0)
+                throw new ArgumentException("Property id must be positive when supplied.", nameof(propertyId));
+
+            PropertyId = propertyId;
             LastModified = DateTime.UtcNow;
         }
 
