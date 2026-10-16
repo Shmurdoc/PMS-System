@@ -66,6 +66,8 @@ namespace Aquri.Infrastructure.Persistence
         public DbSet<AgentLog> AgentLogs => Set<AgentLog>();
 
         public DbSet<RfidTag> RfidTags => Set<RfidTag>();
+        public DbSet<ElectricityRecord> ElectricityRecords => Set<ElectricityRecord>();
+        public DbSet<Integration> Integrations => Set<Integration>();
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -474,6 +476,34 @@ namespace Aquri.Infrastructure.Persistence
                 // Booking delete leaves a stub tag rather than blocking the delete;
                 // taps already reject tags whose booking is gone.
                 entity.HasOne<Booking>().WithMany().HasForeignKey(e => e.BookingId).OnDelete(DeleteBehavior.SetNull);
+            });
+
+            modelBuilder.Entity<ElectricityRecord>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Consumption).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Cost).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.PeakDemand).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Zone).IsRequired().HasMaxLength(100);
+                entity.HasIndex(e => e.PropertyId);
+                entity.HasIndex(e => e.Date);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<Integration>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Category).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Status).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Icon).HasMaxLength(50);
+                entity.Property(e => e.Description).IsRequired().HasMaxLength(2000);
+                entity.Property(e => e.ApiKey).HasMaxLength(500);
+                entity.Property(e => e.WebhookUrl).HasMaxLength(1000);
+                entity.Property(e => e.ConfiguredBy).HasMaxLength(200);
+                entity.HasIndex(e => e.PropertyId);
+                entity.HasIndex(e => e.Status);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
             });
         }
     }

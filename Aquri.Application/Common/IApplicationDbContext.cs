@@ -39,6 +39,8 @@ namespace Aquri.Application.Common.Interfaces
         DbSet<Agent> Agents { get; }
         DbSet<AgentLog> AgentLogs { get; }
         DbSet<RfidTag> RfidTags { get; }
+        DbSet<ElectricityRecord> ElectricityRecords { get; }
+        DbSet<Integration> Integrations { get; }
 
         /// <summary>
         /// Change tracker of the underlying DbContext (exposed for retry loops
