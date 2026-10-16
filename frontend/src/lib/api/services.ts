@@ -28,9 +28,11 @@ import type {
   ApiBooking,
   ApiMessage,
   ApiChatResponse,
+  ApiElectricityRecord,
   ApiExpense,
   ApiGuest,
   ApiGuestTapContext,
+  ApiIntegration,
   ApiInventoryItem,
   ApiInvoice,
   ApiLoginResponse,
@@ -192,6 +194,45 @@ export interface UpdateAttendanceInput {
   checkOut?: string;
   status?: string;
   notes?: string;
+}
+
+export interface CreateElectricityInput {
+  propertyId: number;
+  date: string;
+  consumption: number;
+  cost: number;
+  peakDemand: number;
+  zone: string;
+}
+
+/** Sparse edit — null keeps the current value. */
+export interface UpdateElectricityInput {
+  date?: string;
+  consumption?: number;
+  cost?: number;
+  peakDemand?: number;
+  zone?: string;
+}
+
+/** ConfiguredBy is omitted — the controller stamps it from the JWT. */
+export interface CreateIntegrationInput {
+  propertyId: number;
+  name: string;
+  category: string;
+  description?: string;
+  icon?: string;
+  apiKey?: string;
+  webhookUrl?: string;
+}
+
+/** Sparse edit — null keeps the current value. */
+export interface UpdateIntegrationInput {
+  name?: string;
+  category?: string;
+  description?: string;
+  icon?: string;
+  apiKey?: string;
+  webhookUrl?: string;
 }
 
 /** Sender fields are omitted — the controller stamps them from the authenticated claims. */
@@ -1121,6 +1162,93 @@ export function updateAttendance(id: number, input: UpdateAttendanceInput): Prom
 
 export function deleteAttendance(id: number): Promise<void> {
   return unwrapOk(`/attendance/${id}`, { method: 'DELETE' });
+}
+
+// ---------- electricity ----------
+
+/** Bare GET lists every reading (optional propertyId/zone filters are omitted). */
+export function fetchElectricity(): Promise<ApiElectricityRecord[]> {
+  return unwrap<ApiElectricityRecord[]>('/electricity');
+}
+
+export function createElectricity(input: CreateElectricityInput): Promise<ApiElectricityRecord> {
+  return unwrap<ApiElectricityRecord>('/electricity', {
+    method: 'POST',
+    body: {
+      propertyId: input.propertyId,
+      date: input.date,
+      consumption: input.consumption,
+      cost: input.cost,
+      peakDemand: input.peakDemand,
+      zone: input.zone,
+    },
+  });
+}
+
+/** Omitted/null fields keep their current value. */
+export function updateElectricity(id: number, input: UpdateElectricityInput): Promise<ApiElectricityRecord> {
+  return unwrap<ApiElectricityRecord>(`/electricity/${id}`, {
+    method: 'PUT',
+    body: {
+      id,
+      date: input.date ?? null,
+      consumption: input.consumption ?? null,
+      cost: input.cost ?? null,
+      peakDemand: input.peakDemand ?? null,
+      zone: input.zone ?? null,
+    },
+  });
+}
+
+export function deleteElectricity(id: number): Promise<void> {
+  return unwrapOk(`/electricity/${id}`, { method: 'DELETE' });
+}
+
+// ---------- integrations ----------
+
+/** Bare GET lists every integration (optional propertyId/category/status filters are omitted). */
+export function fetchIntegrations(): Promise<ApiIntegration[]> {
+  return unwrap<ApiIntegration[]>('/integrations');
+}
+
+export function createIntegration(input: CreateIntegrationInput): Promise<ApiIntegration> {
+  return unwrap<ApiIntegration>('/integrations', {
+    method: 'POST',
+    body: {
+      propertyId: input.propertyId,
+      name: input.name,
+      category: input.category,
+      description: input.description ?? null,
+      icon: input.icon ?? null,
+      apiKey: input.apiKey ?? null,
+      webhookUrl: input.webhookUrl ?? null,
+    },
+  });
+}
+
+/** Sparse — only non-null fields are sent; the handler keeps the rest. */
+export function updateIntegration(id: number, input: UpdateIntegrationInput): Promise<ApiIntegration> {
+  return unwrap<ApiIntegration>(`/integrations/${id}`, {
+    method: 'PUT',
+    body: {
+      id,
+      name: input.name ?? null,
+      category: input.category ?? null,
+      description: input.description ?? null,
+      icon: input.icon ?? null,
+      apiKey: input.apiKey ?? null,
+      webhookUrl: input.webhookUrl ?? null,
+    },
+  });
+}
+
+/** Body-less POST — stamps LastSync and flips status to connected. */
+export function syncIntegration(id: number): Promise<ApiIntegration> {
+  return unwrap<ApiIntegration>(`/integrations/${id}/sync`, { method: 'POST' });
+}
+
+export function deleteIntegration(id: number): Promise<void> {
+  return unwrapOk(`/integrations/${id}`, { method: 'DELETE' });
 }
 
 // ---------- messages (staff chat) ----------

@@ -37,9 +37,11 @@ import {
   mapAttendance,
   mapAuditLog,
   mapBooking,
+  mapElectricity,
   mapExpense,
   mapMessage,
   mapGuest,
+  mapIntegration,
   mapInventoryItem,
   mapInvoice,
   mapMaintenanceRequest,
@@ -61,7 +63,9 @@ import {
   fetchAttendance,
   fetchAuditLogs,
   fetchBookingsForProperty,
+  fetchElectricity,
   fetchExpenses,
+  fetchIntegrations,
   fetchMessages,
   fetchCurrentUser,
   fetchGuests,
@@ -192,6 +196,8 @@ export async function hydrateFromApi(): Promise<HydrateResult> {
     auditLogsDto,
     taxConfigsDto,
     expensesDto,
+    electricityDto,
+    integrationsDto,
     inventoryDto,
     roomsLists,
     bookingLists,
@@ -215,6 +221,8 @@ export async function hydrateFromApi(): Promise<HydrateResult> {
     settle('auditLogs', fetchAuditLogs(), failed),
     settle('taxConfigs', fetchTaxConfigs(), failed),
     settle('expenses', fetchExpenses(), failed),
+    settle('electricity', fetchElectricity(), failed),
+    settle('integrations', fetchIntegrations(), failed),
     settle('inventory', fetchInventoryItems(), failed),
     propertiesOk ? fetchPerProperty('rooms', propertyIds, fetchRoomsForProperty, failed) : Promise.resolve(undefined),
     propertiesOk ? fetchPerProperty('bookings', propertyIds, fetchBookingsForProperty, failed) : Promise.resolve(undefined),
@@ -255,6 +263,8 @@ export async function hydrateFromApi(): Promise<HydrateResult> {
   if (auditLogsDto) store.setAuditLogs(auditLogsDto.map(mapAuditLog));
   if (taxConfigsDto) store.setTaxConfigs(taxConfigsDto.map(mapTaxConfig));
   if (expensesDto) store.setExpenses(expensesDto.map(mapExpense));
+  if (electricityDto) store.setElectricity(electricityDto.map(mapElectricity));
+  if (integrationsDto) store.setIntegrations(integrationsDto.map(mapIntegration));
   if (inventoryDto) store.setInventory(inventoryDto.map(mapInventoryItem));
 
   if (propertiesDto) {
