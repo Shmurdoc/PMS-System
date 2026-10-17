@@ -99,6 +99,31 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
+        [HttpPut("{id}/details")]
+        [Authorize(Roles = "admin,manager")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
+        public async Task<ActionResult<PropertyDto>> UpdateDetails(int id, UpdatePropertyDetailsCommand command)
+        {
+            command.Id = id;
+            var result = await _mediator.Send(command);
+
+            if (result.NotFound)
+            {
+                return NotFound();
+            }
+
+            if (!result.Success)
+            {
+                return BadRequest(result.Error);
+            }
+
+            return Ok(result.Data);
+        }
+
         [HttpDelete("{id}")]
         [Authorize(Roles = "admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

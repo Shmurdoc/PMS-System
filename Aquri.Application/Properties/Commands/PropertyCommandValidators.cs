@@ -31,4 +31,14 @@ namespace Aquri.Application.Properties.Commands
             });
         }
     }
+
+    /// <summary>Shape checks for updating a property's editable descriptive fields.</summary>
+    public class UpdatePropertyDetailsCommandValidator : AbstractValidator<UpdatePropertyDetailsCommand>
+    {
+        public UpdatePropertyDetailsCommandValidator()
+        {
+            RuleFor(x => x.Name).NotEmpty().WithMessage("Name cannot be null or empty.");
+            RuleFor(x => x.Rating).InclusiveBetween(0, 5).WithMessage("Rating must be between 0 and 5.");
+        }
+    }
 }
