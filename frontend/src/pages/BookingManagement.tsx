@@ -116,8 +116,8 @@ export default function BookingManagement() {
     addInvoice, addAuditLog,
     updateRoom, taxConfigs,
   } = useAppStore();
-
-  // UI state
+  const role = useAppStore((s) => s.user?.role);
+  const canManage = role === 'admin' || role === 'manager';
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sourceFilter, setSourceFilter] = useState<string>('all');
@@ -804,7 +804,7 @@ export default function BookingManagement() {
                             <RefreshCw className="w-4 h-4 text-info" />
                           </button>
                         )}
-                        {(booking.status === 'pending' || booking.status === 'confirmed') && (
+                        {(booking.status === 'pending' || booking.status === 'confirmed') && canManage && (
                           <button
                             onClick={() => setShowDeleteConfirm(booking.id)}
                             className="p-2 hover:bg-danger/15 rounded-lg transition-colors" title="Delete"

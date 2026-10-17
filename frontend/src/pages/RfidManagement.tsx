@@ -46,6 +46,8 @@ export default function RfidManagement() {
     addAttendance,
     addAuditLog,
   } = useAppStore();
+  const role = useAppStore((s) => s.user?.role);
+  const canManage = role === 'admin' || role === 'manager';
 
   const [activeTab, setActiveTab] = useState<'tags' | 'attendance' | 'tap'>('tags');
   const [searchQuery, setSearchQuery] = useState('');
@@ -516,22 +518,24 @@ export default function RfidManagement() {
             <QrCode className="w-4 h-4" />
             Manual Check-in
           </button>
-          <button
-            onClick={() => {
-              setCreateTagNumber('');
-              setCreateAutoGenerate(true);
-              setCreateAssignTo('');
-              setCreateAssignType('staff');
-              setCreateAccessLevel('Full Access');
-              setCreateRoomAccess([]);
-              setCreateNotes('');
-              setShowCreateModal(true);
-            }}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Create Tag
-          </button>
+          {canManage && (
+            <button
+              onClick={() => {
+                setCreateTagNumber('');
+                setCreateAutoGenerate(true);
+                setCreateAssignTo('');
+                setCreateAssignType('staff');
+                setCreateAccessLevel('Full Access');
+                setCreateRoomAccess([]);
+                setCreateNotes('');
+                setShowCreateModal(true);
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Create Tag
+            </button>
+          )}
         </div>
       </div>
 
@@ -723,13 +727,15 @@ export default function RfidManagement() {
                           >
                             <Eye className="w-4 h-4 text-muted-foreground" />
                           </button>
-                          <button
-                            onClick={() => openEditModal(tag)}
-                            className="p-1.5 hover:bg-muted rounded transition-colors"
-                            title="Edit"
-                          >
-                            <Edit className="w-4 h-4 text-muted-foreground" />
-                          </button>
+                          {canManage && (
+                            <button
+                              onClick={() => openEditModal(tag)}
+                              className="p-1.5 hover:bg-muted rounded transition-colors"
+                              title="Edit"
+                            >
+                              <Edit className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                          )}
                           <button
                             onClick={() => handleToggleStatus(tag)}
                             className="p-1.5 hover:bg-muted rounded transition-colors"
@@ -741,13 +747,15 @@ export default function RfidManagement() {
                               <ToggleLeft className="w-4 h-4 text-gray-400" />
                             )}
                           </button>
-                          <button
-                            onClick={() => setShowDeleteConfirm(tag)}
-                            className="p-1.5 hover:bg-danger/15 rounded transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4 text-danger" />
-                          </button>
+                          {canManage && (
+                            <button
+                              onClick={() => setShowDeleteConfirm(tag)}
+                              className="p-1.5 hover:bg-danger/15 rounded transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4 text-danger" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

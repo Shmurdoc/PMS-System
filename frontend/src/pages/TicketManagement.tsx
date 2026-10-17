@@ -48,6 +48,8 @@ const TYPES = [
 
 export default function TicketManagement() {
   const { tickets, users, properties, rooms, guests, addTicket, updateTicket, deleteTicket, addTicketComment } = useAppStore();
+  const role = useAppStore((s) => s.user?.role);
+  const canManage = role === 'admin' || role === 'manager';
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
@@ -451,13 +453,15 @@ export default function TicketManagement() {
                         >
                           <Eye className="w-4 h-4" />
                         </button>
-                        <button 
-                          onClick={() => handleDelete(ticket.id)}
-                          className="p-1.5 hover:bg-danger/10 rounded-lg text-danger"
-                          title="Delete"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                        {canManage && (
+                          <button 
+                            onClick={() => handleDelete(ticket.id)}
+                            className="p-1.5 hover:bg-danger/10 rounded-lg text-danger"
+                            title="Delete"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>

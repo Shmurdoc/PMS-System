@@ -70,6 +70,8 @@ export default function FinancialManagement() {
     bookings, properties,
     auditLogs, addAuditLog, taxConfigs, addTaxConfig, updateTaxConfig, deleteTaxConfig
   } = useAppStore();
+  const role = useAppStore((s) => s.user?.role);
+  const isAdmin = role === 'admin';
   
   const [activeTab, setActiveTab] = useState<'overview' | 'invoices' | 'payments' | 'expenses' | 'taxes' | 'audit'>('overview');
   const [searchQuery, setSearchQuery] = useState('');
@@ -1407,13 +1409,15 @@ ${inv.notes ? `<p style="margin-top:20px;font-size:12px;color:#666"><strong>Note
                             >
                               <Edit2 className="w-4 h-4" />
                             </button>
-                            <button 
-                              onClick={() => { setDeleteType('expense'); setShowDeleteConfirm(expense.id); }}
-                              className="p-1.5 hover:bg-danger/10 rounded-lg text-danger"
-                              title="Delete"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                            {isAdmin && (
+                              <button 
+                                onClick={() => { setDeleteType('expense'); setShowDeleteConfirm(expense.id); }}
+                                className="p-1.5 hover:bg-danger/10 rounded-lg text-danger"
+                                title="Delete"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

@@ -103,6 +103,9 @@ export default function PropertyManagement() {
     maintenanceTickets, bookings,
     addAuditLog,
   } = useAppStore();
+  const role = useAppStore((s) => s.user?.role);
+  const isAdmin = role === 'admin';
+  const canManage = role === 'admin' || role === 'manager';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
@@ -393,20 +396,24 @@ export default function PropertyManagement() {
             <Wrench className="w-4 h-4" />
             Maintenance ({propertyMaintenanceTickets.length})
           </button>
-          <button
-            onClick={openNewRoom}
-            className="flex items-center gap-2 px-4 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
-          >
-            <BedDouble className="w-4 h-4" />
-            Add Room
-          </button>
-          <button
-            onClick={openNewProperty}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Property
-          </button>
+          {canManage && (
+            <button
+              onClick={openNewRoom}
+              className="flex items-center gap-2 px-4 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+            >
+              <BedDouble className="w-4 h-4" />
+              Add Room
+            </button>
+          )}
+          {canManage && (
+            <button
+              onClick={openNewProperty}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Property
+            </button>
+          )}
         </div>
       </div>
 
@@ -429,13 +436,15 @@ export default function PropertyManagement() {
               </div>
               <div className="flex items-start justify-between mb-1">
                 <h3 className="font-semibold truncate flex-1">{property.name}</h3>
-                <button
-                  onClick={(e) => { e.stopPropagation(); openEditProperty(property); }}
-                  className="p-1 hover:bg-muted rounded transition-colors ml-1"
-                  title="Edit Property"
-                >
-                  <Edit className="w-3.5 h-3.5 text-muted-foreground" />
-                </button>
+                {canManage && (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); openEditProperty(property); }}
+                    className="p-1 hover:bg-muted rounded transition-colors ml-1"
+                    title="Edit Property"
+                  >
+                    <Edit className="w-3.5 h-3.5 text-muted-foreground" />
+                  </button>
+                )}
               </div>
               <p className="text-sm text-muted-foreground flex items-center gap-1 truncate">
                 <MapPin className="w-3 h-3 flex-shrink-0" />
@@ -644,29 +653,33 @@ export default function PropertyManagement() {
                     >
                       <Eye className="w-3.5 h-3.5" /> View
                     </button>
-                    <button
-                      onClick={() => openEditRoom(room)}
-                      className="flex-1 py-2 text-sm bg-muted rounded-lg hover:bg-muted/80 transition-colors flex items-center justify-center gap-1"
-                    >
-                      <Edit className="w-3.5 h-3.5" /> Edit
-                    </button>
-                    {/* Quick status change */}
-                    <div className="relative group">
-                      <button className="py-2 px-2 text-sm bg-muted rounded-lg hover:bg-muted/80 transition-colors">
-                        <ChevronDown className="w-3.5 h-3.5" />
+                    {canManage && (
+                      <button
+                        onClick={() => openEditRoom(room)}
+                        className="flex-1 py-2 text-sm bg-muted rounded-lg hover:bg-muted/80 transition-colors flex items-center justify-center gap-1"
+                      >
+                        <Edit className="w-3.5 h-3.5" /> Edit
                       </button>
-                      <div className="absolute right-0 top-full mt-1 bg-popover border border-border rounded-lg shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-colors z-20 min-w-[140px]">
-                        {ROOM_STATUSES.filter(s => s !== room.status).map(s => (
-                          <button
-                            key={s}
-                            onClick={() => handleQuickStatusChange(room.id, s)}
-                            className={`w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors first:rounded-t-lg last:rounded-b-lg flex items-center gap-2 ${roomStatusColors[s]}`}
-                          >
-                            {s}
-                          </button>
-                        ))}
+                    )}
+                    {/* Quick status change */}
+                    {canManage && (
+                      <div className="relative group">
+                        <button className="py-2 px-2 text-sm bg-muted rounded-lg hover:bg-muted/80 transition-colors">
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                        <div className="absolute right-0 top-full mt-1 bg-popover border border-border rounded-lg shadow-xl opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto transition-colors z-20 min-w-[140px]">
+                          {ROOM_STATUSES.filter(s => s !== room.status).map(s => (
+                            <button
+                              key={s}
+                              onClick={() => handleQuickStatusChange(room.id, s)}
+                              className={`w-full text-left px-3 py-2 text-xs hover:bg-muted transition-colors first:rounded-t-lg last:rounded-b-lg flex items-center gap-2 ${roomStatusColors[s]}`}
+                            >
+                              {s}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               </motion.div>
@@ -734,12 +747,16 @@ export default function PropertyManagement() {
                           <button onClick={() => setViewRoomId(room.id)} className="p-1.5 hover:bg-muted rounded transition-colors" title="View">
                             <Eye className="w-4 h-4 text-muted-foreground" />
                           </button>
-                          <button onClick={() => openEditRoom(room)} className="p-1.5 hover:bg-muted rounded transition-colors" title="Edit">
-                            <Edit className="w-4 h-4 text-muted-foreground" />
-                          </button>
-                          <button onClick={() => setShowDeleteConfirm({ type: 'room', id: room.id })} className="p-1.5 hover:bg-danger/15 rounded transition-colors" title="Delete">
-                            <Trash2 className="w-4 h-4 text-danger" />
-                          </button>
+                          {canManage && (
+                            <button onClick={() => openEditRoom(room)} className="p-1.5 hover:bg-muted rounded transition-colors" title="Edit">
+                              <Edit className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                          )}
+                          {isAdmin && (
+                            <button onClick={() => setShowDeleteConfirm({ type: 'room', id: room.id })} className="p-1.5 hover:bg-danger/15 rounded transition-colors" title="Delete">
+                              <Trash2 className="w-4 h-4 text-danger" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -877,18 +894,22 @@ export default function PropertyManagement() {
 
                 {/* Actions */}
                 <div className="flex gap-2">
-                  <button
-                    onClick={() => { openEditRoom(viewedRoom); setViewRoomId(null); }}
-                    className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors flex items-center justify-center gap-2"
-                  >
-                    <Edit className="w-4 h-4" /> Edit Room
-                  </button>
-                  <button
-                    onClick={() => { setShowDeleteConfirm({ type: 'room', id: viewedRoom.id }); setViewRoomId(null); }}
-                    className="py-2.5 px-4 bg-danger/15 text-danger rounded-lg hover:bg-danger/30 transition-colors flex items-center gap-2"
-                  >
-                    <Trash2 className="w-4 h-4" /> Delete
-                  </button>
+                  {canManage && (
+                    <button
+                      onClick={() => { openEditRoom(viewedRoom); setViewRoomId(null); }}
+                      className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Edit className="w-4 h-4" /> Edit Room
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <button
+                      onClick={() => { setShowDeleteConfirm({ type: 'room', id: viewedRoom.id }); setViewRoomId(null); }}
+                      className="py-2.5 px-4 bg-danger/15 text-danger rounded-lg hover:bg-danger/30 transition-colors flex items-center gap-2"
+                    >
+                      <Trash2 className="w-4 h-4" /> Delete
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>
@@ -978,7 +999,7 @@ export default function PropertyManagement() {
                     </button>
                   </div>
 
-                  {editPropertyId && (
+                  {editPropertyId && isAdmin && (
                     <button
                       onClick={() => { setShowDeleteConfirm({ type: 'property', id: editPropertyId }); setShowPropertyModal(false); }}
                       className="w-full py-2 bg-danger/10 text-danger rounded-lg hover:bg-danger/15 transition-colors text-sm flex items-center justify-center gap-2"

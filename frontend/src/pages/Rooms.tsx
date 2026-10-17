@@ -36,6 +36,9 @@ const amenitiesList = [
 
 export default function Rooms() {
   const { rooms, properties, bookings, addRoom, updateRoom, deleteRoom } = useAppStore();
+  const role = useAppStore((s) => s.user?.role);
+  const isAdmin = role === 'admin';
+  const canManage = role === 'admin' || role === 'manager';
   const [searchQuery, setSearchQuery] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -317,10 +320,12 @@ export default function Rooms() {
               <List className="w-3.5 h-3.5" />
             </button>
           </div>
-          <button onClick={openNewRoomModal} className="flex items-center gap-1.5 px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
-            <Plus className="w-3.5 h-3.5" />
-            Add Room
-          </button>
+          {canManage && (
+            <button onClick={openNewRoomModal} className="flex items-center gap-1.5 px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm font-medium hover:bg-primary/90 transition-colors">
+              <Plus className="w-3.5 h-3.5" />
+              Add Room
+            </button>
+          )}
         </div>
       </div>
 
@@ -409,12 +414,16 @@ export default function Rooms() {
                       <button onClick={() => handleViewDetails(room)} className="p-1.5 hover:bg-muted rounded-lg">
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleEdit(room)} className="p-1.5 hover:bg-muted rounded-lg">
-                        <Edit className="w-4 h-4" />
-                      </button>
-                      <button onClick={() => handleDelete(room.id)} className="p-1.5 hover:bg-danger/10 rounded-lg text-danger">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {canManage && (
+                        <button onClick={() => handleEdit(room)} className="p-1.5 hover:bg-muted rounded-lg">
+                          <Edit className="w-4 h-4" />
+                        </button>
+                      )}
+                      {isAdmin && (
+                        <button onClick={() => handleDelete(room.id)} className="p-1.5 hover:bg-danger/10 rounded-lg text-danger">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -697,43 +706,49 @@ export default function Rooms() {
                 </div>
 
                 {/* Quick Status Change */}
-                <div className="space-y-2">
-                  <h5 className="font-medium">Quick Status Change</h5>
-                  <div className="flex flex-wrap gap-2">
-                    {(['available', 'occupied', 'maintenance', 'cleaning', 'reserved'] as const).map((status) => (
-                      <button
-                        key={status}
-                        onClick={() => handleStatusChange(selectedRoom.id, status)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                          selectedRoom.status === status
-                            ? `${statusColors[status].bg} ${statusColors[status].text}`
-                            : 'bg-muted hover:bg-muted/80'
-                        }`}
-                      >
-                        {status}
-                      </button>
-                    ))}
+                {canManage && (
+                  <div className="space-y-2">
+                    <h5 className="font-medium">Quick Status Change</h5>
+                    <div className="flex flex-wrap gap-2">
+                      {(['available', 'occupied', 'maintenance', 'cleaning', 'reserved'] as const).map((status) => (
+                        <button
+                          key={status}
+                          onClick={() => handleStatusChange(selectedRoom.id, status)}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                            selectedRoom.status === status
+                              ? `${statusColors[status].bg} ${statusColors[status].text}`
+                              : 'bg-muted hover:bg-muted/80'
+                          }`}
+                        >
+                          {status}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="flex items-center gap-3 pt-4 border-t border-border/30">
-                  <button
-                    onClick={() => { setShowDetailModal(false); handleEdit(selectedRoom); }}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-border/30 rounded-xl text-sm font-medium hover:bg-muted transition-colors"
-                  >
-                    <Edit className="w-4 h-4" />
-                    Edit Room
-                  </button>
-                  <button
-                    onClick={() => { 
-                      setShowDetailModal(false); 
-                      handleDelete(selectedRoom.id); 
-                    }}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-danger/10 text-danger rounded-xl text-sm font-medium hover:bg-danger/15 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete Room
-                  </button>
+                  {canManage && (
+                    <button
+                      onClick={() => { setShowDetailModal(false); handleEdit(selectedRoom); }}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 border border-border/30 rounded-xl text-sm font-medium hover:bg-muted transition-colors"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit Room
+                    </button>
+                  )}
+                  {isAdmin && (
+                    <button
+                      onClick={() => { 
+                        setShowDetailModal(false); 
+                        handleDelete(selectedRoom.id); 
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-danger/10 text-danger rounded-xl text-sm font-medium hover:bg-danger/15 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete Room
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>
