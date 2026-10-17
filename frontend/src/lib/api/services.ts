@@ -496,13 +496,15 @@ export function createProperty(input: CreatePropertyInput): Promise<ApiProperty>
       manager: input.manager ?? null,
       phone: input.phone ?? null,
       email: input.email ?? null,
-      description: input.description ?? null,
+      // Description is a non-nullable string server-side (implicitly required by
+      // the model binder), so send '' rather than null when the form left it blank.
+      description: input.description ?? '',
       initialRooms: [],
     },
   });
 }
 
-/** Status is the only mutable field server-side; other property edits stay local. */
+/** Status-only mutation. Descriptive edits go through {@link updatePropertyDetails}. */
 export function updatePropertyStatus(
   id: number,
   status: 'active' | 'maintenance' | 'retired',
@@ -510,6 +512,36 @@ export function updatePropertyStatus(
   return unwrap<ApiProperty>(`/properties/${id}`, {
     method: 'PUT',
     body: { id, status },
+  });
+}
+
+export interface UpdatePropertyDetailsInput {
+  name: string;
+  address: string;
+  description?: string;
+  manager?: string;
+  rating: number;
+  phone?: string;
+  email?: string;
+}
+
+/** Full update of a property's editable descriptive fields (name + details). */
+export function updatePropertyDetails(
+  id: number,
+  input: UpdatePropertyDetailsInput,
+): Promise<ApiProperty> {
+  return unwrap<ApiProperty>(`/properties/${id}/details`, {
+    method: 'PUT',
+    body: {
+      id,
+      name: input.name,
+      address: input.address,
+      description: input.description ?? '',
+      manager: input.manager ?? null,
+      rating: input.rating,
+      phone: input.phone ?? null,
+      email: input.email ?? null,
+    },
   });
 }
 
