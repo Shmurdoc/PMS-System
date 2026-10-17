@@ -52,11 +52,17 @@ namespace Aquri.API.Middleware
                 var statusCode = context.Response.StatusCode;
                 var bodyBytes = buffer.ToArray();
 
-                // Redirects (e.g. HTTPS redirection) and body-forbidden statuses
-                // (204 No Content, 304 Not Modified) pass through unwrapped —
-                // RFC 9110 forbids a message body on them.
-                if (statusCode is >= 300 and < 400
-                    || statusCode is StatusCodes.Status204NoContent or StatusCodes.Status304NotModified)
+                // Body-forbidden statuses (204/304) restore the original stream
+                // and pass through with zero bytes written — RFC 9110 forbids a
+                // message body on them, and Kestrel throws if we write one.
+                if (statusCode is StatusCodes.Status204NoContent or StatusCodes.Status304NotModified)
+                {
+                    context.Response.Body = originalBody;
+                    return;
+                }
+
+                // Redirects (e.g. HTTPS redirection) pass through unwrapped.
+                if (statusCode is >= 300 and < 400)
                 {
                     context.Response.Body = originalBody;
                     await originalBody.WriteAsync(bodyBytes);
