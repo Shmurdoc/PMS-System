@@ -23,6 +23,7 @@ using Microsoft.OpenApi.Models;
 using Microsoft.AspNetCore.Mvc.Versioning;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
+using System.Text.Json.Serialization;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -48,7 +49,12 @@ if (string.IsNullOrWhiteSpace(connectionString))
 // Controllers. Default web JSON options (camelCase) — DTOs are flat, so no
 // ReferenceHandler.Preserve and no indentation (compact payloads, clean
 // frontend parsing; the ApiResponse envelope is applied by middleware).
-builder.Services.AddControllers();
+// Enums bind from their string names (the wire contract the frontend sends,
+// e.g. "active"/"maintenance") as well as numbers. No DTO exposes a raw enum,
+// so response shapes are unchanged.
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
 // TimeProvider for middleware/services that need a fakeable clock in tests
 builder.Services.AddSingleton(TimeProvider.System);

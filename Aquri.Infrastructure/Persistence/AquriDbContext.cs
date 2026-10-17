@@ -65,6 +65,16 @@ namespace Aquri.Infrastructure.Persistence
         public DbSet<ElectricityRecord> ElectricityRecords => Set<ElectricityRecord>();
         public DbSet<Integration> Integrations => Set<Integration>();
 
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            base.ConfigureConventions(configurationBuilder);
+
+            // Every timestamp column is `timestamp with time zone`; force UTC kind so
+            // date-only JSON input (Kind=Unspecified) does not blow up inside Npgsql.
+            configurationBuilder.Properties<DateTime>().HaveConversion<UtcDateTimeConverter>();
+            configurationBuilder.Properties<DateTime?>().HaveConversion<NullableUtcDateTimeConverter>();
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
