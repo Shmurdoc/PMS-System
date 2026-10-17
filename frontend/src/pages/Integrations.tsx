@@ -67,6 +67,8 @@ export default function Integrations() {
   const updateIntegration = useAppStore((s) => s.updateIntegration);
   const deleteIntegration = useAppStore((s) => s.deleteIntegration);
   const addAuditLog = useAppStore((s) => s.addAuditLog);
+  const role = useAppStore((s) => s.user?.role);
+  const isAdmin = role === 'admin';
 
   // UI State
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
@@ -443,13 +445,15 @@ export default function Integrations() {
                     </button>
 
                     {/* Delete */}
-                    <button
-                      onClick={() => setShowDeleteConfirm(integration.id)}
-                      className="p-2 hover:bg-danger/10 rounded-lg transition-colors"
-                      title="Delete"
-                    >
-                      <Trash2 className="w-4 h-4 text-danger" />
-                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => setShowDeleteConfirm(integration.id)}
+                        className="p-2 hover:bg-danger/10 rounded-lg transition-colors"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-4 h-4 text-danger" />
+                      </button>
+                    )}
                   </div>
 
                   {/* Connect/Disconnect */}

@@ -96,6 +96,8 @@ const emptyForm: ShiftFormData = {
 
 export default function StaffScheduling() {
   const { users, shifts, addShift, updateShift, deleteShift, addAuditLog } = useAppStore();
+  const role = useAppStore((s) => s.user?.role);
+  const canManage = role === 'admin' || role === 'manager';
 
   const [currentWeek, setCurrentWeek] = useState(new Date());
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar');
@@ -568,13 +570,15 @@ export default function StaffScheduling() {
             <RefreshCw className="w-4 h-4" />
             Today
           </button>
-          <button
-            onClick={() => { setFormData({ ...emptyForm }); setShowCreateModal(true); }}
-            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Shift
-          </button>
+          {canManage && (
+            <button
+              onClick={() => { setFormData({ ...emptyForm }); setShowCreateModal(true); }}
+              className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Shift
+            </button>
+          )}
         </div>
       </div>
 
@@ -802,38 +806,40 @@ export default function StaffScheduling() {
                       </span>
                     </td>
                     <td className="py-3 px-4">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => openEditModal(shift)}
-                          className="p-1.5 hover:bg-muted rounded transition-colors"
-                          title="Edit shift"
-                        >
-                          <Edit className="w-4 h-4 text-muted-foreground" />
-                        </button>
-                        <button
-                          onClick={() => openSwapModal(shift)}
-                          className="p-1.5 hover:bg-muted rounded transition-colors"
-                          title="Swap shift"
-                        >
-                          <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
-                        </button>
-                        {shift.status === 'scheduled' && (
+                      {canManage && (
+                        <div className="flex items-center gap-1">
                           <button
-                            onClick={() => openCancelConfirm(shift)}
+                            onClick={() => openEditModal(shift)}
                             className="p-1.5 hover:bg-muted rounded transition-colors"
-                            title="Cancel shift"
+                            title="Edit shift"
                           >
-                            <XCircle className="w-4 h-4 text-danger" />
+                            <Edit className="w-4 h-4 text-muted-foreground" />
                           </button>
-                        )}
-                        <button
-                          onClick={() => handleDeleteShift(shift)}
-                          className="p-1.5 hover:bg-muted rounded transition-colors"
-                          title="Delete shift"
-                        >
-                          <Trash2 className="w-4 h-4 text-danger" />
-                        </button>
-                      </div>
+                          <button
+                            onClick={() => openSwapModal(shift)}
+                            className="p-1.5 hover:bg-muted rounded transition-colors"
+                            title="Swap shift"
+                          >
+                            <ArrowLeftRight className="w-4 h-4 text-muted-foreground" />
+                          </button>
+                          {shift.status === 'scheduled' && (
+                            <button
+                              onClick={() => openCancelConfirm(shift)}
+                              className="p-1.5 hover:bg-muted rounded transition-colors"
+                              title="Cancel shift"
+                            >
+                              <XCircle className="w-4 h-4 text-danger" />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => handleDeleteShift(shift)}
+                            className="p-1.5 hover:bg-muted rounded transition-colors"
+                            title="Delete shift"
+                          >
+                            <Trash2 className="w-4 h-4 text-danger" />
+                          </button>
+                        </div>
+                      )}
                     </td>
                   </motion.tr>
                 ))}

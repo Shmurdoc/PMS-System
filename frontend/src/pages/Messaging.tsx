@@ -23,6 +23,8 @@ export default function Messaging() {
   const {
     messages, users, addMessage, deleteMessage, markMessageRead, addAuditLog
   } = useAppStore();
+  const role = useAppStore((s) => s.user?.role);
+  const canManage = role === 'admin' || role === 'manager';
 
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
@@ -584,13 +586,15 @@ export default function Messaging() {
                             exit={{ opacity: 0, scale: 0.9 }}
                             className={`absolute top-0 ${isOwn ? '-left-20' : '-right-20'} flex gap-1`}
                           >
-                            <button
-                              onClick={() => handleDeleteMessage(msg.id)}
-                              className="p-1.5 bg-danger/15 hover:bg-danger/30 text-danger rounded-lg transition-colors"
-                              title="Delete message"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                            {canManage && (
+                              <button
+                                onClick={() => handleDeleteMessage(msg.id)}
+                                className="p-1.5 bg-danger/15 hover:bg-danger/30 text-danger rounded-lg transition-colors"
+                                title="Delete message"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
                             {!msg.read && !isOwn && (
                               <button
                                 onClick={() => handleMarkAsRead(msg.id)}

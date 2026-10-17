@@ -94,6 +94,8 @@ export default function FacilityManagement() {
     addMaintenanceTicket, updateMaintenanceTicket, deleteMaintenanceTicket,
     addAuditLog,
   } = useAppStore();
+  const role = useAppStore((s) => s.user?.role);
+  const isAdmin = role === 'admin';
 
   const [activeTab, setActiveTab] = useState<'electricity' | 'maintenance' | 'zones' | 'alerts'>('electricity');
   const [selectedZone, setSelectedZone] = useState('all');
@@ -908,13 +910,15 @@ export default function FacilityManagement() {
                           >
                             <Edit className="w-4 h-4 text-muted-foreground" />
                           </button>
-                          <button
-                            onClick={() => handleDeleteElectricity(record.id)}
-                            className="p-1.5 hover:bg-muted rounded transition-colors"
-                            title="Delete"
-                          >
-                            <Trash2 className="w-4 h-4 text-muted-foreground" />
-                          </button>
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDeleteElectricity(record.id)}
+                              className="p-1.5 hover:bg-muted rounded transition-colors"
+                              title="Delete"
+                            >
+                              <Trash2 className="w-4 h-4 text-muted-foreground" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

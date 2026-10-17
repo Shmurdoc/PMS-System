@@ -26,6 +26,8 @@ const preferencesList = [
 
 export default function Guests() {
   const { guests, bookings, addGuest, updateGuest, deleteGuest } = useAppStore();
+  const role = useAppStore((s) => s.user?.role);
+  const canManage = role === 'admin' || role === 'manager';
   const [searchQuery, setSearchQuery] = useState('');
   const [segmentFilter, setSegmentFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -351,12 +353,14 @@ export default function Guests() {
                     <Edit className="w-4 h-4" />
                     Edit
                   </button>
-                  <button
-                    onClick={() => handleDelete(guest.id)}
-                    className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm text-danger hover:bg-danger/10 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {canManage && (
+                    <button
+                      onClick={() => handleDelete(guest.id)}
+                      className="flex-1 flex items-center justify-center gap-1 px-3 py-2 text-sm text-danger hover:bg-danger/10 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </motion.div>
             ))}
@@ -413,9 +417,11 @@ export default function Guests() {
                       <button onClick={() => handleEdit(guest)} className="p-1.5 hover:bg-muted rounded-lg">
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button onClick={() => handleDelete(guest.id)} className="p-1.5 hover:bg-danger/10 rounded-lg text-danger">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      {canManage && (
+                        <button onClick={() => handleDelete(guest.id)} className="p-1.5 hover:bg-danger/10 rounded-lg text-danger">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -491,6 +497,7 @@ export default function Guests() {
                     <label className="text-sm font-medium mb-2 block">ID Number</label>
                     <input
                       type="text"
+                      required
                       value={formData.idNumber}
                       onChange={(e) => setFormData({ ...formData, idNumber: e.target.value })}
                       className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
@@ -502,6 +509,7 @@ export default function Guests() {
                     <label className="text-sm font-medium mb-2 block">Nationality</label>
                     <input
                       type="text"
+                      required
                       value={formData.nationality}
                       onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
                       className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
@@ -722,16 +730,18 @@ export default function Guests() {
                     <Edit className="w-4 h-4" />
                     Edit Guest
                   </button>
-                  <button
-                    onClick={() => { 
-                      setShowDetailModal(false); 
-                      handleDelete(selectedGuest.id); 
-                    }}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-danger/10 text-danger rounded-xl text-sm font-medium hover:bg-danger/15 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                    Delete Guest
-                  </button>
+                  {canManage && (
+                    <button
+                      onClick={() => { 
+                        setShowDetailModal(false); 
+                        handleDelete(selectedGuest.id); 
+                      }}
+                      className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-danger/10 text-danger rounded-xl text-sm font-medium hover:bg-danger/15 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Delete Guest
+                    </button>
+                  )}
                 </div>
               </div>
             </motion.div>
