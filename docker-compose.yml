@@ -8,7 +8,9 @@ services:
       POSTGRES_USER: aquri_user
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env (copy .env.example)}"
     ports:
-      - "127.0.0.1:5432:5432"
+      # Host port is 5433, not 5432: a native PostgreSQL service owns 5432 on this
+      # machine. Container-internal traffic (the api service) still uses 5432.
+      - "127.0.0.1:${AQURI_DB_HOST_PORT:-5433}:5432"
     volumes:
       - aquri-data:/var/lib/postgresql/data
     healthcheck:

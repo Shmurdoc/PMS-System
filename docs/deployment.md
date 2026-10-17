@@ -57,16 +57,26 @@ The API does not auto-migrate. Apply once per database:
 dotnet ef database update --project Aquri.Infrastructure --startup-project Aquri.API
 ```
 
-The design-time factory (`AquriDbContextFactory`) resolves `ConnectionStrings__DefaultConnection` first, so point the env var at the target database before running. Inside a running compose stack the DB is only reachable on the internal network; apply migrations from the host against the published port (`127.0.0.1:5432`).
+The design-time factory (`AquriDbContextFactory`) resolves `ConnectionStrings__DefaultConnection` first, so point the env var at the target database before running. Inside a running compose stack the DB is only reachable on the internal network; apply migrations from the host against the published port (default `127.0.0.1:5433`).
 
 ## Ports
 
 | Service | Host port | Container port |
 |---|---|---|
 | api | 8080 | 8080 |
-| db | 127.0.0.1:5432 (loopback only) | 5432 |
+| db | 127.0.0.1:5433 (loopback only) | 5432 |
 
 Postgres is intentionally bound to loopback — it is not exposed beyond the host.
+
+The db host port is **5433**, not the Postgres default. `docker-compose.yml` publishes `${AQURI_DB_HOST_PORT:-5433}` because a native PostgreSQL service can own 5432 on the host; override `AQURI_DB_HOST_PORT` in `.env` if 5433 is taken too. Only the *host* mapping changes — container-to-container traffic still uses `db:5432`.
+
+For local development against that same container, `Aquri.API/appsettings.Development.json` (gitignored) needs the matching port:
+
+```
+Host=localhost;Port=5433;Database=Aquri;Username=aquri_user;Password=<the POSTGRES_PASSWORD from .env>
+```
+
+Omitting `Port=` silently defaults to 5432 and talks to whatever native Postgres is listening there instead of the container.
 
 ## Health and observability
 
