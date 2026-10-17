@@ -71,6 +71,7 @@ import {
   updateIntegration as apiUpdateIntegration,
   updateInventoryItem,
   updateMaintenanceRequest,
+  updatePropertyDetails,
   updatePropertyStatus,
   updateRatePlan as apiUpdateRatePlan,
   updateRoomAmenities,
@@ -147,6 +148,15 @@ import type {
 function toNumericId(id: string): number | null {
   const n = Number(id);
   return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+// New properties need a unique, positive tenant PropertyId (the API field is an
+// int and enforces uniqueness). Date.now() overflows Int32 (~1.76e12 > 2.147e9)
+// and is rejected with a 400, so seed from epoch-seconds (fits Int32 until 2038)
+// and hand out successive values within the session.
+let tenantPropertyIdSeed = Math.floor(Date.now() / 1000);
+function nextPropertyTenantId(): number {
+  return tenantPropertyIdSeed++;
 }
 
 // Backend AppRoles vocabulary. Free-form display titles ('General Manager')
@@ -1148,8 +1158,8 @@ export const useAppStore = create<AppState>()(
         if (toNumericId(property.id) !== null) return;
         const input: CreatePropertyInput = {
           // Tenant identifier (unique int). Non-numeric local ids get a
-          // timestamp-derived value so the uniqueness check always passes.
-          propertyId: toNumericId(property.id) ?? Date.now(),
+          // timestamp-seeded value that stays within Int32 and never repeats.
+          propertyId: toNumericId(property.id) ?? nextPropertyTenantId(),
           name: property.name,
           address: property.address,
           rating: property.rating,
@@ -1167,10 +1177,28 @@ export const useAppStore = create<AppState>()(
         set((state) => ({
           properties: state.properties.map((p) => p.id === id ? { ...p, ...updates } : p)
         }));
-        // Status is the only mutable field server-side — other edits stay local.
-        if (updates.status === undefined) return;
         const numericId = toNumericId(id);
         if (numericId === null) return;
+        // Descriptive edits persist through the full-details endpoint.
+        const detailKeys: (keyof Property)[] = [
+          'name', 'address', 'description', 'manager', 'rating', 'phone', 'email',
+        ];
+        if (detailKeys.some((k) => updates[k] !== undefined)) {
+          const current = get().properties.find((p) => p.id === id);
+          if (current) {
+            syncToApi(`updatePropertyDetails(${id})`, () => updatePropertyDetails(numericId, {
+              name: current.name,
+              address: current.address ?? '',
+              description: current.description,
+              manager: current.manager,
+              rating: current.rating,
+              phone: current.phone,
+              email: current.email,
+            }));
+          }
+        }
+        // Status uses the lightweight status-only endpoint.
+        if (updates.status === undefined) return;
         const wire = updates.status === 'operational' ? 'active'
           : updates.status === 'maintenance' ? 'maintenance'
           : 'retired';
