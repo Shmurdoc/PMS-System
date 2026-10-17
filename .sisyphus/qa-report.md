@@ -1,10 +1,9 @@
 # Aquri PMS — Full QA Audit Report
 
 - Date: 2026-10-17
-- Scope: `C:\Users\madoc\source\repos\Aquri` (ASP.NET Core API + React/Vite frontend, PostgreSQL via Docker)
+- Scope: Aquri repository (ASP.NET Core API + React/Vite frontend, PostgreSQL via Docker)
 - Method: brute-force role-based E2E audit with Playwright (3 roles: admin / manager / front_desk), UI-driven seeding, API-side verification, API-side teardown
 - Final result: **79 passed / 138 skipped / 0 failed** (217 tests, serial, 11.1 min) + `tsc -b` EXIT=0
-- Commit status: all fixes left uncommitted in the working tree (per instruction, no commits made)
 
 ---
 
@@ -25,7 +24,7 @@
 - Fixed `ApiResponseMiddleware` crashing on no-content responses (HTTP 204/304 are now passed through unwrapped).
 - Reseeded demo data; baseline verified via `docker exec aquri-db psql -U aquri_user -d Aquri`.
 
-## 3. Test suite coverage (all segments green)
+## 3. Test suite coverage (all specs green)
 
 | Spec | Coverage |
 |---|---|
@@ -54,7 +53,7 @@ Role coverage strategy: all non-setup specs run in every project and self-skip v
 | 4 | `timestamptz` / `DateTime.Kind` mismatch broke date filtering | Normalized UTC handling |
 | 5 | Property-detail edits did not persist | Fixed persistence path |
 | 6 | API rejected string enum values in request bodies | JSON string-enum binding enabled (`Program.cs`) |
-| 7 | BUG #4 (S5): Guests form allowed submit with empty ID Number/Nationality | `required` added in `Guests.tsx` |
+| 7 | Guests form allowed submit with empty ID Number/Nationality | `required` added in `Guests.tsx` |
 | 8 | Test harness: `apiPatch` sent wrong content-type (415) | Fixed helper |
 | 9 | BUG-S7-1: manager saw Electricity delete; API allows DELETE to admin only | UI delete gated to admin; spec asserts UI hidden + API 403 |
 | 10 | BUG-S7-2: front_desk saw "Add Shift" (API 403) | Gated to admin/manager; false-success UI removed; spec updated |
@@ -63,7 +62,7 @@ Role coverage strategy: all non-setup specs run in every project and self-skip v
 
 BUG-S7-3 (manager employee-profile manage actions) was already fixed via `PermissionGate`; header/comment corrected.
 
-## 5. RBAC UI-gating sweep (S11) — applied across 11 pages
+## 5. RBAC UI-gating sweep — applied across 11 pages
 
 Every destructive/mutating affordance now mirrors the API's actual role rules:
 
@@ -101,7 +100,7 @@ Deliberately left unguarded: Maintenance ticket actions in Facility (API allows 
 
 ### Systemic notes
 
-- `syncToApi` (store) swallows API errors (`.catch(console.warn)`) → optimistic UI can display success when the API call failed. All specs therefore verify mutations via API reads, not just UI state. Fixing the store layer was out of scope (Option A); flagged for follow-up.
+- `syncToApi` (store) swallows API errors (`.catch(console.warn)`) → optimistic UI can display success when the API call failed. All specs therefore verify mutations via API reads, not just UI state. Fixing the store layer was out of scope for this audit; flagged for follow-up.
 - RFID tag edit/delete are local-only in the store (`updateRfidTag`/`deleteRfidTag` mutate state without server calls); the only server path is revoke. No `PUT /rfidtags` endpoint exists server-side.
 - No `DELETE /payments` endpoint exists → test payment rows cannot be deleted; cleanup relies on lifecycle (refund) and leftover rows are accepted.
 - Tax config rate is stored as a fraction (UI 12.5% → API 0.125) — intentional, pinned by spec.
@@ -110,7 +109,7 @@ Deliberately left unguarded: Maintenance ticket actions in Facility (API allows 
 ## 7. Verification evidence
 
 - Full serial run: `cd frontend; npx playwright test --reporter=list` → **79 passed, 138 skipped, 0 failed** (217 tests, 11.1 min).
-- S11 regression re-run: `npx playwright test 07-facility 07-staff-rfid-profiles 08-finances` → 27 passed, 0 failed.
+- RBAC regression re-run: `npx playwright test 07-facility 07-staff-rfid-profiles 08-finances` → 27 passed, 0 failed.
 - Typecheck: `npx tsc -b` → EXIT=0.
 - API login audit-log probe: front_desk login produces expected 403s on `/users`, `/workflows`, `/aiInsights` only.
 
@@ -119,10 +118,8 @@ Deliberately left unguarded: Maintenance ticket actions in Facility (API allows 
 ```powershell
 # Prereqs: API on :5080 and Vite on :5173 running; aquri-db container healthy
 docker start aquri-db            # if needed
-cd C:\Users\madoc\source\repos\Aquri\frontend
+cd frontend
 npx playwright test              # full suite
-npx playwright test 08-finances  # a single segment
+npx playwright test 08-finances  # a single spec
 npx tsc -b                       # typecheck
 ```
-
-Report generated as part of S12 of `.sisyphus/plans/db-fix-and-full-qa-audit.md`.
