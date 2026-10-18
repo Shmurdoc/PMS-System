@@ -31,9 +31,9 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
   };
 
   const demoUsers = [
-    { email: 'admin@nexus.com', password: 'admin123', role: 'Admin', name: 'John Doe' },
-    { email: 'manager@nexus.com', password: 'manager123', role: 'Manager', name: 'Sarah Johnson' },
-    { email: 'front@nexus.com', password: 'front123', role: 'Front Desk', name: 'Mike Chen' },
+    { email: 'admin@nexus.com', password: 'admin123', role: 'Admin', name: 'Admin User' },
+    { email: 'manager@nexus.com', password: 'manager123', role: 'Manager', name: 'Manager User' },
+    { email: 'front@nexus.com', password: 'front123', role: 'Front Desk', name: 'Front Desk' },
   ];
 
   const quickLogin = (user: typeof demoUsers[0]) => {

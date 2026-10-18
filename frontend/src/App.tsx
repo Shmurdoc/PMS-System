@@ -42,7 +42,7 @@ import { DemoControls } from './components/demo/DemoControls';
 import { MetricCard, Panel, PageHeader, StatusBadge } from './components/shared';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useAppStore } from './store/useAppStore';
-import { canAccessRoute } from './lib/rbac';
+import { canAccessRoute, getRoleLabel, ROLE_PERMISSIONS, type UserRole } from './lib/rbac';
 import { hydrateFromApi } from './lib/api/hydrate';
 import { login as apiLogin, sendChat } from './lib/api/services';
 import { clearAuthToken, getAuthToken, setAuthToken } from './lib/api/config';
@@ -733,8 +733,13 @@ function App() {
   });
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('all');
   
-  // Get properties from store
-  const { properties } = useAppStore();
+  const { properties, user } = useAppStore();
+  const userInitials = user?.name
+    ? user.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase()
+    : '?';
+  const userRoleLabel = user
+    ? (ROLE_PERMISSIONS[user.role as UserRole] ? getRoleLabel(user.role as UserRole) : user.role)
+    : '';
 
   // Apply theme
   useEffect(() => {
@@ -760,6 +765,18 @@ function App() {
       if (!demoMatch) {
         throw error instanceof Error ? error : new Error('Login failed.');
       }
+      const offlineRole = email.startsWith('admin') ? 'admin' : email.startsWith('manager') ? 'manager' : 'front_desk';
+      const offlineName = email.startsWith('admin') ? 'Admin User' : email.startsWith('manager') ? 'Manager User' : 'Front Desk';
+      useAppStore.getState().setUser({
+        id: '0',
+        name: offlineName,
+        email,
+        role: offlineRole,
+        department: '',
+        phone: '',
+        hireDate: '',
+        status: 'active',
+      });
       localStorage.setItem('nexus_logged_in', 'true');
       setIsLoggedIn(true);
       toast.success('Welcome back to NEXUS PMS! (offline demo mode)');
@@ -770,6 +787,7 @@ function App() {
   const handleLogout = () => {
     localStorage.removeItem('nexus_logged_in');
     clearAuthToken();
+    useAppStore.getState().setUser(null);
     setIsLoggedIn(false);
     setActivePage('dashboard');
     toast.success('Logged out successfully');
@@ -1283,13 +1301,13 @@ function App() {
           <div className="flex-shrink-0 p-3 border-t border-sidebar-border">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center font-semibold flex-shrink-0 text-xs text-primary" aria-hidden="true">
-                JD
+                {userInitials}
               </div>
               {!sidebarCollapsed && (
                 <>
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-xs truncate">John Doe</p>
-                    <p className="text-[10px] text-muted-foreground truncate">Manager</p>
+                    <p className="font-medium text-xs truncate">{user?.name ?? 'Signed out'}</p>
+                    <p className="text-[10px] text-muted-foreground truncate">{userRoleLabel}</p>
                   </div>
                   <button onClick={handleLogout} aria-label="Log out" title="Log out" className="p-1.5 hover:bg-destructive/15 rounded-lg text-muted-foreground hover:text-destructive transition-colors">
                     <LogOut className="w-3.5 h-3.5" aria-hidden="true" />
