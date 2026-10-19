@@ -30,7 +30,7 @@
 // a page reload the current user must be fetched back from the token.
 
 import { useAppStore } from '../../store/useAppStore';
-import { getAuthToken } from './config';
+import { getAuthToken, getTokenRole } from './config';
 import {
   indexBy,
   mapAiInsight,
@@ -160,6 +160,10 @@ export async function hydrateFromApi(): Promise<HydrateResult> {
 
   const store = useAppStore.getState();
 
+  // Audit-trail reads are admin/manager only — other roles skip the fetch
+  // instead of collecting a guaranteed 403 in `failed`.
+  const canReadAudit = getTokenRole() === 'admin' || getTokenRole() === 'manager';
+
   // 1) Properties first — foundation for per-property fetches + joins.
   let propertiesDto: ApiProperty[] | undefined;
   try {
@@ -205,7 +209,7 @@ export async function hydrateFromApi(): Promise<HydrateResult> {
     settle('shifts', fetchShifts(), failed),
     settle('attendance', fetchAttendance(), failed),
     settle('messages', fetchMessages(), failed),
-    settle('auditLogs', fetchAuditLogs(), failed),
+    settle('auditLogs', canReadAudit ? fetchAuditLogs() : Promise.resolve(undefined), failed),
     settle('taxConfigs', fetchTaxConfigs(), failed),
     settle('expenses', fetchExpenses(), failed),
     settle('electricity', fetchElectricity(), failed),

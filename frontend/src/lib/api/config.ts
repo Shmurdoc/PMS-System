@@ -5,10 +5,12 @@
 // Override the base URL per environment with VITE_API_URL, e.g.
 //   VITE_API_URL=https://staging.example.com npm run dev
 
+// An explicitly-set empty string means same-origin (the containerized frontend
+// proxies /api to the backend); an unset variable keeps the localhost dev default.
 const envUrl: unknown = import.meta.env['VITE_API_URL'];
 
 export const API_BASE_URL: string =
-  typeof envUrl === 'string' && envUrl.trim() !== ''
+  typeof envUrl === 'string'
     ? envUrl.trim().replace(/\/+$/, '')
     : 'http://localhost:5114';
 

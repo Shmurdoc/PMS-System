@@ -74,10 +74,13 @@ namespace Aquri.Application.Messages
             if (message is null)
                 return Result<MessageDto>.NotFoundResult();
 
-            // Only the recipient may mark a directed message read; anything else
-            // 404s so message ids can't be probed. Channel posts (no recipient)
-            // are open to any authenticated user.
-            if (message.RecipientId is int recipientId && recipientId != request.CallerUserId)
+            // Only a participant may flip read state — the recipient (by recipient
+            // id or by a channel named after their user id, which is how the UI
+            // routes DMs) or the sender. Anyone else 404s so ids can't be probed.
+            var callerChannel = request.CallerUserId.ToString();
+            if (message.SenderId != request.CallerUserId
+                && message.RecipientId != request.CallerUserId
+                && message.ChannelId != callerChannel)
                 return Result<MessageDto>.NotFoundResult();
 
             message.MarkRead();

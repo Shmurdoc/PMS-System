@@ -124,15 +124,28 @@ namespace Aquri.Tests.Api
         }
 
         [Fact]
-        public async Task FrontDesk_Can_Read_But_Cannot_Write()
+        public async Task FrontDesk_Cannot_Read_Or_Write()
         {
             var client = await FrontDeskClientAsync();
 
             var list = await client.GetAsync("/api/v1/auditlogs");
-            list.StatusCode.Should().Be(HttpStatusCode.OK);
+            list.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+
+            var byId = await client.GetAsync("/api/v1/auditlogs/1");
+            byId.StatusCode.Should().Be(HttpStatusCode.Forbidden);
 
             var create = await client.PostAsync("/api/v1/auditlogs", JsonBody(NewLog()));
             create.StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        }
+
+        [Fact]
+        public async Task Manager_Can_Read_List()
+        {
+            var client = await ManagerClientAsync();
+
+            var list = await client.GetAsync("/api/v1/auditlogs");
+
+            list.StatusCode.Should().Be(HttpStatusCode.OK);
         }
     }
 }

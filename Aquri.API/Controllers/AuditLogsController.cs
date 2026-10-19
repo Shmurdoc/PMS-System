@@ -39,6 +39,7 @@ namespace Aquri.API.Controllers
         }
 
         [HttpGet("{id:int}")]
+        [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(typeof(AuditLogDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<AuditLogDto>> Get(int id)
@@ -52,6 +53,7 @@ namespace Aquri.API.Controllers
         }
 
         [HttpGet]
+        [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(typeof(List<AuditLogDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<AuditLogDto>>> List(
             [FromQuery] int? propertyId,

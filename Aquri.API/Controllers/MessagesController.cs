@@ -40,7 +40,7 @@ namespace Aquri.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<MessageDto>> Get(int id)
         {
-            var result = await _mediator.Send(new GetMessageQuery(id));
+            var result = await _mediator.Send(new GetMessageQuery(id, CurrentUserId()));
             if (result.NotFound)
                 return NotFound();
             if (!result.Success)
@@ -57,7 +57,7 @@ namespace Aquri.API.Controllers
             [FromQuery] string? channelId,
             [FromQuery] bool? unreadOnly)
         {
-            var messages = await _mediator.Send(new GetMessagesQuery(propertyId, recipientId, channelId, unreadOnly));
+            var messages = await _mediator.Send(new GetMessagesQuery(CurrentUserId(), propertyId, recipientId, channelId, unreadOnly));
             return Ok(messages);
         }
 

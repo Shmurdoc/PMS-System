@@ -79,7 +79,8 @@ Left alone on purpose: maintenance ticket actions in Facility (the API lets main
 | G5 | Invoices tab is read-only; no UI to create invoices or record payments even though the API supports both | Fixed — New Invoice modal computes subtotal/tax/total and creates through the API; completed invoices sync back |
 | G6 | No UI for `POST /payments/{id}/complete` and `{id}/refund` | Fixed — Mark Complete / Refund buttons on payment rows, refund limited to admin/manager |
 | G7 | Nav issues: duplicate staff / rfid-management entries, `maintenance` route has no sidebar entry | Fixed — the duplicate "RFID System" entry is gone (Staff & RFID already renders that page) and the dead `maintenance` route key is removed |
-| — | `GET /auditlogs` returns 200 for any authenticated role while the frontend route-gates the page | Documented; UI is stricter than the API |
+| BUG-S6-2 | `GET /messages` returned every message to any authenticated role | Fixed — message list, read-by-id, and mark-read are now participant-scoped server-side (sender, recipient, or a channel named after the reader's user id); non-participants get 404 on by-id so ids can't be probed |
+| — | `GET /auditlogs` returns 200 for any authenticated role while the frontend route-gates the page | Fixed — both audit-log GETs require admin/manager; the frontend only fetches the trail for those roles |
 
 ## Since this audit
 
@@ -93,6 +94,8 @@ The fake-data layer on the frontend has been stripped out, which changes a few o
 - Account switching is honoured: notifications, messages, and audit stamps follow whoever is signed in. Demo controls and the demo-login panel on the login screen are removed.
 - The messaging spec was rewritten against how the app actually behaves now: conversations come from the signed-in user, sends and deletes round-trip through the API, and front_desk is asserted read-only.
 - Demo seeding is off by default now (`Seed:DemoUsers` for `dotnet run`; compose still defaults on, overridable with `SEED_DEMO_USERS` in `.env`). Fresh database + flag off means zero users — flip the flag for a first run, create real users, turn it off. `GET /users` also opened up to any signed-in role (the admin page stays gated in the UI).
+- Authz tightened for hosting: message reads are participant-scoped in the query handlers (not just filtered in the UI), audit-log reads require admin/manager, and hydrate skips the audit fetch for other roles so they don't collect a guaranteed 403. New API tests pin each of these.
+- Compose now has a `web` service: the SPA is built with an empty `VITE_API_URL` (same-origin) and nginx proxies `/api` to the API, so the containerized app needs no CORS at all. `DEPLOY.md` and `.env.example` cover the rest of the runbook.
 
 One caveat, because I'd rather say it than let it look tidier than it is: apart from the messaging spec, I haven't re-run Playwright since any of these changes — the browser tooling was broken on this box. The green numbers above are the state as of Oct 17; everything since is code changes backed by typecheck, lint, and the backend test suite, plus a fresh green run of `06-messaging` (7 passed) once the helpers learned to point at a non-5080 API via `AQURI_API_URL`.
 

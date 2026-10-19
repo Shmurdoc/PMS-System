@@ -145,5 +145,34 @@ namespace Aquri.Tests.Api
             var delete = await client.DeleteAsync("/api/v1/messages/1");
             delete.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         }
+
+        [Fact]
+        public async Task List_And_Get_Are_Scoped_To_The_Reader()
+        {
+            var admin = await AdminClientAsync();
+            var front = await FrontDeskClientAsync();
+
+            // Admin → manager DM; front desk is neither sender nor addressee.
+            var create = await admin.PostAsync("/api/v1/messages",
+                JsonBody(new { propertyId = 1, content = "Manager-only note", recipientId = 2 }));
+            create.StatusCode.Should().Be(HttpStatusCode.Created);
+            using var created = JsonDocument.Parse(await create.Content.ReadAsStringAsync());
+            var id = created.RootElement.GetProperty("data").GetProperty("id").GetInt32();
+
+            var list = await front.GetAsync("/api/v1/messages");
+            var envelope = await ParseAsync(list);
+            envelope.GetProperty("data").EnumerateArray().Should().NotContain(m =>
+                m.GetProperty("content").GetString() == "Manager-only note");
+
+            var get = await front.GetAsync($"/api/v1/messages/{id}");
+            get.StatusCode.Should().Be(HttpStatusCode.NotFound);
+
+            // The addressee (manager) still sees it.
+            var manager = await ManagerClientAsync();
+            var managerList = await manager.GetAsync("/api/v1/messages");
+            var managerEnvelope = await ParseAsync(managerList);
+            managerEnvelope.GetProperty("data").EnumerateArray().Should().Contain(m =>
+                m.GetProperty("content").GetString() == "Manager-only note");
+        }
     }
 }

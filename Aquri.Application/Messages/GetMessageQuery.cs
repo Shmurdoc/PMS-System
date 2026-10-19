@@ -5,7 +5,8 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Messages
 {
-    public record GetMessageQuery(int Id) : IRequest<Result<MessageDto>>;
+    /// <summary>Reads one message. Returns 404 for non-participants so ids can't be probed.</summary>
+    public record GetMessageQuery(int Id, int ViewerId) : IRequest<Result<MessageDto>>;
 
     public class GetMessageHandler : IRequestHandler<GetMessageQuery, Result<MessageDto>>
     {
@@ -15,9 +16,13 @@ namespace Aquri.Application.Messages
 
         public async Task<Result<MessageDto>> Handle(GetMessageQuery request, CancellationToken cancellationToken)
         {
+            var viewerKey = request.ViewerId.ToString();
             var message = await _context.Messages
                 .AsNoTracking()
-                .FirstOrDefaultAsync(m => m.Id == request.Id, cancellationToken);
+                .FirstOrDefaultAsync(m => m.Id == request.Id
+                    && (m.SenderId == request.ViewerId
+                        || m.RecipientId == request.ViewerId
+                        || m.ChannelId == viewerKey), cancellationToken);
 
             return message is null
                 ? Result<MessageDto>.NotFoundResult()
@@ -25,8 +30,12 @@ namespace Aquri.Application.Messages
         }
     }
 
-    /// <summary>Lists messages, optionally filtered by property, recipient, channel, and unread state.</summary>
-    public record GetMessagesQuery(int? PropertyId, int? RecipientId, string? ChannelId, bool? UnreadOnly) : IRequest<List<MessageDto>>;
+    /// <summary>
+    /// Lists messages, optionally filtered by property, recipient, channel, and unread state.
+    /// The reader always sees only what they sent, what was addressed to them by recipient id,
+    /// or what was posted to a channel named after their user id (how the UI routes DMs).
+    /// </summary>
+    public record GetMessagesQuery(int ViewerId, int? PropertyId, int? RecipientId, string? ChannelId, bool? UnreadOnly) : IRequest<List<MessageDto>>;
 
     public class GetMessagesHandler : IRequestHandler<GetMessagesQuery, List<MessageDto>>
     {
@@ -36,7 +45,13 @@ namespace Aquri.Application.Messages
 
         public async Task<List<MessageDto>> Handle(GetMessagesQuery request, CancellationToken cancellationToken)
         {
+            var viewerKey = request.ViewerId.ToString();
             var query = _context.Messages.AsNoTracking().AsQueryable();
+
+            query = query.Where(m =>
+                m.SenderId == request.ViewerId
+                || m.RecipientId == request.ViewerId
+                || m.ChannelId == viewerKey);
 
             if (request.PropertyId.HasValue)
                 query = query.Where(m => m.PropertyId == request.PropertyId.Value);

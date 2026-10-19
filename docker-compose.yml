@@ -41,5 +41,19 @@ services:
     ports:
       - "8080:8080"
 
+  web:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # Empty = same-origin; nginx proxies /api to the api service.
+        VITE_API_URL: ""
+    container_name: aquri-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "8081:80"
+
 volumes:
   aquri-data:
