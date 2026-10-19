@@ -67,7 +67,8 @@ export default function Integrations() {
   const updateIntegration = useAppStore((s) => s.updateIntegration);
   const deleteIntegration = useAppStore((s) => s.deleteIntegration);
   const addAuditLog = useAppStore((s) => s.addAuditLog);
-  const role = useAppStore((s) => s.user?.role);
+  const me = useAppStore((s) => s.user);
+const role = useAppStore((s) => s.user?.role);
   const isAdmin = role === 'admin';
 
   // UI State
@@ -140,15 +141,15 @@ export default function Integrations() {
       entityType: 'property',
       entityId: integration.id,
       entityName: integration.name,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Integration "${integration.name}" ${newStatus === 'connected' ? 'connected' : 'disconnected'}`,
       timestamp: now,
     });
 
     toast.success(`${integration.name} ${newStatus === 'connected' ? 'connected' : 'disconnected'} successfully`);
-  }, [updateIntegration, addAuditLog]);
+  }, [me, updateIntegration, addAuditLog]);
 
   // ============================================
   // REFRESH / SYNC
@@ -168,16 +169,16 @@ export default function Integrations() {
         entityType: 'property',
         entityId: integration.id,
         entityName: integration.name,
-        userId: 'system',
-        userName: 'System',
-        userRole: 'system',
+        userId: me?.id ?? '',
+        userName: me?.name ?? 'You',
+        userRole: me?.role ?? '',
         details: `Integration "${integration.name}" synced successfully at ${now}`,
         timestamp: new Date().toISOString(),
       });
 
       toast.success(`${integration.name} synced successfully`);
     }, 2000);
-  }, [updateIntegration, addAuditLog]);
+  }, [me, updateIntegration, addAuditLog]);
 
   // ============================================
   // SETTINGS MODAL
@@ -215,9 +216,9 @@ export default function Integrations() {
       entityType: 'property',
       entityId: selectedIntegration.id,
       entityName: editName.trim(),
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Integration "${selectedIntegration.name}" settings updated`,
       oldValue: JSON.stringify({ name: selectedIntegration.name, description: selectedIntegration.description }),
       newValue: JSON.stringify({ name: editName.trim(), description: editDescription.trim() }),
@@ -227,7 +228,7 @@ export default function Integrations() {
     toast.success(`${editName.trim()} settings saved`);
     setShowSettingsModal(false);
     setSelectedIntegration(null);
-  }, [selectedIntegration, editName, editDescription, editApiKey, editWebhookUrl, updateIntegration, addAuditLog]);
+  }, [me, selectedIntegration, editName, editDescription, editApiKey, editWebhookUrl, updateIntegration, addAuditLog]);
 
   // ============================================
   // ADD INTEGRATION
@@ -264,9 +265,9 @@ export default function Integrations() {
       entityType: 'property',
       entityId: id,
       entityName: newName.trim(),
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `New integration "${newName.trim()}" (${newType}) added`,
       timestamp: now,
     });
@@ -280,7 +281,7 @@ export default function Integrations() {
     setNewApiKey('');
     setNewWebhookUrl('');
     setShowAddModal(false);
-  }, [newName, newType, newDescription, newApiKey, newWebhookUrl, addIntegration, addAuditLog]);
+  }, [me, newName, newType, newDescription, newApiKey, newWebhookUrl, addIntegration, addAuditLog]);
 
   // ============================================
   // DELETE INTEGRATION
@@ -298,16 +299,16 @@ export default function Integrations() {
       entityType: 'property',
       entityId: id,
       entityName: integration.name,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Integration "${integration.name}" deleted`,
       timestamp: new Date().toISOString(),
     });
 
     toast.success(`${integration.name} removed`);
     setShowDeleteConfirm(null);
-  }, [integrations, deleteIntegration, addAuditLog]);
+  }, [me, integrations, deleteIntegration, addAuditLog]);
 
   // ============================================
   // RENDER

@@ -25,6 +25,7 @@ const CheckInOutPage = () => {
     addPayment,
     addAuditLog,
   } = useAppStore();
+const me = useAppStore((s) => s.user);
 
   const [activeTab, setActiveTab] = useState<'arrivals' | 'in-house' | 'departures'>('arrivals');
   const [searchQuery, setSearchQuery] = useState('');
@@ -145,16 +146,16 @@ const CheckInOutPage = () => {
       entityType: 'payment',
       entityId: paymentId,
       entityName: `Payment ${paymentNum}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Payment of ${formatCurrency(selectedBooking.balanceDue ?? selectedBooking.amount)} recorded for booking ${selectedBooking.id} via ${paymentMethod}`,
       timestamp: new Date().toISOString(),
     });
     setPaymentVerified(true);
     setSelectedBooking(prev => prev ? { ...prev, paymentStatus: 'paid' } : null);
     toast.success(`Payment of ${formatCurrency(selectedBooking.balanceDue ?? selectedBooking.amount)} recorded successfully`);
-  }, [selectedBooking, paymentMethod, addPayment, updateBooking, addAuditLog]);
+  }, [me, selectedBooking, paymentMethod, addPayment, updateBooking, addAuditLog]);
 
   const handleIssueKeyCard = useCallback(() => {
     if (!selectedBooking) return;
@@ -180,15 +181,15 @@ const CheckInOutPage = () => {
       entityType: 'rfid_tag',
       entityId: tagId,
       entityName: `RFID Tag ${tagId}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `RFID key card ${tagId} issued to ${selectedBooking.guestName} for room ${selectedBooking.roomNumber}`,
       timestamp: new Date().toISOString(),
     });
     setKeyCardIssued(true);
     toast.success(`RFID key card issued for Room ${selectedBooking.roomNumber}`);
-  }, [selectedBooking, addRfidTag, addAuditLog]);
+  }, [me, selectedBooking, addRfidTag, addAuditLog]);
 
   const handleCompleteCheckIn = useCallback(() => {
     if (!selectedBooking) return;
@@ -204,9 +205,9 @@ const CheckInOutPage = () => {
       entityType: 'booking',
       entityId: selectedBooking.id,
       entityName: `Booking ${selectedBooking.id}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Guest ${selectedBooking.guestName} checked in to Room ${selectedBooking.roomNumber}`,
       oldValue: 'confirmed',
       newValue: 'checked-in',
@@ -216,7 +217,7 @@ const CheckInOutPage = () => {
     setShowVerifyModal(false);
     setSelectedBooking(null);
     resetVerification();
-  }, [selectedBooking, idVerified, paymentVerified, keyCardIssued, updateBooking, updateRoom, addAuditLog, resetVerification]);
+  }, [me, selectedBooking, idVerified, paymentVerified, keyCardIssued, updateBooking, updateRoom, addAuditLog, resetVerification]);
 
   const handleCheckOut = useCallback((booking: Booking) => {
     updateBooking(booking.id, { status: 'checked-out', updatedAt: new Date().toISOString() });
@@ -227,9 +228,9 @@ const CheckInOutPage = () => {
       entityType: 'booking',
       entityId: booking.id,
       entityName: `Booking ${booking.id}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Guest ${booking.guestName} checked out from Room ${booking.roomNumber}`,
       oldValue: 'checked-in',
       newValue: 'checked-out',
@@ -238,7 +239,7 @@ const CheckInOutPage = () => {
     toast.success(`${booking.guestName} checked out from Room ${booking.roomNumber}`);
     setShowCheckoutConfirm(null);
     setSelectedBooking(null);
-  }, [updateBooking, updateRoom, addAuditLog]);
+  }, [me, updateBooking, updateRoom, addAuditLog]);
 
   const handlePrintReceipt = useCallback((booking: Booking) => {
     const guest = guests.find(g => g.id === booking.guestId);
@@ -341,13 +342,13 @@ const CheckInOutPage = () => {
       entityType: 'booking',
       entityId: booking.id,
       entityName: `Booking ${booking.id}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Notification sent to ${booking.guestName} (${booking.guestEmail})`,
       timestamp: new Date().toISOString(),
     });
-  }, [addAuditLog]);
+  }, [me, addAuditLog]);
 
   const statusColors: Record<string, string> = {
     confirmed: 'bg-info/15 text-info border-info/30',

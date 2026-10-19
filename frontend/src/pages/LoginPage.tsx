@@ -9,8 +9,8 @@ interface LoginPageProps {
 }
 
 const LoginPage = ({ onLogin }: LoginPageProps) => {
-  const [email, setEmail] = useState('admin@nexus.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -28,17 +28,6 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
     } finally {
       setLoading(false);
     }
-  };
-
-  const demoUsers = [
-    { email: 'admin@nexus.com', password: 'admin123', role: 'Admin', name: 'Admin User' },
-    { email: 'manager@nexus.com', password: 'manager123', role: 'Manager', name: 'Manager User' },
-    { email: 'front@nexus.com', password: 'front123', role: 'Front Desk', name: 'Front Desk' },
-  ];
-
-  const quickLogin = (user: typeof demoUsers[0]) => {
-    setEmail(user.email);
-    setPassword(user.password);
   };
 
   return (
@@ -64,26 +53,6 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
             <div className="bg-card border border-border rounded-xl p-4">
               <p className="text-sm font-medium mb-1">Multi-Property</p>
               <p className="text-xs text-muted-foreground">Manage hotels, resorts, and lodges from one dashboard</p>
-            </div>
-          </div>
-
-          {/* Quick Demo Access */}
-          <div>
-            <p className="text-xs text-muted-foreground mb-2">Quick Demo Access:</p>
-            <div className="space-y-1.5">
-              {demoUsers.map((user) => (
-                <button
-                  key={user.email}
-                  onClick={() => quickLogin(user)}
-                  className="w-full px-3 py-2 bg-card border border-border rounded-lg text-left hover:bg-muted transition-colors flex items-center justify-between"
-                >
-                  <div>
-                    <p className="text-sm font-medium">{user.name}</p>
-                    <p className="text-xs text-muted-foreground">{user.email}</p>
-                  </div>
-                  <span className="text-[10px] px-2 py-0.5 bg-primary/10 text-primary rounded font-medium">{user.role}</span>
-                </button>
-              ))}
             </div>
           </div>
         </div>
@@ -167,22 +136,6 @@ const LoginPage = ({ onLogin }: LoginPageProps) => {
                 ) : 'Sign In'}
               </button>
             </form>
-
-            <div className="mt-4 p-2.5 bg-muted/50 rounded-lg text-center">
-              <p className="text-xs text-muted-foreground">Demo: admin@nexus.com / admin123</p>
-            </div>
-
-            {/* Mobile Quick Access */}
-            <div className="md:hidden mt-4 pt-4 border-t border-border">
-              <p className="text-xs text-muted-foreground text-center mb-2">Quick Demo Access:</p>
-              <div className="grid grid-cols-3 gap-1.5">
-                {demoUsers.map((user) => (
-                  <button key={user.email} onClick={() => quickLogin(user)} className="p-2 bg-muted/50 rounded-lg text-center hover:bg-muted transition-colors">
-                    <p className="text-xs font-medium">{user.role}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
 
           <p className="text-center text-xs text-muted-foreground mt-4">© 2026 NEXUS PMS. All rights reserved.</p>

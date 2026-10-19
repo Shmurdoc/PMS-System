@@ -48,7 +48,8 @@ const TYPES = [
 
 export default function TicketManagement() {
   const { tickets, users, properties, rooms, guests, addTicket, updateTicket, deleteTicket, addTicketComment } = useAppStore();
-  const role = useAppStore((s) => s.user?.role);
+  const me = useAppStore((s) => s.user);
+const role = useAppStore((s) => s.user?.role);
   const canManage = role === 'admin' || role === 'manager';
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -180,8 +181,8 @@ export default function TicketManagement() {
     const comment = {
       id: `c-${Date.now()}`,
       ticketId: selectedTicket.id,
-      userId: '1',
-      userName: 'Current User',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
       content: newComment,
       isInternal: false,
       createdAt: new Date().toISOString(),

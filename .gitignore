@@ -31,6 +31,3 @@ TestResults/
 # Node — frontend ships its own .gitignore too; these are belt and braces
 **/node_modules/
 **/dist/
-
-# Local planning notes — only the QA report ships
-.sisyphus/plans/

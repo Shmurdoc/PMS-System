@@ -56,6 +56,7 @@ const ForecastingPage = () => {
   const aiInsights = useAppStore((s) => s.aiInsights);
   const properties = useAppStore((s) => s.properties);
   const addAuditLog = useAppStore((s) => s.addAuditLog);
+const me = useAppStore((s) => s.user);
 
   const [activeTab, setActiveTab] = useState<'occupancy' | 'revenue' | 'demand'>('occupancy');
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -444,14 +445,14 @@ const ForecastingPage = () => {
         entityType: 'property',
         entityId: 'forecast',
         entityName: 'Forecast Model',
-        userId: 'system',
-        userName: 'System',
-        userRole: 'system',
+        userId: me?.id ?? '',
+        userName: me?.name ?? 'You',
+        userRole: me?.role ?? '',
         details: `Forecast model refreshed — ${forecastMonths} months ahead, ${confidenceLevel}% confidence, model: ${modelType}`,
         timestamp: new Date().toISOString(),
       });
     }, 1500);
-  }, [addAuditLog, forecastMonths, confidenceLevel, modelType]);
+  }, [me, addAuditLog, forecastMonths, confidenceLevel, modelType]);
 
   // ============================================
   // SAVE CONFIGURATION
@@ -467,13 +468,13 @@ const ForecastingPage = () => {
       entityType: 'property',
       entityId: 'forecast-config',
       entityName: 'Forecast Configuration',
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Forecast config updated: months=${forecastMonths}, confidence=${confidenceLevel}%, model=${modelType}`,
       timestamp: new Date().toISOString(),
     });
-  }, [addAuditLog, forecastMonths, confidenceLevel, modelType]);
+  }, [me, addAuditLog, forecastMonths, confidenceLevel, modelType]);
 
   // ============================================
   // RENDER

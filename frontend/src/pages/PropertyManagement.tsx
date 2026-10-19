@@ -103,7 +103,8 @@ export default function PropertyManagement() {
     maintenanceTickets, bookings,
     addAuditLog,
   } = useAppStore();
-  const role = useAppStore((s) => s.user?.role);
+  const me = useAppStore((s) => s.user);
+const role = useAppStore((s) => s.user?.role);
   const isAdmin = role === 'admin';
   const canManage = role === 'admin' || role === 'manager';
 
@@ -236,7 +237,7 @@ export default function PropertyManagement() {
         description: propForm.description || undefined,
       });
       addAuditLog({
-        id: 'AL' + Date.now(), action: 'create_property', userId: 'system', userName: 'System', userRole: 'Admin',
+        id: 'AL' + Date.now(), action: 'create_property', userId: me?.id ?? '', userName: me?.name ?? 'You', userRole: me?.role ?? '',
         entityName: propForm.name, details: `Created property "${propForm.name}"`, timestamp: now, entityType: 'property', entityId: newId,
       });
       toast.success(`Property "${propForm.name}" created`);
@@ -329,7 +330,7 @@ export default function PropertyManagement() {
         updateProperty(currentProperty.id, { totalRooms: propertyRooms.length + 1 });
       }
       addAuditLog({
-        id: 'AL' + Date.now(), action: 'create_room', userId: 'system', userName: 'System', userRole: 'Admin',
+        id: 'AL' + Date.now(), action: 'create_room', userId: me?.id ?? '', userName: me?.name ?? 'You', userRole: me?.role ?? '',
         entityName: `Room ${roomForm.number}`, details: `Created room ${roomForm.number} at ${currentProperty?.name}`, timestamp: now,
         entityType: 'room', entityId: newId,
       });

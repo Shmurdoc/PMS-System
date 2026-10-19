@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type Dispatch, type SetStateAction } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bell, X, Check, Clock, Calendar, AlertTriangle,
@@ -15,24 +15,14 @@ interface Notification {
   category: 'booking' | 'payment' | 'system' | 'staff' | 'guest';
 }
 
-const mockNotifications: Notification[] = [
-  { id: '1', type: 'success', title: 'New Booking', message: 'Sarah Johnson booked Room 301 for Mar 28-31', time: '2 min ago', read: false, category: 'booking' },
-  { id: '2', type: 'info', title: 'Check-in Complete', message: 'Michael Chen checked in to Room 205', time: '15 min ago', read: false, category: 'guest' },
-  { id: '3', type: 'warning', title: 'Low Inventory', message: 'King size sheets below reorder level', time: '1 hr ago', read: false, category: 'system' },
-  { id: '4', type: 'success', title: 'Payment Received', message: 'R12,500 received from David Nkosi', time: '2 hrs ago', read: true, category: 'payment' },
-  { id: '5', type: 'info', title: 'Shift Change', message: 'Evening shift starts in 30 minutes', time: '3 hrs ago', read: true, category: 'staff' },
-  { id: '6', type: 'warning', title: 'Maintenance Request', message: 'Room 503 AC unit needs repair', time: '4 hrs ago', read: true, category: 'system' },
-  { id: '7', type: 'success', title: 'Review Received', message: 'New 5-star review from Lisa Anderson', time: '5 hrs ago', read: true, category: 'guest' },
-  { id: '8', type: 'info', title: 'Rate Update', message: 'Weekend rates updated for April', time: '6 hrs ago', read: true, category: 'system' },
-];
-
 interface NotificationDropdownProps {
   isOpen: boolean;
   onClose: () => void;
+  notifications: Notification[];
+  setNotifications: Dispatch<SetStateAction<Notification[]>>;
 }
 
-const NotificationDropdown = ({ isOpen, onClose }: NotificationDropdownProps) => {
-  const [notifications, setNotifications] = useState<Notification[]>(mockNotifications);
+const NotificationDropdown = ({ isOpen, onClose, notifications, setNotifications }: NotificationDropdownProps) => {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
   const unreadCount = notifications.filter(n => !n.read).length;
@@ -220,7 +210,8 @@ const NotificationDropdown = ({ isOpen, onClose }: NotificationDropdownProps) =>
 // Notification Bell with Badge
 export const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const unreadCount = mockNotifications.filter(n => !n.read).length;
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const unreadCount = notifications.filter(n => !n.read).length;
 
   return (
     <div className="relative">
@@ -238,7 +229,12 @@ export const NotificationBell = () => {
         )}
       </button>
 
-      <NotificationDropdown isOpen={isOpen} onClose={() => setIsOpen(false)} />
+      <NotificationDropdown
+        isOpen={isOpen}
+        onClose={() => setIsOpen(false)}
+        notifications={notifications}
+        setNotifications={setNotifications}
+      />
     </div>
   );
 };

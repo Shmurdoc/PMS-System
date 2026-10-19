@@ -54,6 +54,7 @@ export default function AdminPanel() {
     integrations, updateIntegration,
     addAuditLog,
   } = useAppStore();
+const me = useAppStore((s) => s.user);
 
   const [activeTab, setActiveTab] = useState('users');
   const [searchQuery, setSearchQuery] = useState('');
@@ -168,7 +169,7 @@ export default function AdminPanel() {
         phone: userForm.phone || undefined,
       });
       addAuditLog({
-        id: 'AL' + Date.now(), action: 'update_user', userId: 'system', userName: 'System', userRole: 'Admin',
+        id: 'AL' + Date.now(), action: 'update_user', userId: me?.id ?? '', userName: me?.name ?? 'You', userRole: me?.role ?? '',
         entityName: userForm.name, details: `Updated user ${userForm.name}`, timestamp: now, entityType: 'user', entityId: editUserId,
       });
       toast.success(`User "${userForm.name}" updated`);
@@ -186,7 +187,7 @@ export default function AdminPanel() {
         status: 'active',
       });
       addAuditLog({
-        id: 'AL' + Date.now(), action: 'create_user', userId: 'system', userName: 'System', userRole: 'Admin',
+        id: 'AL' + Date.now(), action: 'create_user', userId: me?.id ?? '', userName: me?.name ?? 'You', userRole: me?.role ?? '',
         entityName: userForm.name, details: `Created user ${userForm.name}`, timestamp: now, entityType: 'user', entityId: newId,
       });
       toast.success(`User "${userForm.name}" created`);
@@ -199,7 +200,7 @@ export default function AdminPanel() {
     const user = users.find(u => u.id === id);
     deleteUser(id);
     addAuditLog({
-      id: 'AL' + Date.now(), action: 'delete_user', userId: 'system', userName: 'System', userRole: 'Admin',
+      id: 'AL' + Date.now(), action: 'delete_user', userId: me?.id ?? '', userName: me?.name ?? 'You', userRole: me?.role ?? '',
       entityName: user?.name ?? id, details: `Deleted user ${user?.name ?? id}`, timestamp: new Date().toISOString(), entityType: 'user', entityId: id,
     });
     toast.success(`User deleted`);

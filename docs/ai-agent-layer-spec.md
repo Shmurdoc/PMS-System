@@ -226,3 +226,16 @@ All tests must pass with **no network** (LLM paths via a fake `HttpMessageHandle
 2. Frontend: services/mappers → hydrate additions → store sync → AIEnhancements → drawer.
 3. Verify: dotnet build + full test run, npm build + scoped eslint, manual API smoke via `/health`.
 4. Docs: roadmap, getting-started, architecture, conventions, this spec → Status: shipped.
+
+## 13. Later adjustments (post-ship)
+
+A few things in the plan above changed after the layer was live:
+
+- **No fallback agent list.** The `FALLBACK_AGENTS` rename in §7.5 happened, then went further: the
+  canned list is deleted outright. The Agents tab fetches on mount and shows an empty state when
+  the call fails or a property has no agents. The only local fallback left is the chat drawer's
+  offline reply path, and it no longer pretends to have run any analysis.
+- **Demo seeding default flipped.** Seeded insights/workflows still ship, but `Seed:DemoUsers` is
+  off by default for `dotnet run` (compose still defaults on) — fresh DB + flag off = no demo rows.
+- **Migration blocker gone.** The env issue in §9 is resolved; `dotnet ef database update` applies
+  all migrations against local Postgres cleanly.

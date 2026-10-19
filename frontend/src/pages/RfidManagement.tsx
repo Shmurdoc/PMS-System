@@ -46,7 +46,8 @@ export default function RfidManagement() {
     addAttendance,
     addAuditLog,
   } = useAppStore();
-  const role = useAppStore((s) => s.user?.role);
+  const me = useAppStore((s) => s.user);
+const role = useAppStore((s) => s.user?.role);
   const canManage = role === 'admin' || role === 'manager';
 
   const [activeTab, setActiveTab] = useState<'tags' | 'attendance' | 'tap'>('tags');
@@ -132,16 +133,16 @@ export default function RfidManagement() {
       entityType: 'rfid_tag',
       entityId: tag.id,
       entityName: `RFID Tag ${tag.tagNumber}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `RFID tag ${tag.tagNumber} status changed from ${tag.status} to ${newStatus}`,
       oldValue: tag.status,
       newValue: newStatus,
       timestamp: new Date().toISOString(),
     });
     toast.success(`Tag ${tag.tagNumber} ${newStatus === 'active' ? 'activated' : 'deactivated'}`);
-  }, [updateRfidTag, addAuditLog]);
+  }, [me, updateRfidTag, addAuditLog]);
 
   const handleDeleteTag = useCallback((tag: RfidTag) => {
     if (isServerTag(tag.id)) {
@@ -155,15 +156,15 @@ export default function RfidManagement() {
       entityType: 'rfid_tag',
       entityId: tag.id,
       entityName: `RFID Tag ${tag.tagNumber}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `RFID tag ${tag.tagNumber} assigned to ${tag.userName ?? tag.guestName ?? 'nobody'} was deleted`,
       timestamp: new Date().toISOString(),
     });
     toast.success(`Tag ${tag.tagNumber} deleted`);
     setShowDeleteConfirm(null);
-  }, [deleteRfidTag, addAuditLog]);
+  }, [me, deleteRfidTag, addAuditLog]);
 
   const handleCreateTag = useCallback((e: React.FormEvent) => {
     e.preventDefault();
@@ -240,9 +241,9 @@ export default function RfidManagement() {
       entityType: 'rfid_tag',
       entityId: newTag.id,
       entityName: `RFID Tag ${tagNumber}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `RFID tag ${tagNumber} created and assigned to ${assigneeName} (${createAssignType})`,
       timestamp: new Date().toISOString(),
     });
@@ -257,7 +258,7 @@ export default function RfidManagement() {
     setCreateRoomAccess([]);
     setCreateNotes('');
     setShowCreateModal(false);
-  }, [createAutoGenerate, createTagNumber, createAssignTo, createAssignType, createAccessLevel, createRoomAccess, createNotes, rfidTags, users, guests, bookings, properties, addRfidTag, addAuditLog]);
+  }, [me, createAutoGenerate, createTagNumber, createAssignTo, createAssignType, createAccessLevel, createRoomAccess, createNotes, rfidTags, users, guests, bookings, properties, addRfidTag, addAuditLog]);
 
   const openEditModal = useCallback((tag: RfidTag) => {
     setEditAssignTo(tag.userId ?? '');
@@ -296,9 +297,9 @@ export default function RfidManagement() {
       entityType: 'rfid_tag',
       entityId: showEditModal.id,
       entityName: `RFID Tag ${showEditModal.tagNumber}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: revoking
         ? `RFID tag ${showEditModal.tagNumber} revoked: assignee=${assigneeName}, access=${editAccessLevel}, status=blocked`
         : `RFID tag ${showEditModal.tagNumber} updated: assignee=${assigneeName}, access=${editAccessLevel}, status=${editStatus}`,
@@ -308,7 +309,7 @@ export default function RfidManagement() {
       ? `Tag ${showEditModal.tagNumber} revoked (blocked)`
       : `Tag ${showEditModal.tagNumber} updated successfully`);
     setShowEditModal(null);
-  }, [showEditModal, editAssignTo, editAssignName, editAccessLevel, editStatus, editNotes, users, guests, updateRfidTag, revokeRfidTag, addAuditLog]);
+  }, [me, showEditModal, editAssignTo, editAssignName, editAccessLevel, editStatus, editNotes, users, guests, updateRfidTag, revokeRfidTag, addAuditLog]);
 
   const handleManualCheckin = useCallback(() => {
     if (!checkinUserId) {
@@ -338,16 +339,16 @@ export default function RfidManagement() {
       entityType: 'user',
       entityId: record.id,
       entityName: `Attendance ${record.id}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Manual check-in recorded for ${user.name} at ${now.toLocaleTimeString()} (${record.status})`,
       timestamp: now.toISOString(),
     });
     toast.success(`${user.name} checked in (${record.status})`);
     setCheckinUserId('');
     setShowManualCheckin(false);
-  }, [checkinUserId, users, addAttendance, addAuditLog]);
+  }, [me, checkinUserId, users, addAttendance, addAuditLog]);
 
   const handleQuickCheckIn = useCallback((userId: string, userName: string) => {
     const now = new Date();
@@ -367,14 +368,14 @@ export default function RfidManagement() {
       entityType: 'user',
       entityId: record.id,
       entityName: `Attendance ${record.id}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Quick check-in: ${userName} at ${now.toLocaleTimeString()} (${record.status})`,
       timestamp: now.toISOString(),
     });
     toast.success(`${userName} checked in (${record.status})`);
-  }, [addAttendance, addAuditLog]);
+  }, [me, addAttendance, addAuditLog]);
 
   const handleExportCsv = useCallback(() => {
     const headers = ['Tag Number', 'Kind', 'Assigned To', 'User ID', 'Room', 'Status', 'Access Level', 'Created At', 'Last Used', 'Notes'];

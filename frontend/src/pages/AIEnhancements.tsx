@@ -62,58 +62,6 @@ interface AgentState {
   logs: { time: string; message: string }[];
 }
 
-// Seed shown until the API answers — first paint, no token, or a failed load.
-const FALLBACK_AGENTS: AgentState[] = [
-  {
-    id: 'agent-1', name: 'Revenue Optimizer', description: 'Dynamic pricing optimization and revenue forecasting based on market demand',
-    icon: DollarSign, status: 'running', lastRun: new Date(Date.now() - 300000).toISOString(), totalRuns: 142,
-    logs: [
-      { time: new Date(Date.now() - 300000).toISOString(), message: 'Analyzed 48 bookings, recommended 3 rate adjustments' },
-      { time: new Date(Date.now() - 900000).toISOString(), message: 'Weekend rates optimized: +12% for Standard, +8% for Deluxe' },
-      { time: new Date(Date.now() - 3600000).toISOString(), message: 'Revenue forecast updated for next 30 days' },
-    ],
-  },
-  {
-    id: 'agent-2', name: 'Guest Predictor', description: 'Predicts guest preferences, satisfaction scores, and repeat visit likelihood',
-    icon: Heart, status: 'running', lastRun: new Date(Date.now() - 600000).toISOString(), totalRuns: 89,
-    logs: [
-      { time: new Date(Date.now() - 600000).toISOString(), message: 'Processed 8 guest profiles, updated 5 preference models' },
-      { time: new Date(Date.now() - 1800000).toISOString(), message: 'VIP guest Sarah Johnson predicted satisfaction: 94%' },
-    ],
-  },
-  {
-    id: 'agent-3', name: 'Maintenance Scheduler', description: 'Predictive maintenance scheduling and resource optimization',
-    icon: Wrench, status: 'paused', lastRun: new Date(Date.now() - 7200000).toISOString(), totalRuns: 67,
-    logs: [
-      { time: new Date(Date.now() - 7200000).toISOString(), message: 'HVAC inspection scheduled for rooms 201-210' },
-      { time: new Date(Date.now() - 14400000).toISOString(), message: 'Pool pump efficiency at 87%, maintenance recommended in 14 days' },
-    ],
-  },
-  {
-    id: 'agent-4', name: 'Rate Analyzer', description: 'Competitive rate analysis and market positioning recommendations',
-    icon: TrendingUp, status: 'running', lastRun: new Date(Date.now() - 1200000).toISOString(), totalRuns: 234,
-    logs: [
-      { time: new Date(Date.now() - 1200000).toISOString(), message: 'Compared rates with 12 competing properties in Sandton area' },
-      { time: new Date(Date.now() - 3600000).toISOString(), message: 'Nexus Grand Hotel rates are 5% below market average for suites' },
-    ],
-  },
-  {
-    id: 'agent-5', name: 'Staffing Optimizer', description: 'AI-driven staff scheduling based on occupancy predictions and workload',
-    icon: Users, status: 'stopped', lastRun: new Date(Date.now() - 86400000).toISOString(), totalRuns: 45,
-    logs: [
-      { time: new Date(Date.now() - 86400000).toISOString(), message: 'Generated weekly shift plan for 8 staff members' },
-    ],
-  },
-  {
-    id: 'agent-6', name: 'Inventory Monitor', description: 'Tracks supply levels and automates reorder recommendations',
-    icon: FileText, status: 'running', lastRun: new Date(Date.now() - 900000).toISOString(), totalRuns: 178,
-    logs: [
-      { time: new Date(Date.now() - 900000).toISOString(), message: 'Scanned 8 inventory categories, 2 items below reorder level' },
-      { time: new Date(Date.now() - 5400000).toISOString(), message: 'Reorder alert: Towels (Bath) at 80 units, reorder level 30' },
-    ],
-  },
-];
-
 const toAgentState = (card: AgentCard): AgentState => ({
   id: card.id,
   name: card.name,
@@ -136,10 +84,11 @@ export default function AIEnhancements() {
     bookings, rooms, guests, invoices,
     addAuditLog,
   } = useAppStore();
+const me = useAppStore((s) => s.user);
 
   const [activeTab, setActiveTab] = useState<'chat' | 'insights' | 'agents' | 'workflows'>('insights');
   const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'ai'; content: string }[]>([
-    { role: 'ai', content: 'Hello! I\'m your NEXUS AI Assistant. Ask me about occupancy, revenue, guests, bookings, or anything about your property. I have access to your live data.' },
+    { role: 'ai', content: 'Hello! I\'m your NEXUS AI Assistant. Ask me about occupancy, revenue, guests, bookings, or anything about your property.' },
   ]);
   const [chatInput, setChatInput] = useState('');
 
@@ -149,7 +98,7 @@ export default function AIEnhancements() {
   const [insightStatusFilter, setInsightStatusFilter] = useState<string>('all');
 
   // Agents local state
-  const [agentStates, setAgentStates] = useState<AgentState[]>(FALLBACK_AGENTS);
+  const [agentStates, setAgentStates] = useState<AgentState[]>([]);
   const [showAgentLogModal, setShowAgentLogModal] = useState<string | null>(null);
 
   // Workflow form
@@ -161,12 +110,12 @@ export default function AIEnhancements() {
   const [wfActionInput, setWfActionInput] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null);
 
-  // Replace the seed with server agents once a session exists.
+  // Load server agents once a session exists.
   useEffect(() => {
     if (!getAuthToken()) return;
     fetchAgents()
       .then(dtos => setAgentStates(dtos.map(dto => toAgentState(mapAgent(dto)))))
-      .catch(() => {/* keep the seed until a load succeeds */});
+      .catch(() => {/* stay empty until a load succeeds */});
   }, []);
 
   // Computed stats
@@ -175,7 +124,7 @@ export default function AIEnhancements() {
   const activeWorkflows = workflows.filter(w => w.status === 'active').length;
   const activeAgents = agentStates.filter(a => a.status === 'running').length;
 
-  // Compute live data for AI chat
+  // Stats for the AI chat answers
   const totalRooms = rooms.length;
   const occupiedRooms = rooms.filter(r => r.status === 'occupied').length;
   const availableRooms = rooms.filter(r => r.status === 'available').length;
@@ -202,16 +151,16 @@ export default function AIEnhancements() {
     const q = query.toLowerCase();
 
     if (q.includes('occupancy') || q.includes('occupied')) {
-      return `Current Occupancy: ${occupancyRate}% (${occupiedRooms} of ${totalRooms} rooms occupied). ${availableRooms} rooms are available. Based on booking trends, I predict occupancy will reach ${Math.min(occupancyRate + 8, 100)}% by end of this week.`;
+      return `Current Occupancy: ${occupancyRate}% (${occupiedRooms} of ${totalRooms} rooms occupied). ${availableRooms} rooms are available.`;
     }
     if (q.includes('revenue') || q.includes('money') || q.includes('income') || q.includes('earnings')) {
-      return `Total booking revenue: ${formatCurrency(totalRevenue)}. Paid invoices total: ${formatCurrency(paidRevenue)}. Average rate per night: ${formatCurrency(avgRoomRate)}. Active bookings: ${activeBookings}. I recommend focusing on upselling suites which have the highest margin.`;
+      return `Total booking revenue: ${formatCurrency(totalRevenue)}. Paid invoices total: ${formatCurrency(paidRevenue)}. Average rate per night: ${formatCurrency(avgRoomRate)}. Active bookings: ${activeBookings}.`;
     }
     if (q.includes('guest') || q.includes('customer')) {
-      return `Total guests in system: ${totalGuests}. VIP guests: ${vipGuests}. Corporate guests: ${corporateGuests}. Active check-ins: ${bookings.filter(b => b.status === 'checked-in').length}. Guest satisfaction is tracking well based on recent booking patterns.`;
+      return `Total guests in system: ${totalGuests}. VIP guests: ${vipGuests}. Corporate guests: ${corporateGuests}. Active check-ins: ${bookings.filter(b => b.status === 'checked-in').length}.`;
     }
     if (q.includes('booking') || q.includes('reservation')) {
-      return `Total bookings: ${bookings.length}. Active/confirmed: ${activeBookings}. Pending: ${pendingBookings}. Cancelled: ${bookings.filter(b => b.status === 'cancelled').length}. Checked-out: ${bookings.filter(b => b.status === 'checked-out').length}. Upcoming bookings look strong with ${bookings.filter(b => b.status === 'confirmed').length} confirmed.`;
+      return `Total bookings: ${bookings.length}. Active/confirmed: ${activeBookings}. Pending: ${pendingBookings}. Cancelled: ${bookings.filter(b => b.status === 'cancelled').length}. Checked-out: ${bookings.filter(b => b.status === 'checked-out').length}.`;
     }
     if (q.includes('room') || q.includes('available') || q.includes('vacancy')) {
       const roomTypes = rooms.reduce((acc, r) => {
@@ -225,10 +174,10 @@ export default function AIEnhancements() {
       return `Based on current ${occupancyRate}% occupancy, I recommend ${occupancyRate > 80 ? 'adding 2 extra housekeeping staff for peak hours' : 'maintaining current staffing levels'}. Consider cross-training front desk staff for concierge duties during low-traffic periods.`;
     }
     if (q.includes('price') || q.includes('rate') || q.includes('pricing')) {
-      return `Average nightly rate: ${formatCurrency(avgRoomRate)}. At ${occupancyRate}% occupancy, ${occupancyRate > 85 ? 'there is room to increase rates by 10-15% on premium rooms' : 'current rates are well-positioned for market conditions'}. Weekend rates can be optimized for higher yield.`;
+      return `Average nightly rate: ${formatCurrency(avgRoomRate)}. At ${occupancyRate}% occupancy, ${occupancyRate > 85 ? 'there is room to increase rates by 10-15% on premium rooms' : 'rates are sitting steady at current occupancy'}.`;
     }
     if (q.includes('forecast') || q.includes('predict') || q.includes('trend')) {
-      return `Based on ${bookings.length} historical bookings: projected occupancy next week is ${Math.min(occupancyRate + 5, 98)}%. Revenue trend is ${totalRevenue > 50000 ? 'positive' : 'stable'}. Peak demand expected on weekends. Consider running a mid-week promotion to boost occupancy.`;
+      return `Based on ${bookings.length} historical bookings: projected occupancy next week is ${Math.min(occupancyRate + 5, 98)}%. Consider running a mid-week promotion to boost occupancy.`;
     }
     if (q.includes('invoice') || q.includes('payment') || q.includes('billing')) {
       const pendingInvoices = invoices.filter(i => i.status === 'pending').length;
@@ -238,7 +187,7 @@ export default function AIEnhancements() {
     if (q.includes('help') || q.includes('what can')) {
       return 'I can help with: occupancy analysis, revenue reports, guest insights, booking status, room availability, staffing recommendations, pricing optimization, demand forecasting, invoice/payment tracking, and more. Just ask!';
     }
-    return `I've analyzed your query against current property data. We have ${occupancyRate}% occupancy, ${formatCurrency(totalRevenue)} in bookings, and ${totalGuests} guests. Try asking about specific topics like "revenue", "occupancy", "guests", "bookings", "rooms", "pricing", "forecast", or "invoices" for detailed insights.`;
+    return `Here's what I have right now: ${occupancyRate}% occupancy, ${formatCurrency(totalRevenue)} in bookings, and ${totalGuests} guests. Try asking about specific topics like "revenue", "occupancy", "guests", "bookings", "rooms", "pricing", "forecast", or "invoices" for detailed insights.`;
   };
 
   // Backend answers when signed in; the local responder keeps chat usable offline.
@@ -279,9 +228,9 @@ export default function AIEnhancements() {
       entityType: 'property',
       entityId: insight.id,
       entityName: insight.title,
-      userId: 'system',
-      userName: 'AI System',
-      userRole: 'AI',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Implemented AI insight: ${insight.title} - ${insight.recommendation}`,
       timestamp: new Date().toISOString(),
     });
@@ -310,7 +259,7 @@ export default function AIEnhancements() {
       id: localId('ai'),
       type: 'revenue',
       title: 'Auto-Generated Operations Report',
-      description: `Comprehensive analysis: ${occupancyRate}% occupancy across ${totalRooms} rooms. ${activeBookings} active bookings generating ${formatCurrency(totalRevenue)} in revenue.`,
+      description: `${occupancyRate}% occupancy across ${totalRooms} rooms. ${activeBookings} active bookings generating ${formatCurrency(totalRevenue)} in revenue.`,
       recommendation: `Focus on ${availableRooms} available rooms. ${pendingBookings > 0 ? `Confirm ${pendingBookings} pending bookings to secure revenue.` : 'All bookings are confirmed.'} Consider weekend promotions for Standard rooms.`,
       impact: 'high',
       timestamp: new Date().toISOString(),
@@ -323,9 +272,9 @@ export default function AIEnhancements() {
       entityType: 'property',
       entityId: insight.id,
       entityName: 'AI Operations Report',
-      userId: 'system',
-      userName: 'AI System',
-      userRole: 'AI',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Generated operations report: ${occupancyRate}% occupancy, ${formatCurrency(totalRevenue)} revenue`,
       timestamp: new Date().toISOString(),
     });
@@ -357,9 +306,9 @@ export default function AIEnhancements() {
       entityType: 'property',
       entityId: insight.id,
       entityName: 'Pricing Optimization',
-      userId: 'system',
-      userName: 'AI System',
-      userRole: 'AI',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Pricing optimization: ${occupancyRate}% occupancy, avg rate ${formatCurrency(avgPrice)}`,
       timestamp: new Date().toISOString(),
     });
@@ -388,9 +337,9 @@ export default function AIEnhancements() {
       entityType: 'property',
       entityId: insight.id,
       entityName: 'Demand Prediction',
-      userId: 'system',
-      userName: 'AI System',
-      userRole: 'AI',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Demand prediction: ${predictedOccupancy}% expected occupancy, ${confirmedUpcoming} upcoming bookings`,
       timestamp: new Date().toISOString(),
     });
@@ -466,9 +415,9 @@ export default function AIEnhancements() {
       entityType: 'property',
       entityId: workflow.id,
       entityName: workflow.name,
-      userId: 'system',
-      userName: 'AI System',
-      userRole: 'AI',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Workflow "${workflow.name}" changed to ${newStatus}`,
       oldValue: workflow.status,
       newValue: newStatus,
@@ -487,9 +436,9 @@ export default function AIEnhancements() {
       entityType: 'property',
       entityId: workflowId,
       entityName: workflow?.name ?? 'Unknown',
-      userId: 'system',
-      userName: 'AI System',
-      userRole: 'AI',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Deleted workflow: ${workflow?.name}`,
       timestamp: new Date().toISOString(),
     });
@@ -522,9 +471,9 @@ export default function AIEnhancements() {
       entityType: 'property',
       entityId: newWorkflow.id,
       entityName: wfName,
-      userId: 'system',
-      userName: 'AI System',
-      userRole: 'AI',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Created workflow: ${wfName} (trigger: ${wfTrigger}, ${wfActions.length} actions)`,
       timestamp: new Date().toISOString(),
     });
@@ -651,10 +600,7 @@ export default function AIEnhancements() {
               </div>
               <div>
                 <h3 className="font-semibold text-sm">NEXUS AI Assistant</h3>
-                <p className="text-xs text-success flex items-center gap-1">
-                  <span className="w-2 h-2 bg-success rounded-full" />
-                  Online - Connected to live data
-                </p>
+                <p className="text-xs text-muted-foreground">Answers from your property data</p>
               </div>
             </div>
 
@@ -794,22 +740,6 @@ export default function AIEnhancements() {
                   <h3 className="font-semibold mb-1">{insight.title}</h3>
                   <p className="text-sm text-muted-foreground mb-3">{insight.description}</p>
 
-                  {/* Confidence bar (derived from impact) */}
-                  <div className="mb-3">
-                    <div className="flex justify-between text-xs text-muted-foreground mb-1">
-                      <span>Confidence</span>
-                      <span>{insight.impact === 'high' ? '92%' : insight.impact === 'medium' ? '75%' : '58%'}</span>
-                    </div>
-                    <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full ${
-                          insight.impact === 'high' ? 'bg-success' : insight.impact === 'medium' ? 'bg-warning' : 'bg-warning'
-                        }`}
-                        style={{ width: insight.impact === 'high' ? '92%' : insight.impact === 'medium' ? '75%' : '58%' }}
-                      />
-                    </div>
-                  </div>
-
                   <div className="p-3 bg-muted/30 rounded-lg mb-3">
                     <p className="text-sm font-medium text-primary">{insight.recommendation}</p>
                   </div>
@@ -882,7 +812,7 @@ export default function AIEnhancements() {
                   <BarChart3 className="w-5 h-5 text-info group-hover:scale-110 transition-transform" />
                   <p className="font-medium">Generate Report</p>
                 </div>
-                <p className="text-sm text-muted-foreground">Create AI-powered analytics report from live data</p>
+                <p className="text-sm text-muted-foreground">Summarise current occupancy, bookings, and revenue</p>
               </button>
               <button
                 onClick={handleOptimizePricing}
@@ -912,6 +842,12 @@ export default function AIEnhancements() {
       {/* =================== AGENTS TAB =================== */}
       {activeTab === 'agents' && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {agentStates.length === 0 && (
+            <div className="col-span-full py-10 text-center">
+              <Bot className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-sm text-muted-foreground">No agents on this property yet.</p>
+            </div>
+          )}
           {agentStates.map((agent, i) => (
             <motion.div
               key={agent.id}

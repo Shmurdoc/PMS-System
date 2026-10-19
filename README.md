@@ -21,7 +21,7 @@ dotnet run --project Aquri.API
 
 Connection string and `Jwt:Key` are not committed: `appsettings.json` ships empty and `Program.cs` fails fast when either is missing. Set them in `Aquri.API/appsettings.Development.json` (gitignored) or env vars (`ConnectionStrings__DefaultConnection`, `Jwt__Key`); Docker reads `.env` (copy `.env.example`).
 
-Demo logins: `admin@nexus.com`/`admin123`, `manager@nexus.com`/`manager123`, `front@nexus.com`/`front123`.
+Demo logins: `admin@nexus.com`/`admin123`, `manager@nexus.com`/`manager123`, `front@nexus.com`/`front123`, seeded only when demo seeding is on — `Seed:DemoUsers=true` for `dotnet run` (off by default; set it in `appsettings.Development.json`), or `SEED_DEMO_USERS` in `.env` for compose (on by default). Seed once, create real users, then switch it off.
 
 ## API surface
 

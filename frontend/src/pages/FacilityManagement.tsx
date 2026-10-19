@@ -94,7 +94,8 @@ export default function FacilityManagement() {
     addMaintenanceTicket, updateMaintenanceTicket, deleteMaintenanceTicket,
     addAuditLog,
   } = useAppStore();
-  const role = useAppStore((s) => s.user?.role);
+  const me = useAppStore((s) => s.user);
+const role = useAppStore((s) => s.user?.role);
   const isAdmin = role === 'admin';
 
   const [activeTab, setActiveTab] = useState<'electricity' | 'maintenance' | 'zones' | 'alerts'>('electricity');
@@ -301,9 +302,9 @@ export default function FacilityManagement() {
         entityType: 'property',
         entityId: editingElectricity.id,
         entityName: `Electricity ${editingElectricity.zone}`,
-        userId: 'system',
-        userName: 'System',
-        userRole: 'system',
+        userId: me?.id ?? '',
+        userName: me?.name ?? 'You',
+        userRole: me?.role ?? '',
         details: `Updated electricity record for ${electricityForm.zone} on ${electricityForm.date}`,
         timestamp: new Date().toISOString(),
       });
@@ -317,9 +318,9 @@ export default function FacilityManagement() {
         entityType: 'property',
         entityId: newId,
         entityName: `Electricity ${electricityForm.zone}`,
-        userId: 'system',
-        userName: 'System',
-        userRole: 'system',
+        userId: me?.id ?? '',
+        userName: me?.name ?? 'You',
+        userRole: me?.role ?? '',
         details: `Added electricity record for ${electricityForm.zone} on ${electricityForm.date}: ${electricityForm.consumption} kWh, R${electricityForm.cost.toFixed(2)}`,
         timestamp: new Date().toISOString(),
       });
@@ -351,9 +352,9 @@ export default function FacilityManagement() {
         entityType: 'property',
         entityId: id,
         entityName: 'Electricity Record',
-        userId: 'system',
-        userName: 'System',
-        userRole: 'system',
+        userId: me?.id ?? '',
+        userName: me?.name ?? 'You',
+        userRole: me?.role ?? '',
         details: `Deleted electricity record ${id}`,
         timestamp: new Date().toISOString(),
       });
@@ -397,9 +398,9 @@ export default function FacilityManagement() {
       entityType: 'ticket',
       entityId: newTicket.id,
       entityName: `Maintenance: ${newTicket.title}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Created maintenance ticket "${newTicket.title}" (${newTicket.priority} priority)`,
       timestamp: new Date().toISOString(),
     });
@@ -450,9 +451,9 @@ export default function FacilityManagement() {
       entityType: 'ticket',
       entityId: editingTicket.id,
       entityName: `Maintenance: ${ticketForm.title}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Updated maintenance ticket "${ticketForm.title}"`,
       oldValue: JSON.stringify({ status: editingTicket.status, priority: editingTicket.priority }),
       newValue: JSON.stringify({ status: ticketForm.status, priority: ticketForm.priority }),
@@ -480,9 +481,9 @@ export default function FacilityManagement() {
       entityType: 'ticket',
       entityId: ticket.id,
       entityName: `Maintenance: ${ticket.title}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Completed maintenance ticket "${ticket.title}"`,
       oldValue: ticket.status,
       newValue: 'completed',
@@ -500,9 +501,9 @@ export default function FacilityManagement() {
         entityType: 'ticket',
         entityId: ticket.id,
         entityName: `Maintenance: ${ticket.title}`,
-        userId: 'system',
-        userName: 'System',
-        userRole: 'system',
+        userId: me?.id ?? '',
+        userName: me?.name ?? 'You',
+        userRole: me?.role ?? '',
         details: `Deleted maintenance ticket "${ticket.title}"`,
         timestamp: new Date().toISOString(),
       });

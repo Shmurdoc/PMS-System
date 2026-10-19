@@ -73,7 +73,7 @@ Timeout, 5xx, or a malformed response falls back to the deterministic answer, so
 
 ## Demo logins
 
-`DbSeeder` creates three users on first run (skips if any user exists):
+`DbSeeder` creates three users on first run when demo seeding is enabled (`Seed:DemoUsers=true`; skipped if any user already exists):
 
 | Email               | Password    | Role       |
 |---------------------|-------------|------------|
@@ -85,7 +85,7 @@ Timeout, 5xx, or a malformed response falls back to the deterministic answer, so
 
 ## Applying migrations
 
-EF migrations are in `Aquri.Infrastructure\Persistence\Migrations\`, in order: `InitialCreate` (Properties, Rooms, MaintenanceRequests, Users), `AddCoreEntities`, `AddSupportingEntities`, `AddNumberSequences`, `DropOrphanNavigationForeignKeys`, `AddAiAgentLayer`, `AddRfidTags`.
+EF migrations are in `Aquri.Infrastructure\Persistence\Migrations\`, in order: `InitialCreate` (Properties, Rooms, MaintenanceRequests, Users), `AddCoreEntities`, `AddSupportingEntities`, `AddNumberSequences`, `DropOrphanNavigationForeignKeys`, `AddAiAgentLayer`, `AddRfidTags`, `AddUserPropertyScope`, `MakeRfidTagIndexActiveOnly`, `AddElectricityAndIntegrations`.
 
 To apply against a live database:
 
@@ -93,14 +93,9 @@ To apply against a live database:
 2. Either run the API (it does not auto-migrate; check startup logs) or run `dotnet ef database update --project Aquri.Infrastructure --startup-project Aquri.API`.
 3. To generate a new migration after model changes: `dotnet ef migrations add {Name} --project Aquri.Infrastructure --startup-project Aquri.API`. The design-time factory (`AquriDbContextFactory`) supplies the connection context.
 
-### Known blocker: 28P01
+### Note on the old 28P01 blocker
 
-Applying migrations to local Postgres currently fails with `28P01: password authentication failed for user "aquri_user"`. This is a credential/environment mismatch, not a code bug. Options:
-
-- Create the role to match whatever you put in the connection string: `CREATE ROLE aquri_user WITH LOGIN PASSWORD '<your password>';`
-- Or point the connection string at credentials your local Postgres already accepts (the design-time factory picks the value up automatically).
-
-Until this is resolved, migrations are generated but not applied. The API still starts; `DbSeeder` catches the connection failure and logs a warning.
+An earlier version of this page said `dotnet ef database update` always failed with `28P01: password authentication failed for user "aquri_user"` — credentials in the connection string didn't match the role in Postgres. That's sorted now: the dev config and the `aquri-db` container agree, and a full `database update` applies all ten migrations cleanly (verified 2026-10-19). If you do hit 28P01 on a fresh box, the fix is the same as it ever was — either `CREATE ROLE aquri_user WITH LOGIN PASSWORD '<your password>';` or point the connection string at credentials your Postgres accepts (the design-time factory picks the value up automatically).
 
 ## Project layout (quick reference)
 

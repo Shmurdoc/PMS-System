@@ -96,7 +96,8 @@ const emptyForm: ShiftFormData = {
 
 export default function StaffScheduling() {
   const { users, shifts, addShift, updateShift, deleteShift, addAuditLog } = useAppStore();
-  const role = useAppStore((s) => s.user?.role);
+  const me = useAppStore((s) => s.user);
+const role = useAppStore((s) => s.user?.role);
   const canManage = role === 'admin' || role === 'manager';
 
   const [currentWeek, setCurrentWeek] = useState(new Date());
@@ -233,9 +234,9 @@ export default function StaffScheduling() {
       entityType: 'user',
       entityId: newShift.id,
       entityName: `Shift for ${userName}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Created shift for ${userName} on ${formData.date} (${formData.startTime}-${formData.endTime})`,
       timestamp: new Date().toISOString(),
     });
@@ -269,9 +270,9 @@ export default function StaffScheduling() {
       entityType: 'user',
       entityId: editingShift.id,
       entityName: `Shift for ${userName}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Updated shift for ${userName} on ${formData.date}`,
       oldValue: JSON.stringify({ startTime: editingShift.startTime, endTime: editingShift.endTime }),
       newValue: JSON.stringify({ startTime: formData.startTime, endTime: formData.endTime }),
@@ -343,9 +344,9 @@ export default function StaffScheduling() {
       entityType: 'user',
       entityId: editingShift.id,
       entityName: `Shift swap`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Swapped shift between ${originalName} and ${targetName} on ${editingShift.date}`,
       oldValue: originalName,
       newValue: targetName,
@@ -372,9 +373,9 @@ export default function StaffScheduling() {
       entityType: 'user',
       entityId: editingShift.id,
       entityName: `Shift for ${editingShift.userName}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Cancelled shift for ${editingShift.userName} on ${editingShift.date}`,
       timestamp: new Date().toISOString(),
     });
@@ -391,9 +392,9 @@ export default function StaffScheduling() {
       entityType: 'user',
       entityId: shift.id,
       entityName: `Shift for ${shift.userName}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'system',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Deleted shift for ${shift.userName} on ${shift.date}`,
       timestamp: new Date().toISOString(),
     });

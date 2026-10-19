@@ -38,7 +38,6 @@ import LoginPage from './pages/LoginPage';
 import { ErrorBoundary } from './pages/ErrorPages';
 import NotificationBell from './components/notifications/NotificationBell';
 import GlobalSearch from './components/search/GlobalSearch';
-import { DemoControls } from './components/demo/DemoControls';
 import { MetricCard, Panel, PageHeader, StatusBadge } from './components/shared';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useAppStore } from './store/useAppStore';
@@ -82,7 +81,7 @@ const cannedAssistantReply = (text: string): string => {
   const responses: Record<string, string> = {
     'booking': 'I can help you create a new booking. Would you like me to open the booking form or search for available rooms first?',
     'report': 'I can generate various reports. Which type would you like? Financial, occupancy, guest analysis, or custom?',
-    'analytics': 'I\'ve analyzed your data. Your occupancy rate is up 12% this month, and revenue has increased by R45,000 compared to last month.',
+    'analytics': 'Live analytics are unavailable right now. When connected, I can show occupancy, revenue, and booking trends for your property.',
     'automation': 'I can help you set up automated workflows. What would you like to automate? Check-in emails, payment reminders, or review requests?',
     'help': 'I can assist with: creating bookings, managing guests, generating reports, analyzing data, setting up automations, and answering questions about your PMS.',
   };
@@ -823,19 +822,6 @@ function App() {
         e.preventDefault();
         setVisualBuilderOpen(true);
       }
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'R') {
-        e.preventDefault();
-        if (confirm('Reset all demo data?')) {
-          window.location.reload();
-        }
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === 'd') {
-        e.preventDefault();
-        import('./lib/mockApi').then(({ setDemoMode }) => {
-          setDemoMode(true);
-          window.location.reload();
-        });
-      }
     };
 
     window.addEventListener('keydown', handleKeyDown);
@@ -1223,7 +1209,6 @@ function App() {
 
   return (
     <ErrorBoundary>
-      <DemoControls>
         <div className="min-h-screen bg-background text-foreground">
           {/* Mobile Menu Overlay */}
         <AnimatePresence>
@@ -1479,7 +1464,6 @@ function App() {
           {/* Toasts are handled by sonner */}
         </div>
         </div>
-      </DemoControls>
     </ErrorBoundary>
   );
 }

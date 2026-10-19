@@ -11,8 +11,6 @@ import { toast } from 'sonner';
 import { useAppStore } from '../store/useAppStore';
 import { newId } from '../utils/id';
 
-const CURRENT_USER_ID = '1';
-
 const EMOJI_LIST = [
   '😀', '😂', '😍', '🥰', '😎', '🤔', '👍', '👎', '❤️', '🔥',
   '🎉', '✅', '⭐', '💯', '🙏', '👋', '😊', '😢', '🤝', '💪',
@@ -23,8 +21,9 @@ export default function Messaging() {
   const {
     messages, users, addMessage, deleteMessage, markMessageRead, addAuditLog
   } = useAppStore();
-  const role = useAppStore((s) => s.user?.role);
-  const canManage = role === 'admin' || role === 'manager';
+  const me = useAppStore((s) => s.user);
+  const meId = me?.id ?? '';
+  const canManage = me?.role === 'admin' || me?.role === 'manager';
 
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [newMessage, setNewMessage] = useState('');
@@ -74,12 +73,12 @@ export default function Messaging() {
   }, [messages, selectedConversation]);
 
   // Build conversations: between current user and each other user
-  const otherUsers = users.filter(u => u.id !== CURRENT_USER_ID);
+  const otherUsers = users.filter(u => u.id !== meId);
 
   const conversations = otherUsers.map(user => {
     const userMessages = messages.filter(
-      m => (m.senderId === user.id && (!m.channelId || m.channelId === CURRENT_USER_ID)) ||
-           (m.senderId === CURRENT_USER_ID && m.channelId === user.id)
+      m => (m.senderId === user.id && (!m.channelId || m.channelId === meId)) ||
+           (m.senderId === meId && m.channelId === user.id)
     );
     const lastMessage = userMessages.sort(
       (a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
@@ -109,8 +108,8 @@ export default function Messaging() {
   const selectedMessages = selectedUser
     ? messages
         .filter(
-          m => (m.senderId === selectedUser.id && (!m.channelId || m.channelId === CURRENT_USER_ID)) ||
-               (m.senderId === CURRENT_USER_ID && m.channelId === selectedUser.id)
+          m => (m.senderId === selectedUser.id && (!m.channelId || m.channelId === meId)) ||
+               (m.senderId === meId && m.channelId === selectedUser.id)
         )
         .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
     : [];
@@ -122,8 +121,8 @@ export default function Messaging() {
     const recipientUser = users.find(u => u.id === recipient);
     const message = {
       id: newId('msg'),
-      senderId: CURRENT_USER_ID,
-      senderName: users.find(u => u.id === CURRENT_USER_ID)?.name ?? 'You',
+      senderId: meId,
+      senderName: me?.name ?? 'You',
       content: text,
       timestamp: new Date().toISOString(),
       read: false,
@@ -137,14 +136,14 @@ export default function Messaging() {
       entityType: 'user',
       entityId: recipient,
       entityName: recipientUser?.name ?? 'Unknown',
-      userId: CURRENT_USER_ID,
-      userName: users.find(u => u.id === CURRENT_USER_ID)?.name ?? 'System',
-      userRole: users.find(u => u.id === CURRENT_USER_ID)?.role ?? 'System',
+      userId: meId,
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Sent message to ${recipientUser?.name ?? 'Unknown'}`,
       timestamp: new Date().toISOString(),
     });
     if (!content) setNewMessage('');
-  }, [newMessage, selectedConversation, users, addMessage, addAuditLog]);
+  }, [newMessage, selectedConversation, users, me, meId, addMessage, addAuditLog]);
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
@@ -178,9 +177,9 @@ export default function Messaging() {
           entityType: 'user',
           entityId: selectedUser.id,
           entityName: selectedUser.name,
-          userId: CURRENT_USER_ID,
-          userName: users.find(u => u.id === CURRENT_USER_ID)?.name ?? 'System',
-          userRole: users.find(u => u.id === CURRENT_USER_ID)?.role ?? 'System',
+          userId: meId,
+          userName: me?.name ?? 'You',
+          userRole: me?.role ?? '',
           details: `${type === 'phone' ? 'Phone' : 'Video'} call with ${selectedUser.name}`,
           timestamp: new Date().toISOString(),
         });
@@ -203,8 +202,8 @@ export default function Messaging() {
   const handleClearChat = () => {
     if (!selectedUser) return;
     const chatMsgs = messages.filter(
-      m => (m.senderId === selectedUser.id && (!m.channelId || m.channelId === CURRENT_USER_ID)) ||
-           (m.senderId === CURRENT_USER_ID && m.channelId === selectedUser.id)
+      m => (m.senderId === selectedUser.id && (!m.channelId || m.channelId === meId)) ||
+           (m.senderId === meId && m.channelId === selectedUser.id)
     );
     chatMsgs.forEach(m => deleteMessage(m.id));
     setShowMoreMenu(false);
@@ -215,9 +214,9 @@ export default function Messaging() {
       entityType: 'user',
       entityId: selectedUser.id,
       entityName: selectedUser.name,
-      userId: CURRENT_USER_ID,
-      userName: users.find(u => u.id === CURRENT_USER_ID)?.name ?? 'System',
-      userRole: users.find(u => u.id === CURRENT_USER_ID)?.role ?? 'System',
+      userId: meId,
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Cleared chat history with ${selectedUser.name}`,
       timestamp: new Date().toISOString(),
     });
@@ -260,8 +259,8 @@ export default function Messaging() {
     const recipientUser = users.find(u => u.id === selectedConversation);
     const message = {
       id: newId('msg'),
-      senderId: CURRENT_USER_ID,
-      senderName: users.find(u => u.id === CURRENT_USER_ID)?.name ?? 'You',
+      senderId: meId,
+      senderName: me?.name ?? 'You',
       content,
       timestamp: new Date().toISOString(),
       read: false,
@@ -277,9 +276,9 @@ export default function Messaging() {
       entityType: 'user',
       entityId: selectedConversation,
       entityName: recipientUser?.name ?? 'Unknown',
-      userId: CURRENT_USER_ID,
-      userName: users.find(u => u.id === CURRENT_USER_ID)?.name ?? 'System',
-      userRole: users.find(u => u.id === CURRENT_USER_ID)?.role ?? 'System',
+      userId: meId,
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Sent ${type.toLowerCase()} attachment to ${recipientUser?.name ?? 'Unknown'}`,
       timestamp: new Date().toISOString(),
     });
@@ -367,7 +366,6 @@ export default function Messaging() {
                 </div>
               )}
               {filteredConversations.map((conv) => {
-                const isOnline = conv.user.status === 'active';
                 const isPinned = pinnedConversations.has(conv.user.id);
                 return (
                   <motion.button
@@ -384,7 +382,7 @@ export default function Messaging() {
                           {conv.user.name.split(' ').map(n => n[0]).join('')}
                         </div>
                         <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card ${
-                          isOnline ? 'bg-success' : 'bg-muted-foreground'
+                          conv.user.status === 'active' ? 'bg-success' : conv.user.status === 'on_leave' ? 'bg-warning' : 'bg-muted-foreground'
                         }`} />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -401,7 +399,7 @@ export default function Messaging() {
                           {conv.lastMessage?.content ?? 'No messages yet'}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {conv.user.role} · {isOnline ? 'Online' : 'Offline'}
+                          {conv.user.role} · {conv.user.status === 'active' ? 'Active' : conv.user.status === 'on_leave' ? 'On Leave' : 'Inactive'}
                         </p>
                       </div>
                       {conv.unreadCount > 0 && (
@@ -449,7 +447,7 @@ export default function Messaging() {
                     {selectedUser.name.split(' ').map(n => n[0]).join('')}
                   </div>
                   <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-card ${
-                    selectedUser.status === 'active' ? 'bg-success' : 'bg-muted-foreground'
+                    selectedUser.status === 'active' ? 'bg-success' : selectedUser.status === 'on_leave' ? 'bg-warning' : 'bg-muted-foreground'
                   }`} />
                 </div>
                 <div>
@@ -460,7 +458,7 @@ export default function Messaging() {
                     )}
                   </h3>
                   <p className="text-xs text-muted-foreground">
-                    {selectedUser.role} · {selectedUser.status === 'active' ? 'Online' : 'Offline'}
+                    {selectedUser.role} · {selectedUser.status === 'active' ? 'Active' : selectedUser.status === 'on_leave' ? 'On Leave' : 'Inactive'}
                   </p>
                 </div>
               </div>
@@ -539,7 +537,7 @@ export default function Messaging() {
                 </div>
               )}
               {selectedMessages.map((msg) => {
-                const isOwn = msg.senderId === CURRENT_USER_ID;
+                const isOwn = msg.senderId === meId;
                 const typeStyle = getMessageTypeStyle(msg);
                 return (
                   <motion.div
@@ -875,7 +873,7 @@ export default function Messaging() {
                     ? 'bg-warning/15 text-warning'
                     : 'bg-gray-500/20 text-gray-400'
                 }`}>
-                  {selectedUser.status === 'active' ? 'Online' : selectedUser.status === 'on_leave' ? 'On Leave' : 'Offline'}
+                  {selectedUser.status === 'active' ? 'Active' : selectedUser.status === 'on_leave' ? 'On Leave' : 'Inactive'}
                 </span>
               </div>
               <div className="space-y-3">

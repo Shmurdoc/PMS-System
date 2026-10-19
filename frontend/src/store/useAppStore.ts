@@ -858,211 +858,6 @@ export interface AppState {
   setActivePage: (page: string) => void;
 }
 
-// ============================================
-// MOCK DATA
-// ============================================
-
-const mockUsers: User[] = [
-  { id: '1', name: 'Sarah Johnson', email: 'sarah@nexus.com', role: 'General Manager', department: 'Management', phone: '+27 82 123 4567', hireDate: '2022-01-15', status: 'active' },
-  { id: '2', name: 'Mike Chen', email: 'mike@nexus.com', role: 'Front Desk Manager', department: 'Front Desk', phone: '+27 82 234 5678', hireDate: '2021-06-01', status: 'active' },
-  { id: '3', name: 'Emma Williams', email: 'emma@nexus.com', role: 'Housekeeping Supervisor', department: 'Housekeeping', phone: '+27 82 345 6789', hireDate: '2020-03-20', status: 'active' },
-  { id: '4', name: 'James Brown', email: 'james@nexus.com', role: 'Maintenance Manager', department: 'Maintenance', phone: '+27 82 456 7890', hireDate: '2019-11-10', status: 'active' },
-  { id: '5', name: 'Lisa Anderson', email: 'lisa@nexus.com', role: 'Finance Manager', department: 'Finance', phone: '+27 82 567 8901', hireDate: '2021-02-28', status: 'active' },
-  { id: '6', name: 'David Martinez', email: 'david@nexus.com', role: 'Chef', department: 'Kitchen', phone: '+27 82 678 9012', hireDate: '2022-05-15', status: 'active' },
-  { id: '7', name: 'Amy Taylor', email: 'amy@nexus.com', role: 'Concierge', department: 'Front Desk', phone: '+27 82 789 0123', hireDate: '2023-01-10', status: 'active' },
-  { id: '8', name: 'Robert Kim', email: 'robert@nexus.com', role: 'Security Officer', department: 'Security', phone: '+27 82 890 1234', hireDate: '2020-08-05', status: 'active' },
-];
-
-const mockProperties: Property[] = [
-  { id: '1', name: 'Nexus Grand Hotel', address: '123 Main Street, Sandton, Johannesburg', totalRooms: 150, occupiedRooms: 120, rating: 4.8, image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?w=400', status: 'operational', phone: '+27 11 123 4567', email: 'grand@nexus.com', manager: 'Sarah Johnson', checkInTime: '14:00', checkOutTime: '11:00' },
-  { id: '2', name: 'Nexus Beach Resort', address: '45 Marine Drive, Durban', totalRooms: 80, occupiedRooms: 65, rating: 4.6, image: 'https://images.unsplash.com/photo-1582719508461-905c673771fd?w=400', status: 'operational', phone: '+27 31 234 5678', email: 'beach@nexus.com', manager: 'Mike Chen', checkInTime: '15:00', checkOutTime: '10:00' },
-  { id: '3', name: 'Nexus City Lodge', address: '78 Church Street, Cape Town', totalRooms: 45, occupiedRooms: 38, rating: 4.5, image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=400', status: 'operational', phone: '+27 21 345 6789', email: 'city@nexus.com', manager: 'Lisa Anderson', checkInTime: '14:00', checkOutTime: '11:00' },
-  { id: '4', name: 'Nexus Garden Inn', address: '12 Botanical Road, Pretoria', totalRooms: 30, occupiedRooms: 22, rating: 4.3, image: 'https://images.unsplash.com/photo-1445019980597-93fa8acb246c?w=400', status: 'operational', phone: '+27 12 456 7890', email: 'garden@nexus.com', manager: 'Emma Williams', checkInTime: '14:00', checkOutTime: '10:00' },
-];
-
-const mockRooms: Room[] = [
-  { id: '101', propertyId: '1', number: '101', type: 'Standard Suite', floor: 1, status: 'available', price: 1500, description: 'Comfortable room with city view', amenities: ['WiFi', 'TV', 'AC'], image: 'https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=400', maxOccupancy: 2, bedType: 'Queen', size: 28, view: 'City' },
-  { id: '102', propertyId: '1', number: '102', type: 'Deluxe Room', floor: 1, status: 'occupied', price: 2200, description: 'Spacious room with balcony', amenities: ['WiFi', 'TV', 'AC', 'Mini Bar'], image: 'https://images.unsplash.com/photo-1611892440504-42a792e24d32?w=400', maxOccupancy: 2, bedType: 'King', size: 35, view: 'Garden' },
-  { id: '103', propertyId: '1', number: '103', type: 'Standard Suite', floor: 1, status: 'cleaning', price: 1500, description: 'Standard room recently cleaned', amenities: ['WiFi', 'TV', 'AC'], image: 'https://images.unsplash.com/photo-1590490360182-c33d57733427?w=400', maxOccupancy: 2, bedType: 'Queen', size: 28, view: 'City' },
-  { id: '201', propertyId: '1', number: '201', type: 'Executive Suite', floor: 2, status: 'available', price: 3500, description: 'Luxury suite with separate living area', amenities: ['WiFi', 'TV', 'AC', 'Jacuzzi', 'Room Service'], image: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=400', maxOccupancy: 3, bedType: 'King', size: 55, view: 'Panoramic' },
-  { id: '202', propertyId: '1', number: '202', type: 'Deluxe Room', floor: 2, status: 'maintenance', price: 2200, description: 'Under maintenance', amenities: ['WiFi', 'TV', 'AC'], image: 'https://images.unsplash.com/photo-1566665797739-1674de7a421a?w=400', maxOccupancy: 2, bedType: 'King', size: 35, view: 'City' },
-  { id: '301', propertyId: '1', number: '301', type: 'Presidential Suite', floor: 3, status: 'occupied', price: 8500, description: 'Ultimate luxury with panoramic views', amenities: ['WiFi', 'TV', 'AC', 'Jacuzzi', 'Butler Service', 'Private Pool'], image: 'https://images.unsplash.com/photo-1591088398332-8a7791972843?w=400', maxOccupancy: 4, bedType: 'King', size: 120, view: 'Panoramic' },
-  { id: '401', propertyId: '2', number: '401', type: 'Ocean View', floor: 4, status: 'available', price: 2800, description: 'Stunning ocean views', amenities: ['WiFi', 'TV', 'AC', 'Balcony'], image: 'https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=400', maxOccupancy: 2, bedType: 'King', size: 40, view: 'Ocean' },
-  { id: '402', propertyId: '2', number: '402', type: 'Beach Villa', floor: 4, status: 'occupied', price: 5500, description: 'Private villa steps from beach', amenities: ['WiFi', 'TV', 'AC', 'Private Pool', 'Butler'], image: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=400', maxOccupancy: 4, bedType: 'King', size: 85, view: 'Beach' },
-];
-
-const mockMessages: Message[] = [
-  { id: '1', senderId: '2', senderName: 'Mike Chen', content: 'Morning team! Please ensure all checkout rooms are ready by 11 AM today.', timestamp: '2025-03-26T08:30:00', read: false, type: 'text' },
-  { id: '2', senderId: '3', senderName: 'Emma Williams', content: 'Housekeeping report: 85% rooms completed, 15% in progress.', timestamp: '2025-03-26T09:15:00', read: true, type: 'text' },
-  { id: '3', senderId: '4', senderName: 'James Brown', content: 'Pool pump maintenance completed. All systems operational.', timestamp: '2025-03-26T10:00:00', read: true, type: 'text' },
-  { id: '4', senderId: '5', senderName: 'Lisa Anderson', content: 'Q1 financial report is ready for review. Revenue up 12% YoY.', timestamp: '2025-03-26T11:30:00', read: false, type: 'text' },
-  { id: '5', senderId: '6', senderName: 'David Martinez', content: 'Kitchen inventory check complete. Need to reorder seafood supplies.', timestamp: '2025-03-26T12:00:00', read: false, type: 'text' },
-];
-
-const mockRfidTags: RfidTag[] = [
-  { id: '1', propertyId: '1', kind: 'staff', tagNumber: 'RFID-001', userId: '1', userName: 'Sarah Johnson', status: 'active', accessLevel: 'Full Access', createdAt: '2024-01-15', lastUsed: '2025-03-26T08:00:00' },
-  { id: '2', propertyId: '1', kind: 'staff', tagNumber: 'RFID-002', userId: '2', userName: 'Mike Chen', status: 'active', accessLevel: 'Front Desk', createdAt: '2024-02-01', lastUsed: '2025-03-26T07:45:00' },
-  { id: '3', propertyId: '1', kind: 'staff', tagNumber: 'RFID-003', userId: '3', userName: 'Emma Williams', status: 'active', accessLevel: 'Housekeeping', createdAt: '2024-02-15', lastUsed: '2025-03-26T07:30:00' },
-  { id: '4', propertyId: '1', kind: 'staff', tagNumber: 'RFID-004', userId: '4', userName: 'James Brown', status: 'inactive', accessLevel: 'Maintenance', createdAt: '2024-03-01', lastUsed: '2025-03-25T18:00:00' },
-  { id: '5', propertyId: '1', kind: 'staff', tagNumber: 'RFID-005', userId: '5', userName: 'Lisa Anderson', status: 'active', accessLevel: 'Finance', createdAt: '2024-03-15', lastUsed: '2025-03-26T08:15:00' },
-  { id: '6', propertyId: '1', kind: 'staff', tagNumber: 'RFID-006', userId: '8', userName: 'Robert Kim', status: 'active', accessLevel: 'Security', createdAt: '2024-04-01', lastUsed: '2025-03-26T06:00:00' },
-  // Guest card bound to a mock stay — expires at checkout, so taps fail the expiry guard.
-  { id: '7', propertyId: '1', kind: 'guest', tagNumber: 'RFID-G-100001', bookingId: 'BK001', guestName: 'Sarah Johnson', roomNumber: '301', status: 'active', accessLevel: 'Room 301', createdAt: '2026-03-20', expiresAt: '2026-03-30' },
-];
-
-const mockAttendance: AttendanceRecord[] = [
-  { id: '1', userId: '1', userName: 'Sarah Johnson', checkIn: '2025-03-26T08:00:00', date: '2025-03-26', status: 'present' },
-  { id: '2', userId: '2', userName: 'Mike Chen', checkIn: '2025-03-26T07:45:00', date: '2025-03-26', status: 'present' },
-  { id: '3', userId: '3', userName: 'Emma Williams', checkIn: '2025-03-26T07:30:00', date: '2025-03-26', status: 'present' },
-  { id: '4', userId: '4', userName: 'James Brown', checkIn: '2025-03-26T08:30:00', date: '2025-03-26', status: 'late' },
-  { id: '5', userId: '5', userName: 'Lisa Anderson', checkIn: '2025-03-26T08:15:00', date: '2025-03-26', status: 'present' },
-  { id: '6', userId: '6', userName: 'David Martinez', checkIn: '2025-03-26T06:00:00', date: '2025-03-26', status: 'present' },
-  { id: '7', userId: '7', userName: 'Amy Taylor', checkIn: '2025-03-26T07:00:00', date: '2025-03-26', status: 'present' },
-  { id: '8', userId: '8', userName: 'Robert Kim', checkIn: '2025-03-26T06:00:00', date: '2025-03-26', status: 'present' },
-];
-
-const mockShifts: Shift[] = [
-  { id: '1', userId: '2', userName: 'Mike Chen', startTime: '07:00', endTime: '15:00', date: '2025-03-26', role: 'Front Desk', status: 'scheduled', department: 'Front Desk' },
-  { id: '2', userId: '7', userName: 'Amy Taylor', startTime: '15:00', endTime: '23:00', date: '2025-03-26', role: 'Front Desk', status: 'scheduled', department: 'Front Desk' },
-  { id: '3', userId: '3', userName: 'Emma Williams', startTime: '06:00', endTime: '14:00', date: '2025-03-26', role: 'Housekeeping', status: 'completed', department: 'Housekeeping' },
-  { id: '4', userId: '6', userName: 'David Martinez', startTime: '06:00', endTime: '14:00', date: '2025-03-26', role: 'Kitchen', status: 'completed', department: 'Kitchen' },
-  { id: '5', userId: '4', userName: 'James Brown', startTime: '08:00', endTime: '17:00', date: '2025-03-26', role: 'Maintenance', status: 'scheduled', department: 'Maintenance' },
-  { id: '6', userId: '8', userName: 'Robert Kim', startTime: '18:00', endTime: '06:00', date: '2025-03-26', role: 'Security', status: 'scheduled', department: 'Security' },
-];
-
-const mockExpenses: Expense[] = [
-  { id: '1', category: 'Supplies', amount: 2500, description: 'Cleaning supplies and toiletries', date: '2025-03-25', status: 'approved', submittedBy: 'Emma Williams', approvedBy: 'Sarah Johnson', approvedAt: '2025-03-25', propertyId: '1' },
-  { id: '2', category: 'Maintenance', amount: 8500, description: 'HVAC system repair', date: '2025-03-24', status: 'approved', submittedBy: 'James Brown', approvedBy: 'Sarah Johnson', approvedAt: '2025-03-24', propertyId: '1' },
-  { id: '3', category: 'Food & Beverage', amount: 12000, description: 'Weekly produce order', date: '2025-03-23', status: 'approved', submittedBy: 'David Martinez', approvedBy: 'Lisa Anderson', approvedAt: '2025-03-23', propertyId: '1' },
-  { id: '4', category: 'Utilities', amount: 45000, description: 'March electricity bill', date: '2025-03-20', status: 'approved', submittedBy: 'Lisa Anderson', approvedBy: 'Sarah Johnson', approvedAt: '2025-03-20', propertyId: '1' },
-  { id: '5', category: 'Marketing', amount: 8000, description: 'Online advertising campaign', date: '2025-03-18', status: 'pending', submittedBy: 'Sarah Johnson', propertyId: '1' },
-  { id: '6', category: 'Supplies', amount: 1500, description: 'Office stationery', date: '2025-03-26', status: 'pending', submittedBy: 'Mike Chen', propertyId: '1' },
-];
-
-const mockInventory: InventoryItem[] = [
-  { id: '1', name: 'King Size Sheets', category: 'Linens', quantity: 150, unit: 'sets', reorderLevel: 50, price: 450, supplier: 'Textile Co', sku: 'LIN-KSS-001', location: 'Main Store' },
-  { id: '2', name: 'Towels (Bath)', category: 'Linens', quantity: 80, unit: 'pieces', reorderLevel: 30, price: 180, supplier: 'Textile Co', sku: 'LIN-TWL-001', location: 'Main Store' },
-  { id: '3', name: 'Shampoo', category: 'Toiletries', quantity: 200, unit: 'bottles', reorderLevel: 50, price: 45, supplier: 'Hotel Supplies', sku: 'TOI-SHP-001', location: 'Amenity Room' },
-  { id: '4', name: 'Soap Bars', category: 'Toiletries', quantity: 300, unit: 'pieces', reorderLevel: 100, price: 12, supplier: 'Hotel Supplies', sku: 'TOI-SOP-001', location: 'Amenity Room' },
-  { id: '5', name: 'Coffee Beans', category: 'Kitchen', quantity: 25, unit: 'kg', reorderLevel: 10, price: 280, supplier: 'Coffee Masters', sku: 'KIT-COF-001', location: 'Kitchen Store' },
-  { id: '6', name: 'Tea Bags', category: 'Kitchen', quantity: 500, unit: 'bags', reorderLevel: 200, price: 8, supplier: 'Coffee Masters', sku: 'KIT-TEA-001', location: 'Kitchen Store' },
-  { id: '7', name: 'Minibar Snacks', category: 'F&B', quantity: 100, unit: 'items', reorderLevel: 30, price: 35, supplier: 'Snack Distributors', sku: 'FNB-SNK-001', location: 'F&B Store' },
-  { id: '8', name: 'Cleaning Solution', category: 'Maintenance', quantity: 40, unit: 'liters', reorderLevel: 15, price: 120, supplier: 'Clean Pro', sku: 'MNT-CLN-001', location: 'Maintenance Store' },
-];
-
-const mockElectricity: ElectricityRecord[] = [
-  { id: '1', date: '2025-03-26', consumption: 1250, cost: 3125, peakDemand: 180, zone: 'Main Building' },
-  { id: '2', date: '2025-03-25', consumption: 1380, cost: 3450, peakDemand: 195, zone: 'Main Building' },
-  { id: '3', date: '2025-03-24', consumption: 1420, cost: 3550, peakDemand: 200, zone: 'Main Building' },
-  { id: '4', date: '2025-03-23', consumption: 1290, cost: 3225, peakDemand: 185, zone: 'Main Building' },
-  { id: '5', date: '2025-03-22', consumption: 1150, cost: 2875, peakDemand: 170, zone: 'Main Building' },
-  { id: '6', date: '2025-03-21', consumption: 980, cost: 2450, peakDemand: 150, zone: 'Main Building' },
-  { id: '7', date: '2025-03-26', consumption: 450, cost: 1125, peakDemand: 65, zone: 'Annex' },
-  { id: '8', date: '2025-03-25', consumption: 480, cost: 1200, peakDemand: 70, zone: 'Annex' },
-];
-
-const mockMaintenanceTickets: MaintenanceTicket[] = [
-  { id: '1', roomId: '202', title: 'AC Unit Repair', description: 'Air conditioning not cooling properly in room 202', priority: 'high', status: 'in_progress', assignedTo: 'James Brown', createdAt: '2025-03-25T10:00:00', propertyId: '1' },
-  { id: '2', roomId: '103', title: 'Bathroom Faucet Leak', description: 'Dripping faucet in bathroom', priority: 'medium', status: 'pending', createdAt: '2025-03-26T08:30:00', propertyId: '1' },
-  { id: '3', title: 'Pool Pump Maintenance', description: 'Quarterly maintenance for pool filtration system', priority: 'medium', status: 'completed', assignedTo: 'James Brown', createdAt: '2025-03-24T09:00:00', completedAt: '2025-03-26T14:00:00', propertyId: '1' },
-  { id: '4', title: 'Elevator Inspection', description: 'Annual safety inspection for main elevator', priority: 'high', status: 'scheduled', createdAt: '2025-03-20T11:00:00', propertyId: '1' },
-  { id: '5', roomId: '301', title: 'TV Remote Replacement', description: 'Guest reported non-functional TV remote', priority: 'low', status: 'completed', assignedTo: 'James Brown', createdAt: '2025-03-25T16:00:00', completedAt: '2025-03-26T09:00:00', propertyId: '1' },
-];
-
-const mockAiInsights: AiInsight[] = [
-  { id: '1', type: 'revenue', title: 'Revenue Optimization', description: 'Based on current booking trends and seasonal patterns', recommendation: 'Consider increasing weekend rates by 15% for April', impact: 'high', timestamp: '2025-03-26T08:00:00' },
-  { id: '2', type: 'occupancy', title: 'Occupancy Forecast', description: 'Predictive analysis of room demand', recommendation: 'Expected 92% occupancy next week - optimize staff scheduling', impact: 'high', timestamp: '2025-03-26T07:30:00' },
-  { id: '3', type: 'staffing', title: 'Staffing Recommendation', description: 'Workload analysis based on occupancy', recommendation: 'Add 2 housekeeping staff for afternoon shift on Friday', impact: 'medium', timestamp: '2025-03-26T09:00:00' },
-  { id: '4', type: 'maintenance', title: 'Predictive Maintenance', description: 'Equipment health monitoring', recommendation: 'Schedule HVAC inspection within next 2 weeks', impact: 'medium', timestamp: '2025-03-26T10:00:00' },
-  { id: '5', type: 'guest', title: 'Guest Experience', description: 'Satisfaction prediction based on reviews', recommendation: 'Focus on breakfast service quality - recent feedback mentions delays', impact: 'high', timestamp: '2025-03-26T11:00:00' },
-];
-
-const mockWorkflows: Workflow[] = [
-  { id: '1', name: 'Guest Check-in Welcome', trigger: 'On check-in', actions: ['Send welcome email', 'Notify housekeeping', 'Update preferences'], status: 'active', lastRun: '2025-03-26T08:00:00', description: 'Automated welcome sequence for arriving guests' },
-  { id: '2', name: 'Low Inventory Alert', trigger: 'Stock below reorder level', actions: ['Notify manager', 'Create purchase order', 'Log alert'], status: 'active', lastRun: '2025-03-26T07:00:00', description: 'Alert when inventory drops below threshold' },
-  { id: '3', name: 'Late Checkout Auto-Extension', trigger: 'Check-out time exceeded', actions: ['Send notification', 'Apply late fee', 'Update room status'], status: 'inactive', lastRun: '2025-03-25T14:00:00', description: 'Handle late checkout scenarios automatically' },
-  { id: '4', name: 'Maintenance Escalation', trigger: 'Ticket unresolved for 48hrs', actions: ['Escalate to manager', 'Notify department head', 'Log incident'], status: 'active', lastRun: '2025-03-25T12:00:00', description: 'Escalate unresolved maintenance tickets' },
-];
-
-const mockTickets: Ticket[] = [
-  { id: 'TKT-001', ticketNumber: 'TKT-001', title: 'AC not cooling in Room 301', description: 'Guest reports air conditioning is not working properly. Room temperature remains high despite thermostat settings.', type: 'issue', category: 'maintenance', priority: 'high', status: 'in_progress', assigneeId: '4', assigneeName: 'James Brown', reporterId: '2', reporterName: 'Mike Chen', propertyId: '1', roomId: '301', guestId: '1', guestName: 'Sarah Johnson', dueDate: '2026-03-27', tags: ['ac', 'maintenance', 'urgent'], attachments: [], comments: [{ id: 'c1', ticketId: 'TKT-001', userId: '4', userName: 'James Brown', content: 'Technician dispatched. Arrival in 15 minutes.', isInternal: false, createdAt: '2026-03-26T09:00:00' }], createdAt: '2026-03-26T08:30:00', updatedAt: '2026-03-26T09:00:00' },
-  { id: 'TKT-002', ticketNumber: 'TKT-002', title: 'Late checkout request', description: 'Guest requests late checkout until 2 PM due to flight schedule.', type: 'request', category: 'front_desk', priority: 'medium', status: 'pending', assigneeId: '2', assigneeName: 'Mike Chen', reporterId: '2', reporterName: 'Mike Chen', propertyId: '1', roomId: '201', guestId: '2', guestName: 'Michael Chen', dueDate: '2026-03-26', tags: ['checkout', 'guest-request'], attachments: [], comments: [], createdAt: '2026-03-26T07:00:00', updatedAt: '2026-03-26T07:00:00' },
-  { id: 'TKT-003', ticketNumber: 'TKT-003', title: 'Pool area maintenance needed', description: 'Pool pump making unusual noise. Requires inspection before peak season.', type: 'task', category: 'maintenance', priority: 'urgent', status: 'open', assigneeId: '4', assigneeName: 'James Brown', reporterId: '1', reporterName: 'Sarah Johnson', propertyId: '1', tags: ['pool', 'maintenance', 'equipment'], attachments: [], comments: [], createdAt: '2026-03-25T14:00:00', updatedAt: '2026-03-25T14:00:00' },
-  { id: 'TKT-004', ticketNumber: 'TKT-004', title: 'WiFi connectivity issues', description: 'Guest experiencing slow WiFi in Room 102. Already restarted router.', type: 'issue', category: 'it', priority: 'medium', status: 'resolved', assigneeId: '8', assigneeName: 'Robert Kim', reporterId: '6', reporterName: 'James Brown', propertyId: '1', roomId: '102', tags: ['wifi', 'it', 'resolved'], attachments: [], comments: [{ id: 'c2', ticketId: 'TKT-004', userId: '8', userName: 'Robert Kim', content: 'Router firmware updated. Issue resolved.', isInternal: false, createdAt: '2026-03-25T16:00:00' }], createdAt: '2026-03-25T15:00:00', updatedAt: '2026-03-25T16:00:00', resolvedAt: '2026-03-25T16:00:00' },
-  { id: 'TKT-005', ticketNumber: 'TKT-005', title: 'Extra amenities request', description: 'VIP guest requests additional bathrobes and spa appointment.', type: 'request', category: 'guest_service', priority: 'high', status: 'in_progress', assigneeId: '7', assigneeName: 'Amy Taylor', reporterId: '7', reporterName: 'Amy Taylor', propertyId: '1', roomId: '301', guestId: '1', guestName: 'Sarah Johnson', dueDate: '2026-03-26', tags: ['vip', 'amenities', 'spa'], attachments: [], comments: [], createdAt: '2026-03-26T06:30:00', updatedAt: '2026-03-26T06:30:00' },
-  { id: 'TKT-006', ticketNumber: 'TKT-006', title: 'Food quality complaint', description: 'Guest complained about breakfast service delay and cold food.', type: 'incident', category: 'food_beverage', priority: 'high', status: 'pending', assigneeId: '6', assigneeName: 'David Martinez', reporterId: '3', reporterName: 'Emma Williams', propertyId: '1', guestId: '3', guestName: 'Emma Williams', tags: ['fnb', 'complaint', 'breakfast'], attachments: [], comments: [], createdAt: '2026-03-26T10:00:00', updatedAt: '2026-03-26T10:00:00' },
-];
-
-const mockInvoices: Invoice[] = [
-  { id: 'INV-2026-001', invoiceNumber: 'INV-2026-001', type: 'booking', bookingId: 'BK001', guestId: '1', guestName: 'Sarah Johnson', guestEmail: 'sarah@nexus.com', propertyId: '1', items: [{ id: 'i1', description: 'Presidential Suite - 4 nights', quantity: 4, unitPrice: 8500, taxRate: 15, amount: 34000, category: 'room' }], subtotal: 34000, taxAmount: 5100, discountAmount: 0, total: 39100, currency: 'ZAR', status: 'paid', issueDate: '2026-03-20', dueDate: '2026-03-25', paidDate: '2026-03-20', paidAmount: 39100, paymentMethod: 'card', createdAt: '2026-03-20T10:00:00', createdBy: 'Mike Chen' },
-  { id: 'INV-2026-002', invoiceNumber: 'INV-2026-002', type: 'booking', bookingId: 'BK002', guestId: '2', guestName: 'Michael Chen', guestEmail: 'mike@nexus.com', propertyId: '1', items: [{ id: 'i2', description: 'Executive Suite - 2 nights', quantity: 2, unitPrice: 3500, taxRate: 15, amount: 7000, category: 'room' }], subtotal: 7000, taxAmount: 1050, discountAmount: 0, total: 8050, currency: 'ZAR', status: 'paid', issueDate: '2026-03-22', dueDate: '2026-03-27', paidDate: '2026-03-22', paidAmount: 8050, paymentMethod: 'eft', createdAt: '2026-03-22T14:00:00', createdBy: 'Mike Chen' },
-  { id: 'INV-2026-003', invoiceNumber: 'INV-2026-003', type: 'service', guestId: '1', guestName: 'Sarah Johnson', guestEmail: 'sarah@nexus.com', propertyId: '1', items: [{ id: 'i3', description: 'Spa Treatment - Full Body Massage', quantity: 1, unitPrice: 1500, taxRate: 15, amount: 1500, category: 'spa' }, { id: 'i4', description: 'Champagne - Dom Perignon', quantity: 1, unitPrice: 2500, taxRate: 15, amount: 2500, category: 'minibar' }], subtotal: 4000, taxAmount: 600, discountAmount: 0, total: 4600, currency: 'ZAR', status: 'pending', issueDate: '2026-03-26', dueDate: '2026-03-30', notes: 'Charge to room', createdAt: '2026-03-26T11:00:00', createdBy: 'Amy Taylor' },
-  { id: 'INV-2026-004', invoiceNumber: 'INV-2026-004', type: 'booking', bookingId: 'BK003', guestId: '3', guestName: 'Emma Williams', guestEmail: 'emma@nexus.com', propertyId: '1', items: [{ id: 'i5', description: 'Standard Suite - 3 nights', quantity: 3, unitPrice: 1500, taxRate: 15, amount: 4500, category: 'room' }], subtotal: 4500, taxAmount: 675, discountAmount: 450, total: 4725, currency: 'ZAR', status: 'pending', issueDate: '2026-03-25', dueDate: '2026-03-28', createdAt: '2026-03-25T09:00:00', createdBy: 'Mike Chen' },
-];
-
-const mockPayments: Payment[] = [
-  { id: 'PAY-001', paymentNumber: 'PAY-001', invoiceId: 'INV-2026-001', bookingId: 'BK001', guestId: '1', guestName: 'Sarah Johnson', propertyId: '1', amount: 39100, currency: 'ZAR', method: 'card', status: 'completed', reference: 'TXN-12345', transactionId: 'ch_abc123', processedBy: 'Mike Chen', processedAt: '2026-03-20T10:05:00', createdAt: '2026-03-20T10:00:00' },
-  { id: 'PAY-002', paymentNumber: 'PAY-002', invoiceId: 'INV-2026-002', bookingId: 'BK002', guestId: '2', guestName: 'Michael Chen', propertyId: '1', amount: 8050, currency: 'ZAR', method: 'eft', status: 'completed', reference: 'EFT-67890', processedBy: 'Mike Chen', processedAt: '2026-03-22T14:10:00', createdAt: '2026-03-22T14:00:00' },
-  { id: 'PAY-003', paymentNumber: 'PAY-003', bookingId: 'BK004', guestId: '4', guestName: 'David Martinez', propertyId: '1', amount: 8400, currency: 'ZAR', method: 'cash', status: 'completed', processedBy: 'Mike Chen', processedAt: '2026-03-25T15:00:00', createdAt: '2026-03-25T14:30:00' },
-];
-
-const mockAuditLogs: AuditLog[] = [
-  { id: 'LOG-001', action: 'create', entityType: 'booking', entityId: 'BK001', entityName: 'Booking BK001', userId: '2', userName: 'Mike Chen', userRole: 'Front Desk Manager', details: 'New booking created for Sarah Johnson', timestamp: '2026-03-20T10:00:00' },
-  { id: 'LOG-002', action: 'update', entityType: 'booking', entityId: 'BK001', entityName: 'Booking BK001', userId: '2', userName: 'Mike Chen', userRole: 'Front Desk Manager', details: 'Booking confirmed', timestamp: '2026-03-20T10:05:00' },
-  { id: 'LOG-003', action: 'checkin', entityType: 'booking', entityId: 'BK001', entityName: 'Booking BK001', userId: '2', userName: 'Mike Chen', userRole: 'Front Desk Manager', details: 'Guest checked in to Room 301', timestamp: '2026-03-26T14:00:00' },
-  { id: 'LOG-004', action: 'payment', entityType: 'payment', entityId: 'PAY-001', entityName: 'Payment PAY-001', userId: '2', userName: 'Mike Chen', userRole: 'Front Desk Manager', details: 'Payment received: R39,100 via card', timestamp: '2026-03-20T10:05:00' },
-  { id: 'LOG-005', action: 'create', entityType: 'ticket', entityId: 'TKT-001', entityName: 'Ticket TKT-001', userId: '2', userName: 'Mike Chen', userRole: 'Front Desk Manager', details: 'Maintenance ticket created: AC not cooling', timestamp: '2026-03-26T08:30:00' },
-  { id: 'LOG-006', action: 'update', entityType: 'ticket', entityId: 'TKT-001', entityName: 'Ticket TKT-001', userId: '4', userName: 'James Brown', userRole: 'Maintenance Manager', details: 'Ticket assigned to James Brown', timestamp: '2026-03-26T08:45:00' },
-  { id: 'LOG-007', action: 'update', entityType: 'room', entityId: '301', entityName: 'Room 301', userId: '2', userName: 'Mike Chen', userRole: 'Front Desk Manager', oldValue: 'available', newValue: 'occupied', details: 'Room status changed to occupied', timestamp: '2026-03-26T14:00:00' },
-  { id: 'LOG-008', action: 'create', entityType: 'invoice', entityId: 'INV-2026-003', entityName: 'Invoice INV-2026-003', userId: '7', userName: 'Amy Taylor', userRole: 'Concierge', details: 'Service invoice created for spa treatment', timestamp: '2026-03-26T11:00:00' },
-];
-
-const mockTaxConfigs: TaxConfig[] = [
-  { id: 'TAX-001', name: 'VAT', rate: 15, type: 'vat', included: false, applicableTo: ['room', 'fnb', 'spa'], validFrom: '2024-01-01', active: true },
-  { id: 'TAX-002', name: 'Tourism Levy', rate: 1, type: 'tourism_levy', included: true, applicableTo: ['room'], validFrom: '2024-01-01', active: true },
-  { id: 'TAX-003', name: 'City Tax', rate: 2, type: 'city_tax', included: true, applicableTo: ['room'], validFrom: '2025-01-01', active: true },
-];
-
-const mockBookings: Booking[] = [
-  { id: 'BK001', guestId: '1', guestName: 'Sarah Johnson', guestEmail: 'sarah@nexus.com', guestPhone: '+27 82 123 4567', guestSegment: 'VIP', propertyId: '1', propertyName: 'Nexus Grand Hotel', roomId: '301', roomNumber: '301', roomType: 'Presidential Suite', checkIn: '2026-03-26', checkOut: '2026-03-30', nights: 4, guests: 2, adults: 2, children: 0, status: 'checked-in', paymentStatus: 'paid', amount: 34000, ratePerNight: 8500, depositPaid: 34000, balanceDue: 0, source: 'Direct', specialRequests: 'Late checkout, Ocean view', notes: 'VIP guest - arrange champagne on arrival', createdAt: '2026-03-20' },
-  { id: 'BK002', guestId: '2', guestName: 'Michael Chen', guestEmail: 'mike@nexus.com', guestPhone: '+27 82 234 5678', guestSegment: 'Corporate', propertyId: '1', propertyName: 'Nexus Grand Hotel', roomId: '201', roomNumber: '201', roomType: 'Executive Suite', checkIn: '2026-03-27', checkOut: '2026-03-29', nights: 2, guests: 1, adults: 1, children: 0, status: 'confirmed', paymentStatus: 'paid', amount: 7000, ratePerNight: 3500, depositPaid: 7000, balanceDue: 0, source: 'Booking.com', createdAt: '2026-03-22' },
-  { id: 'BK003', guestId: '3', guestName: 'Emma Williams', guestEmail: 'emma@nexus.com', guestPhone: '+27 82 345 6789', guestSegment: 'New', propertyId: '1', propertyName: 'Nexus Grand Hotel', roomId: '101', roomNumber: '101', roomType: 'Standard Suite', checkIn: '2026-03-28', checkOut: '2026-03-31', nights: 3, guests: 2, adults: 2, children: 0, status: 'pending', paymentStatus: 'pending', amount: 4500, ratePerNight: 1500, depositPaid: 0, balanceDue: 4500, source: 'Expedia', createdAt: '2026-03-25' },
-  { id: 'BK004', guestId: '4', guestName: 'David Martinez', guestEmail: 'david@nexus.com', guestPhone: '+27 82 456 7890', guestSegment: 'Frequent', propertyId: '2', propertyName: 'Nexus Beach Resort', roomId: '401', roomNumber: '401', roomType: 'Ocean View', checkIn: '2026-03-25', checkOut: '2026-03-28', nights: 3, guests: 4, adults: 2, children: 2, status: 'checked-in', paymentStatus: 'paid', amount: 8400, ratePerNight: 2800, depositPaid: 8400, balanceDue: 0, source: 'Direct', specialRequests: 'Extra bed, Child-friendly room', createdAt: '2026-03-18' },
-  { id: 'BK005', guestId: '5', guestName: 'Lisa Anderson', guestEmail: 'lisa@nexus.com', guestPhone: '+27 82 567 8901', guestSegment: 'VIP', propertyId: '2', propertyName: 'Nexus Beach Resort', roomId: '402', roomNumber: '402', roomType: 'Beach Villa', checkIn: '2026-04-01', checkOut: '2026-04-05', nights: 4, guests: 2, adults: 2, children: 0, status: 'confirmed', paymentStatus: 'partial', amount: 22000, ratePerNight: 5500, depositPaid: 11000, balanceDue: 11000, source: 'Direct', specialRequests: 'Private dinner setup on beach', createdAt: '2026-03-23' },
-  { id: 'BK006', guestId: '6', guestName: 'James Brown', guestEmail: 'james@nexus.com', guestPhone: '+27 82 678 9012', guestSegment: 'Frequent', propertyId: '1', propertyName: 'Nexus Grand Hotel', roomId: '102', roomNumber: '102', roomType: 'Deluxe Room', checkIn: '2026-03-20', checkOut: '2026-03-22', nights: 2, guests: 1, adults: 1, children: 0, status: 'checked-out', paymentStatus: 'paid', amount: 4400, ratePerNight: 2200, depositPaid: 4400, balanceDue: 0, source: 'Airbnb', createdAt: '2026-03-15' },
-  { id: 'BK007', guestId: '7', guestName: 'Amy Taylor', guestEmail: 'amy@nexus.com', guestPhone: '+27 82 789 0123', guestSegment: 'New', propertyId: '3', propertyName: 'Nexus City Lodge', roomId: '101', roomNumber: '101', roomType: 'Standard', checkIn: '2026-04-02', checkOut: '2026-04-04', nights: 2, guests: 1, adults: 1, children: 0, status: 'cancelled', paymentStatus: 'refunded', amount: 1700, ratePerNight: 850, source: 'Direct', notes: 'Guest cancelled due to travel changes', createdAt: '2026-03-24' },
-  { id: 'BK008', guestId: '1', guestName: 'Sarah Johnson', guestEmail: 'sarah@nexus.com', guestPhone: '+27 82 123 4567', guestSegment: 'VIP', propertyId: '1', propertyName: 'Nexus Grand Hotel', roomId: '301', roomNumber: '301', roomType: 'Presidential Suite', checkIn: '2026-04-15', checkOut: '2026-04-20', nights: 5, guests: 2, adults: 2, children: 0, status: 'confirmed', paymentStatus: 'paid', amount: 42500, ratePerNight: 8500, depositPaid: 42500, balanceDue: 0, source: 'Direct', specialRequests: 'Same room as before, early check-in', createdAt: '2026-03-26' },
-];
-
-const mockGuests: Guest[] = [
-  { id: '1', name: 'Sarah Johnson', email: 'sarah@nexus.com', phone: '+27 82 123 4567', idNumber: '7801234567890', nationality: 'USA', segment: 'VIP', totalStays: 12, loyaltyPoints: 5200, preferences: ['Ocean view', 'High floor', 'Late checkout'], notes: 'Prefers quiet rooms away from elevators', createdAt: '2025-01-15', lastVisit: '2026-03-26', vipLevel: 'platinum', address: '123 Park Avenue, New York, NY 10001' },
-  { id: '2', name: 'Michael Chen', email: 'mike@nexus.com', phone: '+27 82 234 5678', idNumber: '8012345678901', nationality: 'China', segment: 'Corporate', totalStays: 8, loyaltyPoints: 3400, preferences: ['Quiet room', 'Extra pillows', 'Early check-in'], notes: 'Corporate account - Tech Corp', createdAt: '2025-03-20', lastVisit: '2026-03-27', vipLevel: 'gold', companyName: 'Tech Corp International' },
-  { id: '3', name: 'Emma Williams', email: 'emma@nexus.com', phone: '+27 82 345 6789', idNumber: '9012345678902', nationality: 'UK', segment: 'New', totalStays: 1, loyaltyPoints: 200, preferences: [], notes: 'First visit', createdAt: '2026-03-25', lastVisit: '2026-03-28', vipLevel: 'standard' },
-  { id: '4', name: 'David Martinez', email: 'david@nexus.com', phone: '+27 82 456 7890', idNumber: '0012345678903', nationality: 'South Africa', segment: 'Frequent', totalStays: 15, loyaltyPoints: 7800, preferences: ['Suite', 'Breakfast included', 'Gym access'], notes: 'Diamond member - always brings family', createdAt: '2024-06-10', lastVisit: '2026-03-25', vipLevel: 'diamond', address: '45 Beach Road, Durban, 4056' },
-  { id: '5', name: 'Lisa Anderson', email: 'lisa@nexus.com', phone: '+27 82 567 8901', idNumber: '1012345678904', nationality: 'South Africa', segment: 'VIP', totalStays: 6, loyaltyPoints: 2100, preferences: ['Beach view', 'Spa access'], notes: 'Honeymoon couple - arrange special amenities', createdAt: '2025-08-15', lastVisit: '2026-04-01', vipLevel: 'gold' },
-  { id: '6', name: 'James Brown', email: 'james@nexus.com', phone: '+27 82 678 9012', idNumber: '2012345678905', nationality: 'South Africa', segment: 'Frequent', totalStays: 4, loyaltyPoints: 1200, preferences: ['Standard room', 'No preferences'], notes: 'Regular weekend guest', createdAt: '2025-11-01', lastVisit: '2026-03-22', vipLevel: 'standard' },
-  { id: '7', name: 'Amy Taylor', email: 'amy@nexus.com', phone: '+27 82 789 0123', idNumber: '3012345678906', nationality: 'Australia', segment: 'New', totalStays: 1, loyaltyPoints: 150, preferences: ['City view'], notes: 'Backpacker - extended stay', createdAt: '2026-03-24', lastVisit: '2026-04-02', vipLevel: 'standard' },
-  { id: '8', name: 'Robert Kim', email: 'robert@nexus.com', phone: '+27 82 890 1234', idNumber: '4012345678907', nationality: 'South Korea', segment: 'Corporate', totalStays: 3, loyaltyPoints: 900, preferences: ['Business center access'], notes: 'Samsung corporate account', createdAt: '2026-01-10', lastVisit: '2026-03-15', vipLevel: 'gold', companyName: 'Samsung Electronics' },
-];
-
-const mockRatePlans: RatePlan[] = [
-  { id: 'RP001', name: 'Peak Season', roomTypes: ['All'], baseRate: 1850, season: 'Dec-Feb', minStay: 2, active: true, restrictions: [] },
-  { id: 'RP002', name: 'Off-Season', roomTypes: ['All'], baseRate: 950, season: 'Jun-Aug', minStay: 1, active: true, restrictions: [] },
-  { id: 'RP003', name: 'Weekend Special', roomTypes: ['Standard', 'Deluxe'], baseRate: 1200, season: 'Year-round', minStay: 2, active: true, restrictions: ['Fri-Sun only'] },
-  { id: 'RP004', name: 'Corporate', roomTypes: ['All'], baseRate: 1100, season: 'Year-round', minStay: 1, active: true, restrictions: ['Corporate ID required'] },
-];
-
-const mockIntegrations: Integration[] = [
-  { id: '1', name: 'Booking.com', category: 'OTA', status: 'connected', lastSync: '2 min ago', icon: 'calendar', description: 'Sync reservations and availability' },
-  { id: '2', name: 'Stripe', category: 'Payment', status: 'connected', lastSync: '5 min ago', icon: 'credit-card', description: 'Process payments securely' },
-  { id: '3', name: 'Twilio SMS', category: 'Communication', status: 'disconnected', lastSync: '-', icon: 'message-square', description: 'Send SMS notifications to guests' },
-  { id: '4', name: 'Google Calendar', category: 'Productivity', status: 'disconnected', lastSync: '-', icon: 'calendar', description: 'Sync bookings with calendar' },
-  { id: '5', name: 'Xero Accounting', category: 'Finance', status: 'connected', lastSync: '1 hr ago', icon: 'file-text', description: 'Automatic invoice sync' },
-  { id: '6', name: 'Slack', category: 'Communication', status: 'connected', lastSync: 'Just now', icon: 'message-circle', description: 'Team notifications and alerts' },
-  { id: '7', name: 'Zapier', category: 'Automation', status: 'syncing', lastSync: 'Syncing...', icon: 'zap', description: 'Connect 5000+ apps' },
-  { id: '8', name: 'Mailchimp', category: 'Marketing', status: 'connected', lastSync: '30 min ago', icon: 'mail', description: 'Email marketing campaigns' },
-];
-
 const defaultSettings: AppSettings = {
   checkInTime: '14:00',
   checkOutTime: '11:00',
@@ -1094,11 +889,11 @@ export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
       // Current user
-      user: mockUsers[0],
+      user: null,
       setUser: (user) => set({ user }),
 
       // Users CRUD
-      users: mockUsers,
+      users: [],
       setUsers: (users) => set({ users }),
       reconcileUser: (localId, serverId) => set((state) => ({
         users: state.users.map((u) => u.id === localId ? { ...u, id: serverId } : u)
@@ -1147,7 +942,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Properties CRUD
-      properties: mockProperties,
+      properties: [],
       setProperties: (properties) => set({ properties }),
       reconcileProperty: (localId, serverId) => set((state) => ({
         properties: state.properties.map((p) => p.id === localId ? { ...p, id: serverId } : p)
@@ -1215,7 +1010,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Rooms CRUD
-      rooms: mockRooms,
+      rooms: [],
       setRooms: (rooms) => set({ rooms }),
       reconcileRoom: (localId, serverId) => set((state) => ({
         rooms: state.rooms.map((r) => r.id === localId ? { ...r, id: serverId } : r)
@@ -1292,7 +1087,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Messages CRUD
-      messages: mockMessages,
+      messages: [],
       setMessages: (messages) => set({ messages }),
       reconcileMessage: (localId, serverId) => set((state) => ({
         messages: state.messages.map((m) => m.id === localId ? { ...m, id: serverId } : m)
@@ -1334,7 +1129,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // RFID Tags CRUD
-      rfidTags: mockRfidTags,
+      rfidTags: [],
       setRfidTags: (rfidTags) => set({ rfidTags }),
       reconcileRfidTag: (localId, serverId) => set((state) => ({
         rfidTags: state.rfidTags.map((t) => t.id === localId ? { ...t, id: serverId } : t)
@@ -1346,7 +1141,7 @@ export const useAppStore = create<AppState>()(
         const propertyId = toNumericId(tag.propertyId);
         const userId = toNumericId(tag.userId ?? '');
         const bookingId = toNumericId(tag.bookingId ?? '');
-        // Demo bindings (mock bookings/users) have no server counterpart — keep it local.
+        // Ids that don't resolve to server rows stay local - nothing to sync against.
         if (propertyId === null) return;
         if (tag.kind === 'staff' && userId === null) return;
         if (tag.kind === 'guest' && bookingId === null) return;
@@ -1453,7 +1248,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Attendance CRUD
-      attendance: mockAttendance,
+      attendance: [],
       setAttendance: (attendance) => set({ attendance }),
       reconcileAttendance: (localId, serverId) => set((state) => ({
         attendance: state.attendance.map((a) => a.id === localId ? { ...a, id: serverId } : a)
@@ -1505,7 +1300,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Shifts CRUD
-      shifts: mockShifts,
+      shifts: [],
       setShifts: (shifts) => set({ shifts }),
       reconcileShift: (localId, serverId) => set((state) => ({
         shifts: state.shifts.map((s) => s.id === localId ? { ...s, id: serverId } : s)
@@ -1577,7 +1372,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Expenses CRUD
-      expenses: mockExpenses,
+      expenses: [],
       setExpenses: (expenses) => set({ expenses }),
       reconcileExpense: (localId, serverId) => set((state) => ({
         expenses: state.expenses.map((e) => e.id === localId ? { ...e, id: serverId } : e)
@@ -1640,7 +1435,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Inventory CRUD
-      inventory: mockInventory,
+      inventory: [],
       setInventory: (inventory) => set({ inventory }),
       reconcileInventoryItem: (localId, serverId) => set((state) => ({
         inventory: state.inventory.map((i) => i.id === localId ? { ...i, id: serverId } : i)
@@ -1708,7 +1503,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Electricity CRUD
-      electricity: mockElectricity,
+      electricity: [],
       setElectricity: (electricity) => set({ electricity }),
       reconcileElectricity: (localId, serverId) => set((state) => ({
         electricity: state.electricity.map((e) => e.id === localId ? { ...e, id: serverId } : e)
@@ -1758,7 +1553,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Maintenance Tickets CRUD
-      maintenanceTickets: mockMaintenanceTickets,
+      maintenanceTickets: [],
       setMaintenanceTickets: (maintenanceTickets) => set({ maintenanceTickets }),
       reconcileMaintenanceTicket: (localId, serverId) => set((state) => ({
         maintenanceTickets: state.maintenanceTickets.map((t) => t.id === localId ? { ...t, id: serverId } : t)
@@ -1804,7 +1599,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // AI Insights
-      aiInsights: mockAiInsights,
+      aiInsights: [],
       setAiInsights: (aiInsights) => set({ aiInsights }),
       reconcileAiInsight: (localId, serverId) => set((state) => ({
         aiInsights: state.aiInsights.map((i) => i.id === localId ? { ...i, id: serverId } : i)
@@ -1853,7 +1648,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Workflows CRUD
-      workflows: mockWorkflows,
+      workflows: [],
       setWorkflows: (workflows) => set({ workflows }),
       reconcileWorkflow: (localId, serverId) => set((state) => ({
         workflows: state.workflows.map((w) => w.id === localId ? { ...w, id: serverId } : w)
@@ -1908,7 +1703,7 @@ export const useAppStore = create<AppState>()(
       setActivePage: (activePage) => set({ activePage }),
 
       // Bookings CRUD
-      bookings: mockBookings,
+      bookings: [],
       setBookings: (bookings) => set({ bookings }),
       reconcileBooking: (localId, serverId) => set((state) => ({
         bookings: state.bookings.map((b) => b.id === localId ? { ...b, id: serverId } : b)
@@ -1962,7 +1757,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Guests CRUD
-      guests: mockGuests,
+      guests: [],
       setGuests: (guests) => set({ guests }),
       reconcileGuest: (localId, serverId) => set((state) => ({
         guests: state.guests.map((g) => g.id === localId ? { ...g, id: serverId } : g)
@@ -2016,7 +1811,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Rate Plans CRUD
-      ratePlans: mockRatePlans,
+      ratePlans: [],
       setRatePlans: (ratePlans) => set({ ratePlans }),
       reconcileRatePlan: (localId, serverId) => set((state) => ({
         ratePlans: state.ratePlans.map((p) => p.id === localId ? { ...p, id: serverId } : p)
@@ -2066,7 +1861,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Integrations CRUD
-      integrations: mockIntegrations,
+      integrations: [],
       setIntegrations: (integrations) => set({ integrations }),
       reconcileIntegration: (localId, serverId) => set((state) => ({
         integrations: state.integrations.map((i) => i.id === localId ? { ...i, id: serverId } : i)
@@ -2136,7 +1931,7 @@ export const useAppStore = create<AppState>()(
       })),
 
       // Tickets CRUD
-      tickets: mockTickets,
+      tickets: [],
       setTickets: (tickets) => set({ tickets }),
       reconcileTicket: (localId, serverId, serverTicketNumber) => set((state) => ({
         tickets: state.tickets.map((t) => t.id === localId
@@ -2207,7 +2002,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Invoices CRUD
-      invoices: mockInvoices,
+      invoices: [],
       setInvoices: (invoices) => set({ invoices }),
       reconcileInvoice: (localId, serverId, serverInvoiceNumber) => set((state) => ({
         invoices: state.invoices.map((i) => i.id === localId
@@ -2267,7 +2062,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Payments CRUD
-      payments: mockPayments,
+      payments: [],
       setPayments: (payments) => set({ payments }),
       reconcilePayment: (localId, serverId, serverPaymentNumber) => set((state) => ({
         payments: state.payments.map((p) => p.id === localId
@@ -2317,7 +2112,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Audit Logs
-      auditLogs: mockAuditLogs,
+      auditLogs: [],
       setAuditLogs: (auditLogs) => set({ auditLogs }),
       addAuditLog: (log) => {
         set((state) => ({ auditLogs: [log, ...state.auditLogs] }));
@@ -2338,7 +2133,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // Tax Configs CRUD
-      taxConfigs: mockTaxConfigs,
+      taxConfigs: [],
       setTaxConfigs: (taxConfigs) => set({ taxConfigs }),
       reconcileTaxConfig: (localId, serverId) => set((state) => ({
         taxConfigs: state.taxConfigs.map((t) => t.id === localId ? { ...t, id: serverId } : t)
@@ -2389,7 +2184,7 @@ export const useAppStore = create<AppState>()(
       },
     }),
     {
-      name: 'nexus-pms-storage',
+      name: 'aquri-pms-storage',
       partialize: (state) => ({
         bookings: state.bookings,
         guests: state.guests,

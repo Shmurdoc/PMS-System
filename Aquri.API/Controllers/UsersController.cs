@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace Aquri.API.Controllers
 {
-    /// <summary>Staff account administration. Reads are available to admin and manager; every write (create, update, delete) is admin only. The password hash never appears in any response — <see cref="UserDto"/> does not project it.</summary>
+    /// <summary>Staff account administration. The roster list is open to every signed-in role (staff messaging needs to see colleagues); single-account reads are admin and manager; every write (create, update, delete) is admin only. The password hash never appears in any response — <see cref="UserDto"/> does not project it.</summary>
     [ApiVersion("1.0")]
     [ApiController]
     [Route("api/v{version:apiVersion}/[controller]")]
@@ -18,7 +18,6 @@ namespace Aquri.API.Controllers
         public UsersController(IMediator mediator) => _mediator = mediator;
 
         [HttpGet]
-        [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<UserDto>>> List([FromQuery] string? search)
         {

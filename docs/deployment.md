@@ -15,7 +15,7 @@ cp .env.example .env        # then edit — compose refuses to boot without real
 docker compose up -d --build
 ```
 
-On first boot the API seeds the demo users (admin@nexus.com / manager@nexus.com / front@nexus.com — see `docs/getting-started.md`) unless `SEED_DEMO_USERS=false`. Migrations do not auto-apply; run them once per database (below).
+On first boot the API seeds the demo users (admin@nexus.com / manager@nexus.com / front@nexus.com — see `docs/getting-started.md`) and the sample AI layer (agents, insights, workflows) unless `SEED_DEMO_USERS=false`. Migrations do not auto-apply; run them once per database (below).
 
 ## Environment variables
 
@@ -25,7 +25,7 @@ On first boot the API seeds the demo users (admin@nexus.com / manager@nexus.com 
 |---|---|---|
 | `POSTGRES_PASSWORD` | yes | Postgres password for `aquri_user`; compose fails fast if unset |
 | `JWT_KEY` | yes | Signing key, minimum 32 characters; compose fails fast if unset |
-| `SEED_DEMO_USERS` | no (default `true`) | Seed demo logins on first boot; set `false` for real deployments |
+| `SEED_DEMO_USERS` | no (default `true`) | Seed demo logins and sample AI data on first boot; set `false` for real deployments |
 
 Passed into the API container:
 
@@ -68,7 +68,7 @@ The design-time factory (`AquriDbContextFactory`) resolves `ConnectionStrings__D
 
 Postgres is intentionally bound to loopback — it is not exposed beyond the host.
 
-The db host port is **5433**, not the Postgres default. `docker-compose.yml` publishes `${AQURI_DB_HOST_PORT:-5433}` because a native PostgreSQL service can own 5432 on the host; override `AQURI_DB_HOST_PORT` in `.env` if 5433 is taken too. Only the *host* mapping changes — container-to-container traffic still uses `db:5432`.
+The db host port is **5433**, not the Postgres default. `docker-compose.yml` publishes `${AQURI_DB_HOST_PORT:-5433}` because a native PostgreSQL service can own 5432 on the host; override `AQURI_DB_HOST_PORT` in `.env` if 5433 is taken too. Only the *host* mapping changes — container-to-container traffic still uses `db:5432`. (On the current dev machine 5433 happened to land inside a Windows `winnat` dynamic exclusion range, so `.env` sets `AQURI_DB_HOST_PORT=15433` — same idea, different number.)
 
 For local development against that same container, `Aquri.API/appsettings.Development.json` (gitignored) needs the matching port:
 
@@ -90,7 +90,7 @@ Omitting `Port=` silently defaults to 5432 and talks to whatever native Postgres
 
 ## Production checklist
 
-- [ ] `SEED_DEMO_USERS=false` — demo logins must not exist in production.
+- [ ] `SEED_DEMO_USERS=false` — demo logins and sample AI data must not exist in production.
 - [ ] Strong `POSTGRES_PASSWORD` and a random 32+ char `JWT_KEY`; rotate the JWT key by restarting the API (invalidates outstanding tokens).
 - [ ] Restrict `Cors__AllowedOrigins__*` to the real frontend origin(s).
 - [ ] Do not commit `.env`; keep `appsettings.Production.json` out of source control if it holds secrets.

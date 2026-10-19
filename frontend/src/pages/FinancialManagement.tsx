@@ -70,7 +70,8 @@ export default function FinancialManagement() {
     bookings, properties,
     auditLogs, addAuditLog, taxConfigs, addTaxConfig, updateTaxConfig, deleteTaxConfig
   } = useAppStore();
-  const role = useAppStore((s) => s.user?.role);
+  const me = useAppStore((s) => s.user);
+const role = useAppStore((s) => s.user?.role);
   const isAdmin = role === 'admin';
   
   const [activeTab, setActiveTab] = useState<'overview' | 'invoices' | 'payments' | 'expenses' | 'taxes' | 'audit'>('overview');
@@ -335,9 +336,9 @@ export default function FinancialManagement() {
       entityType: 'expense',
       entityId: newExpense.id,
       entityName: `Expense: ${expenseForm.description}`,
-      userId: '1',
-      userName: 'Current User',
-      userRole: 'Manager',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `New expense added: ${fmtR(expenseForm.amount)} for ${expenseForm.category}`,
       timestamp: new Date().toISOString(),
     });
@@ -370,9 +371,9 @@ export default function FinancialManagement() {
       entityType: 'expense',
       entityId: editingExpense.id,
       entityName: `Expense: ${expenseForm.description}`,
-      userId: '1',
-      userName: 'Current User',
-      userRole: 'Manager',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Expense updated: ${fmtR(expenseForm.amount)} for ${expenseForm.category}`,
       timestamp: new Date().toISOString(),
     });
@@ -390,9 +391,9 @@ export default function FinancialManagement() {
       entityType: 'expense',
       entityId: exp.id,
       entityName: `Expense: ${exp.description}`,
-      userId: '1',
-      userName: 'Current User',
-      userRole: 'Manager',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Expense approved: ${fmtR(exp.amount)}`,
       timestamp: new Date().toISOString(),
     });
@@ -407,9 +408,9 @@ export default function FinancialManagement() {
       entityType: 'expense',
       entityId: exp.id,
       entityName: `Expense: ${exp.description}`,
-      userId: '1',
-      userName: 'Current User',
-      userRole: 'Manager',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Expense rejected: ${fmtR(exp.amount)}`,
       timestamp: new Date().toISOString(),
     });
@@ -443,9 +444,9 @@ export default function FinancialManagement() {
         entityType: 'expense',
         entityId: showDeleteConfirm,
         entityName: `Expense: ${exp?.description || 'Unknown'}`,
-        userId: '1',
-        userName: 'Current User',
-        userRole: 'Manager',
+        userId: me?.id ?? '',
+        userName: me?.name ?? 'You',
+        userRole: me?.role ?? '',
         details: `Expense deleted: ${exp ? fmtR(exp.amount) : 'N/A'}`,
         timestamp: new Date().toISOString(),
       });
@@ -459,9 +460,9 @@ export default function FinancialManagement() {
         entityType: 'invoice',
         entityId: showDeleteConfirm,
         entityName: `Invoice: ${inv?.invoiceNumber || 'Unknown'}`,
-        userId: '1',
-        userName: 'Current User',
-        userRole: 'Manager',
+        userId: me?.id ?? '',
+        userName: me?.name ?? 'You',
+        userRole: me?.role ?? '',
         details: `Invoice deleted: ${inv ? fmtR(inv.total) : 'N/A'}`,
         timestamp: new Date().toISOString(),
       });
@@ -509,9 +510,9 @@ export default function FinancialManagement() {
       entityType: 'payment',
       entityId: payment.id,
       entityName: `Payment ${payment.paymentNumber}`,
-      userId: '1',
-      userName: 'Current User',
-      userRole: 'Manager',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       details: `Payment received: ${fmtR(amt)} via ${paymentMethod} for invoice ${selectedInvoice.invoiceNumber}`,
       timestamp: new Date().toISOString(),
     });
@@ -529,7 +530,7 @@ export default function FinancialManagement() {
       addAuditLog({
         id: `LOG-${Date.now()}`, action: 'update', entityType: 'invoice',
         entityId: inv.id, entityName: `Invoice ${inv.invoiceNumber}`,
-        userId: '1', userName: 'Current User', userRole: 'Manager',
+        userId: me?.id ?? '', userName: me?.name ?? 'You', userRole: me?.role ?? '',
         details: `Invoice sent to ${inv.guestEmail}`, timestamp: new Date().toISOString(),
       });
       toastHelpers.success('Invoice sent', `Sent to ${inv.guestEmail}`);
@@ -544,7 +545,7 @@ export default function FinancialManagement() {
     addAuditLog({
       id: `LOG-${Date.now()}`, action: 'update', entityType: 'invoice',
       entityId: inv.id, entityName: `Invoice ${inv.invoiceNumber}`,
-      userId: '1', userName: 'Current User', userRole: 'Manager',
+      userId: me?.id ?? '', userName: me?.name ?? 'You', userRole: me?.role ?? '',
       details: `Invoice cancelled`, timestamp: new Date().toISOString(),
     });
     toastHelpers.success('Invoice cancelled');

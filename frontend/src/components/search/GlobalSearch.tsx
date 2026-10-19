@@ -5,6 +5,7 @@ import {
   Wallet, Settings, ArrowRight, 
   Fingerprint, FileText, BarChart3
 } from 'lucide-react';
+import { useAppStore } from '../../store/useAppStore';
 
 interface SearchResult {
   id: string;
@@ -12,22 +13,19 @@ interface SearchResult {
   title: string;
   subtitle: string;
   icon: React.ComponentType<{ className?: string }>;
-  action: () => void;
 }
 
-const mockSearchData: SearchResult[] = [
-  { id: '1', type: 'booking', title: 'BK001 - Sarah Johnson', subtitle: 'Room 301, Mar 28-31', icon: Calendar, action: () => {} },
-  { id: '2', type: 'booking', title: 'BK002 - Michael Chen', subtitle: 'Room 205, Mar 29-30', icon: Calendar, action: () => {} },
-  { id: '3', type: 'guest', title: 'Sarah Johnson', subtitle: 'VIP Guest, 12 stays', icon: Users, action: () => {} },
-  { id: '4', type: 'guest', title: 'David Nkosi', subtitle: 'Corporate, 15 stays', icon: Users, action: () => {} },
-  { id: '5', type: 'room', title: 'Room 301', subtitle: 'Presidential Suite, Available', icon: DoorOpen, action: () => {} },
-  { id: '6', type: 'room', title: 'Room 502', subtitle: 'Suite, Occupied', icon: DoorOpen, action: () => {} },
-  { id: '7', type: 'staff', title: 'James Mkhize', subtitle: 'Housekeeping Manager', icon: Fingerprint, action: () => {} },
-  { id: '8', type: 'staff', title: 'Maria Santos', subtitle: 'Front Desk', icon: Fingerprint, action: () => {} },
-  { id: '9', type: 'report', title: 'Monthly Revenue Report', subtitle: 'Financial', icon: FileText, action: () => {} },
-  { id: '10', type: 'report', title: 'Occupancy Analysis', subtitle: 'Analytics', icon: BarChart3, action: () => {} },
-  { id: '11', type: 'setting', title: 'Rate Management', subtitle: 'Configure room rates', icon: Settings, action: () => {} },
-  { id: '12', type: 'setting', title: 'User Management', subtitle: 'Manage staff accounts', icon: Settings, action: () => {} },
+const shortDate = (iso: string) => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+
+const staticLinks: SearchResult[] = [
+  { id: 'report-revenue', type: 'report', title: 'Monthly Revenue Report', subtitle: 'Financial', icon: FileText },
+  { id: 'report-occupancy', type: 'report', title: 'Occupancy Analysis', subtitle: 'Analytics', icon: BarChart3 },
+  { id: 'setting-rates', type: 'setting', title: 'Rate Management', subtitle: 'Configure room rates', icon: Settings },
+  { id: 'setting-users', type: 'setting', title: 'User Management', subtitle: 'Manage staff accounts', icon: Settings },
 ];
 
 interface GlobalSearchProps {
@@ -40,6 +38,10 @@ const GlobalSearch = ({ isOpen, onClose, onNavigate }: GlobalSearchProps) => {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const bookings = useAppStore((s) => s.bookings);
+  const guests = useAppStore((s) => s.guests);
+  const rooms = useAppStore((s) => s.rooms);
+  const users = useAppStore((s) => s.users);
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -51,11 +53,41 @@ const GlobalSearch = ({ isOpen, onClose, onNavigate }: GlobalSearchProps) => {
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return [];
-    return mockSearchData.filter(item =>
-      item.title.toLowerCase().includes(q) ||
-      item.subtitle.toLowerCase().includes(q)
-    );
-  }, [query]);
+    const index: SearchResult[] = [
+      ...bookings.map((b) => ({
+        id: `booking-${b.id}`,
+        type: 'booking' as const,
+        title: `${b.guestName} - Room ${b.roomNumber}`,
+        subtitle: `${shortDate(b.checkIn)} - ${shortDate(b.checkOut)} · ${b.status.replace('-', ' ')}`,
+        icon: Calendar,
+      })),
+      ...guests.map((g) => ({
+        id: `guest-${g.id}`,
+        type: 'guest' as const,
+        title: g.name,
+        subtitle: `${g.segment} · ${g.totalStays} stays`,
+        icon: Users,
+      })),
+      ...rooms.map((r) => ({
+        id: `room-${r.id}`,
+        type: 'room' as const,
+        title: `Room ${r.number}`,
+        subtitle: `${r.type} · ${r.status}`,
+        icon: DoorOpen,
+      })),
+      ...users.map((u) => ({
+        id: `staff-${u.id}`,
+        type: 'staff' as const,
+        title: u.name,
+        subtitle: `${u.role.replace(/_/g, ' ')}${u.department ? ` · ${u.department}` : ''}`,
+        icon: Fingerprint,
+      })),
+      ...staticLinks,
+    ];
+    return index
+      .filter((item) => item.title.toLowerCase().includes(q) || item.subtitle.toLowerCase().includes(q))
+      .slice(0, 40);
+  }, [query, bookings, guests, rooms, users]);
 
   // Clamp instead of resetting when the result set shrinks.
   const safeIndex = Math.min(selectedIndex, results.length - 1);

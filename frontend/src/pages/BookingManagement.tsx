@@ -116,7 +116,8 @@ export default function BookingManagement() {
     addInvoice, addAuditLog,
     updateRoom, taxConfigs,
   } = useAppStore();
-  const role = useAppStore((s) => s.user?.role);
+  const me = useAppStore((s) => s.user);
+const role = useAppStore((s) => s.user?.role);
   const canManage = role === 'admin' || role === 'manager';
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -303,9 +304,9 @@ export default function BookingManagement() {
       addAuditLog({
         id: 'AL' + Date.now(),
         action: 'update_booking',
-        userId: 'system',
-        userName: 'System',
-        userRole: 'Admin',
+        userId: me?.id ?? '',
+        userName: me?.name ?? 'You',
+        userRole: me?.role ?? '',
         entityName: guest.name,
         details: `Updated booking ${editBookingId} for ${guest.name}`,
         timestamp: now,
@@ -355,9 +356,9 @@ export default function BookingManagement() {
       addAuditLog({
         id: 'AL' + Date.now(),
         action: 'create_booking',
-        userId: 'system',
-        userName: 'System',
-        userRole: 'Admin',
+        userId: me?.id ?? '',
+        userName: me?.name ?? 'You',
+        userRole: me?.role ?? '',
         entityName: guest.name,
         details: `Created booking ${newId} for ${guest.name} — Room ${room.number} at ${property.name}`,
         timestamp: now,
@@ -446,9 +447,9 @@ export default function BookingManagement() {
     addAuditLog({
       id: 'AL' + Date.now(),
       action: `booking_${newStatus.replace('-', '_')}`,
-      userId: 'system',
-      userName: 'System',
-      userRole: 'Admin',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       entityName: `Booking ${bookingId}`,
       details: `Booking ${bookingId} status changed to ${newStatus}`,
       timestamp: now,
@@ -473,9 +474,9 @@ export default function BookingManagement() {
     addAuditLog({
       id: 'AL' + Date.now(),
       action: 'delete_booking',
-      userId: 'system',
-      userName: 'System',
-      userRole: 'Admin',
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
       entityName: booking?.guestName ?? bookingId,
       details: `Deleted booking ${bookingId}`,
       timestamp: new Date().toISOString(),
