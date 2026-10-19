@@ -1,64 +1,162 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, type FormEvent } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Tag, Plus, Search, Edit, Trash2, X, 
-  Calendar, DollarSign, TrendingUp,
-  ChevronLeft, ChevronRight, Copy, ToggleLeft, ToggleRight
+import {
+  Tag, Plus, Search, Edit, Trash2, X,
+  DollarSign, Calendar, Copy, ToggleLeft, ToggleRight, Layers, Lock,
 } from 'lucide-react';
+import { useAppStore } from '../store/useAppStore';
+import type { RatePlan } from '../store/useAppStore';
+import { newId } from '../utils/id';
+import toastHelpers from '../lib/toast';
 
-interface RatePlan {
-  id: string;
-  name: string;
-  description: string;
-  roomType: string;
-  baseRate: number;
-  weekendRate: number;
-  peakRate: number;
-  status: 'active' | 'inactive';
-  minStay: number;
-  maxStay: number;
-  validFrom: string;
-  validTo: string;
-  mealPlan: string;
-  cancellation: string;
-  bookings: number;
-  revenue: number;
-}
+const ROOM_TYPE_OPTIONS = ['Standard', 'Deluxe', 'Suite', 'All'];
 
-const mockRatePlans: RatePlan[] = [
-  { id: 'RP001', name: 'Standard Rate', description: 'Best available rate', roomType: 'Standard', baseRate: 850, weekendRate: 1050, peakRate: 1200, status: 'active', minStay: 1, maxStay: 30, validFrom: '2026-01-01', validTo: '2026-12-31', mealPlan: 'Room Only', cancellation: 'Free cancellation 24h before', bookings: 145, revenue: 123250 },
-  { id: 'RP002', name: 'Weekend Special', description: 'Special rate for Fri-Sun', roomType: 'All', baseRate: 950, weekendRate: 950, peakRate: 1100, status: 'active', minStay: 2, maxStay: 14, validFrom: '2026-01-01', validTo: '2026-12-31', mealPlan: 'Breakfast Included', cancellation: 'Free cancellation 48h before', bookings: 89, revenue: 84550 },
-  { id: 'RP003', name: 'Corporate Rate', description: 'For business travelers', roomType: 'Deluxe', baseRate: 1200, weekendRate: 1400, peakRate: 1600, status: 'active', minStay: 1, maxStay: 90, validFrom: '2026-01-01', validTo: '2026-12-31', mealPlan: 'Breakfast Included', cancellation: 'Free cancellation 72h before', bookings: 67, revenue: 80400 },
-  { id: 'RP004', name: 'VIP Package', description: 'Premium experience', roomType: 'Suite', baseRate: 2500, weekendRate: 3000, peakRate: 3500, status: 'active', minStay: 2, maxStay: 30, validFrom: '2026-01-01', validTo: '2026-12-31', mealPlan: 'All Inclusive', cancellation: 'Free cancellation anytime', bookings: 34, revenue: 85000 },
-  { id: 'RP005', name: 'Early Bird', description: 'Book 30 days ahead', roomType: 'Standard', baseRate: 700, weekendRate: 850, peakRate: 950, status: 'active', minStay: 1, maxStay: 14, validFrom: '2026-01-01', validTo: '2026-06-30', mealPlan: 'Room Only', cancellation: 'Non-refundable', bookings: 56, revenue: 39200 },
-  { id: 'RP006', name: 'Holiday Season', description: 'Peak season rates', roomType: 'All', baseRate: 1500, weekendRate: 1800, peakRate: 2200, status: 'inactive', minStay: 3, maxStay: 14, validFrom: '2026-12-15', validTo: '2027-01-05', mealPlan: 'Breakfast Included', cancellation: 'Free cancellation 14 days before', bookings: 0, revenue: 0 },
+const SEASON_OPTIONS = [
+  { value: 'low', label: 'Low' },
+  { value: 'shoulder', label: 'Shoulder' },
+  { value: 'high', label: 'High' },
+  { value: 'peak', label: 'Peak' },
 ];
 
+const RESTRICTION_OPTIONS = ['Non-refundable', 'Advance purchase', 'Minimum 2 nights', 'Blackout dates', 'Members only'];
+
+const SEASON_LABEL: Record<string, string> = { low: 'Low', shoulder: 'Shoulder', high: 'High', peak: 'Peak' };
+
+const emptyForm = {
+  name: '',
+  season: 'low',
+  baseRate: 850,
+  minStay: 1,
+  roomTypes: ['Standard'] as string[],
+  restrictions: [] as string[],
+};
+
 const RateManagementPage = () => {
-  const [ratePlans, setRatePlans] = useState<RatePlan[]>(mockRatePlans);
+  const { ratePlans, addRatePlan, updateRatePlan, deleteRatePlan, addAuditLog } = useAppStore();
+  const me = useAppStore((s) => s.user);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
   const [showModal, setShowModal] = useState(false);
   const [editingRate, setEditingRate] = useState<RatePlan | null>(null);
-  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [form, setForm] = useState(emptyForm);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const filteredRates = useMemo(() => {
-    return ratePlans.filter(rate => {
-      const matchesSearch = rate.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           rate.roomType.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesStatus = statusFilter === 'all' || rate.status === statusFilter;
+    const q = searchQuery.toLowerCase();
+    return ratePlans.filter((rate) => {
+      const matchesSearch = rate.name.toLowerCase().includes(q) ||
+        rate.roomTypes.some((t) => t.toLowerCase().includes(q));
+      const matchesStatus = statusFilter === 'all' ||
+        (statusFilter === 'active' ? rate.active : !rate.active);
       return matchesSearch && matchesStatus;
     });
   }, [ratePlans, searchQuery, statusFilter]);
 
-  const totalRevenue = ratePlans.reduce((sum, r) => sum + r.revenue, 0);
-  const totalBookings = ratePlans.reduce((sum, r) => sum + r.bookings, 0);
-  const avgRate = ratePlans.filter(r => r.status === 'active').reduce((sum, r) => sum + r.baseRate, 0) / ratePlans.filter(r => r.status === 'active').length || 0;
+  const activePlans = ratePlans.filter((r) => r.active);
+  const avgRate = activePlans.length
+    ? activePlans.reduce((sum, r) => sum + r.baseRate, 0) / activePlans.length
+    : 0;
+  const avgMinStay = ratePlans.length
+    ? ratePlans.reduce((sum, r) => sum + r.minStay, 0) / ratePlans.length
+    : 0;
 
-  const toggleStatus = (id: string) => {
-    setRatePlans(prev => prev.map(r => 
-      r.id === id ? { ...r, status: r.status === 'active' ? 'inactive' : 'active' } : r
-    ));
+  const audit = (action: string, plan: RatePlan, details: string) => addAuditLog({
+    id: newId('LOG'),
+    action,
+    entityType: 'rate_plan',
+    entityId: plan.id,
+    entityName: plan.name,
+    userId: me?.id ?? '',
+    userName: me?.name ?? 'You',
+    userRole: me?.role ?? '',
+    details,
+    timestamp: new Date().toISOString(),
+  });
+
+  const openCreate = () => {
+    setEditingRate(null);
+    setForm(emptyForm);
+    setShowModal(true);
+  };
+
+  const openEdit = (rate: RatePlan) => {
+    setEditingRate(rate);
+    setForm({
+      name: rate.name,
+      season: rate.season,
+      baseRate: rate.baseRate,
+      minStay: rate.minStay,
+      roomTypes: [...rate.roomTypes],
+      restrictions: [...rate.restrictions],
+    });
+    setConfirmDeleteId(null);
+    setShowModal(true);
+  };
+
+  const toggleStatus = (rate: RatePlan) => {
+    const active = !rate.active;
+    updateRatePlan(rate.id, { active });
+    audit(active ? 'activate' : 'deactivate', rate, `Rate plan "${rate.name}" ${active ? 'activated' : 'deactivated'}`);
+    toastHelpers.success(`Rate plan "${rate.name}" ${active ? 'activated' : 'deactivated'}`);
+  };
+
+  const handleCopy = (rate: RatePlan) => {
+    const copy: RatePlan = { ...rate, id: newId('RP'), name: `${rate.name} (Copy)` };
+    addRatePlan(copy);
+    audit('create', copy, `Rate plan duplicated from "${rate.name}"`);
+    toastHelpers.success(`Copied to "${copy.name}"`);
+  };
+
+  const handleDelete = (rate: RatePlan) => {
+    deleteRatePlan(rate.id);
+    audit('delete', rate, `Rate plan "${rate.name}" deleted`);
+    setConfirmDeleteId(null);
+    toastHelpers.success(`Rate plan "${rate.name}" deleted`);
+  };
+
+  const toggleListValue = (field: 'roomTypes' | 'restrictions', value: string) => {
+    setForm((f) => ({
+      ...f,
+      [field]: f[field].includes(value) ? f[field].filter((v) => v !== value) : [...f[field], value],
+    }));
+  };
+
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    if (editingRate) {
+      updateRatePlan(editingRate.id, {
+        baseRate: form.baseRate,
+        roomTypes: form.roomTypes,
+        restrictions: form.restrictions,
+      });
+      audit('update', editingRate, `Rate plan "${editingRate.name}" updated`);
+      toastHelpers.success(`Rate plan "${editingRate.name}" updated`);
+      setShowModal(false);
+      return;
+    }
+    if (!form.name.trim()) {
+      toastHelpers.error('Plan name is required');
+      return;
+    }
+    if (form.baseRate <= 0) {
+      toastHelpers.error('Base rate must be greater than 0');
+      return;
+    }
+    const plan: RatePlan = {
+      id: newId('RP'),
+      name: form.name.trim(),
+      roomTypes: form.roomTypes,
+      baseRate: form.baseRate,
+      season: form.season,
+      minStay: Math.max(1, form.minStay),
+      active: true,
+      restrictions: form.restrictions,
+    };
+    addRatePlan(plan);
+    audit('create', plan, `Rate plan "${plan.name}" created`);
+    toastHelpers.success(`Rate plan "${plan.name}" created`);
+    setShowModal(false);
   };
 
   return (
@@ -69,8 +167,8 @@ const RateManagementPage = () => {
           <h1 className="text-2xl font-bold">Rate Management</h1>
           <p className="text-muted-foreground">Manage room rates, seasonal pricing, and rate plans</p>
         </div>
-        <button 
-          onClick={() => { setEditingRate(null); setShowModal(true); }}
+        <button
+          onClick={openCreate}
           className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -86,41 +184,41 @@ const RateManagementPage = () => {
               <DollarSign className="w-5 h-5 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold">R{avgRate.toFixed(0)}</p>
-              <p className="text-sm text-muted-foreground">Avg Rate</p>
+              <p className="text-2xl font-bold">R{avgRate.toLocaleString(undefined, { maximumFractionDigits: 0 })}</p>
+              <p className="text-sm text-muted-foreground">Avg Active Rate</p>
             </div>
           </div>
         </div>
-        <div className="bg-card border border-border rounded-xl p-4 border border-success/30">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-success/15 rounded-lg flex items-center justify-center">
-              <TrendingUp className="w-5 h-5 text-success" />
-            </div>
-            <div>
-              <p className="text-2xl font-bold">R{totalRevenue.toLocaleString()}</p>
-              <p className="text-sm text-muted-foreground">Total Revenue</p>
-            </div>
-          </div>
-        </div>
-        <div className="bg-card border border-border rounded-xl p-4 border border-info/30">
+        <div className="bg-card border border-border rounded-xl p-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-info/15 rounded-lg flex items-center justify-center">
-              <Calendar className="w-5 h-5 text-info" />
+              <Layers className="w-5 h-5 text-info" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{totalBookings}</p>
-              <p className="text-sm text-muted-foreground">Total Bookings</p>
+              <p className="text-2xl font-bold">{ratePlans.length}</p>
+              <p className="text-sm text-muted-foreground">Total Plans</p>
             </div>
           </div>
         </div>
-        <div className="bg-card border border-border rounded-xl p-4 border border-warning/30">
+        <div className="bg-card border border-border rounded-xl p-4">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-warning/15 rounded-lg flex items-center justify-center">
-              <Tag className="w-5 h-5 text-warning" />
+            <div className="w-10 h-10 bg-success/15 rounded-lg flex items-center justify-center">
+              <Tag className="w-5 h-5 text-success" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{ratePlans.filter(r => r.status === 'active').length}</p>
+              <p className="text-2xl font-bold">{activePlans.length}</p>
               <p className="text-sm text-muted-foreground">Active Plans</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-card border border-border rounded-xl p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-warning/15 rounded-lg flex items-center justify-center">
+              <Calendar className="w-5 h-5 text-warning" />
+            </div>
+            <div>
+              <p className="text-2xl font-bold">{avgMinStay.toFixed(1)} <span className="text-sm font-normal text-muted-foreground">nights</span></p>
+              <p className="text-sm text-muted-foreground">Avg Min Stay</p>
             </div>
           </div>
         </div>
@@ -144,8 +242,8 @@ const RateManagementPage = () => {
               key={status}
               onClick={() => setStatusFilter(status as typeof statusFilter)}
               className={`px-4 py-2 rounded-lg text-sm capitalize transition-colors ${
-                statusFilter === status 
-                  ? 'bg-primary text-primary-foreground' 
+                statusFilter === status
+                  ? 'bg-primary text-primary-foreground'
                   : 'bg-muted hover:bg-muted/80'
               }`}
             >
@@ -156,135 +254,128 @@ const RateManagementPage = () => {
       </div>
 
       {/* Rate Plans Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredRates.map((rate) => (
-          <motion.div
-            key={rate.id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary/50 transition-colors"
-          >
-            {/* Header */}
-            <div className={`p-4 ${rate.status === 'active' ? 'border-b border-border/30' : 'bg-muted/30 border-b border-border/30'}`}>
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="font-semibold text-lg">{rate.name}</h3>
-                  <p className="text-sm text-muted-foreground">{rate.description}</p>
-                </div>
-                <button
-                  onClick={() => toggleStatus(rate.id)}
-                  className={`p-1 rounded ${rate.status === 'active' ? 'text-success' : 'text-gray-400'}`}
-                >
-                  {rate.status === 'active' ? <ToggleRight className="w-6 h-6" /> : <ToggleLeft className="w-6 h-6" />}
-                </button>
-              </div>
-            </div>
-
-            {/* Pricing */}
-            <div className="p-4 space-y-3">
-              <div className="grid grid-cols-3 gap-2">
-                <div className="text-center p-2 bg-muted/30 rounded-lg">
-                  <p className="text-xs text-muted-foreground">Weekday</p>
-                  <p className="font-bold">R{rate.baseRate}</p>
-                </div>
-                <div className="text-center p-2 bg-info/10 rounded-lg">
-                  <p className="text-xs text-info">Weekend</p>
-                  <p className="font-bold">R{rate.weekendRate}</p>
-                </div>
-                <div className="text-center p-2 bg-warning/10 rounded-lg">
-                  <p className="text-xs text-warning">Peak</p>
-                  <p className="font-bold">R{rate.peakRate}</p>
+      {filteredRates.length > 0 ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredRates.map((rate) => (
+            <motion.div
+              key={rate.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-card border border-border rounded-xl overflow-hidden hover:border-primary/50 transition-colors"
+            >
+              {/* Header */}
+              <div className={`p-4 border-b border-border/30 ${rate.active ? '' : 'bg-muted/30'}`}>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="font-semibold text-lg">{rate.name}</h3>
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-primary/15 text-primary">
+                        {SEASON_LABEL[rate.season] ?? rate.season}
+                      </span>
+                      <span className={`text-xs ${rate.active ? 'text-success' : 'text-muted-foreground'}`}>
+                        {rate.active ? 'Active' : 'Inactive'}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => toggleStatus(rate)}
+                    aria-label={`${rate.active ? 'Deactivate' : 'Activate'} ${rate.name}`}
+                    className={`p-1 rounded ${rate.active ? 'text-success' : 'text-gray-400'}`}
+                  >
+                    {rate.active ? <ToggleRight className="w-6 h-6" /> : <ToggleLeft className="w-6 h-6" />}
+                  </button>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Room Type</span>
-                <span className="font-medium">{rate.roomType}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Meal Plan</span>
-                <span className="font-medium">{rate.mealPlan}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Min Stay</span>
-                <span className="font-medium">{rate.minStay} night(s)</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Bookings</span>
-                <span className="font-medium">{rate.bookings}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Revenue</span>
-                <span className="font-medium text-success">R{rate.revenue.toLocaleString()}</span>
-              </div>
-            </div>
+              {/* Pricing */}
+              <div className="p-4 space-y-3">
+                <div className="text-center p-3 bg-muted/30 rounded-lg">
+                  <p className="text-xs text-muted-foreground">Base Rate</p>
+                  <p className="text-xl font-bold">
+                    R{rate.baseRate.toLocaleString()}
+                    <span className="text-xs font-normal text-muted-foreground"> /night</span>
+                  </p>
+                </div>
 
-            {/* Actions */}
-            <div className="p-4 border-t border-border/30 flex gap-2">
-              <button 
-                onClick={() => { setEditingRate(rate); setShowModal(true); }}
-                className="flex-1 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors flex items-center justify-center gap-2 text-sm"
-              >
-                <Edit className="w-4 h-4" />
-                Edit
-              </button>
-              <button className="p-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors">
-                <Copy className="w-4 h-4" />
-              </button>
-              <button className="p-2 bg-danger/15 text-danger rounded-lg hover:bg-danger/30 transition-colors">
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          </motion.div>
-        ))}
-      </div>
+                <div className="flex items-center justify-between text-sm gap-3">
+                  <span className="text-muted-foreground shrink-0">Room Types</span>
+                  <span className="font-medium text-right">{rate.roomTypes.length ? rate.roomTypes.join(', ') : 'All types'}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Min Stay</span>
+                  <span className="font-medium">{rate.minStay} night(s)</span>
+                </div>
+                <div className="flex items-center justify-between text-sm gap-3">
+                  <span className="text-muted-foreground shrink-0">Restrictions</span>
+                  <span className="font-medium text-right">{rate.restrictions.length ? rate.restrictions.join(', ') : 'None'}</span>
+                </div>
+              </div>
 
-      {/* Rate Calendar Preview */}
-      <div className="bg-card border border-border rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold flex items-center gap-2">
-            <Calendar className="w-5 h-5" />
-            Rate Calendar Preview
-          </h3>
-          <div className="flex items-center gap-2">
-            <button className="p-2 hover:bg-muted rounded-lg">
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <input 
-              type="date" 
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="px-3 py-1.5 bg-muted border border-border rounded-lg text-sm"
-            />
-            <button className="p-2 hover:bg-muted rounded-lg">
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        <div className="grid grid-cols-7 gap-2">
-          {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(day => (
-            <div key={day} className="text-center text-sm text-muted-foreground py-2">{day}</div>
+              {/* Actions */}
+              <div className="p-4 border-t border-border/30 flex gap-2">
+                {confirmDeleteId === rate.id ? (
+                  <>
+                    <button
+                      onClick={() => handleDelete(rate)}
+                      className="flex-1 py-2 bg-danger text-white rounded-lg hover:bg-danger/90 transition-colors flex items-center justify-center gap-2 text-sm"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                      Confirm delete
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteId(null)}
+                      className="px-3 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors text-sm"
+                    >
+                      Cancel
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button
+                      onClick={() => openEdit(rate)}
+                      className="flex-1 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors flex items-center justify-center gap-2 text-sm"
+                    >
+                      <Edit className="w-4 h-4" />
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleCopy(rate)}
+                      aria-label={`Duplicate ${rate.name}`}
+                      className="p-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setConfirmDeleteId(rate.id)}
+                      aria-label={`Delete ${rate.name}`}
+                      className="p-2 bg-danger/15 text-danger rounded-lg hover:bg-danger/30 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </>
+                )}
+              </div>
+            </motion.div>
           ))}
-          {Array.from({ length: 28 }, (_, i) => {
-            const date = new Date(2026, 2, i + 1);
-            const isWeekend = date.getDay() === 0 || date.getDay() === 6;
-            const isToday = i + 1 === 27;
-            return (
-              <div 
-                key={i}
-                className={`p-2 rounded-lg text-center text-sm cursor-pointer transition-colors ${
-                  isToday ? 'bg-primary text-primary-foreground' :
-                  isWeekend ? 'bg-info/15 hover:bg-info/30' : 
-                  'bg-muted/30 hover:bg-muted/50'
-                }`}
-              >
-                <p className="font-medium">{i + 1}</p>
-                <p className="text-xs opacity-70">R{isWeekend ? '1050' : '850'}</p>
-              </div>
-            );
-          })}
         </div>
-      </div>
+      ) : (
+        <div className="bg-card border border-border rounded-xl p-10 text-center">
+          <Tag className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
+          <p className="font-medium">No rate plans found</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {ratePlans.length ? 'Try a different search or filter.' : 'Create your first plan to get started.'}
+          </p>
+          {!ratePlans.length && (
+            <button
+              onClick={openCreate}
+              className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
+            >
+              <Plus className="w-4 h-4" />
+              New Rate Plan
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Modal */}
       {showModal && (
@@ -294,82 +385,129 @@ const RateManagementPage = () => {
             <div className="p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">{editingRate ? 'Edit Rate Plan' : 'New Rate Plan'}</h2>
-                <button onClick={() => setShowModal(false)} className="p-2 hover:bg-muted rounded-lg">
+                <button onClick={() => setShowModal(false)} className="p-2 hover:bg-muted rounded-lg" aria-label="Close">
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <form className="space-y-4">
+              <form className="space-y-4" onSubmit={handleSubmit}>
+                {editingRate ? (
+                  <div className="bg-muted/40 border border-border rounded-lg p-4 space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Plan Name</span>
+                      <span className="font-medium">{editingRate.name}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Season</span>
+                      <span className="font-medium">{SEASON_LABEL[editingRate.season] ?? editingRate.season}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Min Stay</span>
+                      <span className="font-medium">{editingRate.minStay} night(s)</span>
+                    </div>
+                    <p className="flex items-center gap-2 pt-2 text-xs text-muted-foreground">
+                      <Lock className="w-3.5 h-3.5 shrink-0" />
+                      Name, season and minimum stay are set when the plan is created.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Plan Name</label>
+                      <input
+                        type="text"
+                        value={form.name}
+                        onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                        placeholder="e.g., Weekend Special"
+                        className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Season</label>
+                        <select
+                          value={form.season}
+                          onChange={(e) => setForm((f) => ({ ...f, season: e.target.value }))}
+                          className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
+                        >
+                          {SEASON_OPTIONS.map((s) => (
+                            <option key={s.value} value={s.value}>{s.label}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium mb-2 block">Min Stay (nights)</label>
+                        <input
+                          type="number"
+                          min={1}
+                          value={form.minStay}
+                          onChange={(e) => setForm((f) => ({ ...f, minStay: Number(e.target.value) }))}
+                          className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Plan Name</label>
-                  <input type="text" defaultValue={editingRate?.name} placeholder="e.g., Weekend Special" className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors" />
+                  <label className="text-sm font-medium mb-2 block">Base Rate (R)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    value={form.baseRate}
+                    onChange={(e) => setForm((f) => ({ ...f, baseRate: Number(e.target.value) }))}
+                    className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
+                  />
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Description</label>
-                  <input type="text" defaultValue={editingRate?.description} placeholder="Brief description" className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors" />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Room Type</label>
-                    <select defaultValue={editingRate?.roomType} className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors">
-                      <option value="Standard">Standard</option>
-                      <option value="Deluxe">Deluxe</option>
-                      <option value="Suite">Suite</option>
-                      <option value="All">All Types</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Meal Plan</label>
-                    <select defaultValue={editingRate?.mealPlan} className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors">
-                      <option value="Room Only">Room Only</option>
-                      <option value="Breakfast Included">Breakfast Included</option>
-                      <option value="Half Board">Half Board</option>
-                      <option value="All Inclusive">All Inclusive</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Weekday Rate (R)</label>
-                    <input type="number" defaultValue={editingRate?.baseRate} className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Weekend Rate (R)</label>
-                    <input type="number" defaultValue={editingRate?.weekendRate} className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Peak Rate (R)</label>
-                    <input type="number" defaultValue={editingRate?.peakRate} className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Min Stay (nights)</label>
-                    <input type="number" defaultValue={editingRate?.minStay || 1} className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Max Stay (nights)</label>
-                    <input type="number" defaultValue={editingRate?.maxStay || 30} className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors" />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Valid From</label>
-                    <input type="date" defaultValue={editingRate?.validFrom} className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors" />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Valid To</label>
-                    <input type="date" defaultValue={editingRate?.validTo} className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors" />
+                  <span className="text-sm font-medium mb-2 block">Room Types</span>
+                  <div className="flex flex-wrap gap-2">
+                    {ROOM_TYPE_OPTIONS.map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => toggleListValue('roomTypes', opt)}
+                        className={`px-3 py-1.5 rounded-lg text-sm capitalize transition-colors ${
+                          form.roomTypes.includes(opt)
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted hover:bg-muted/80'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Cancellation Policy</label>
-                  <input type="text" defaultValue={editingRate?.cancellation} placeholder="e.g., Free cancellation 24h before" className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors" />
+                  <span className="text-sm font-medium mb-2 block">Restrictions</span>
+                  <div className="flex flex-wrap gap-2">
+                    {RESTRICTION_OPTIONS.map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        onClick={() => toggleListValue('restrictions', opt)}
+                        className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                          form.restrictions.includes(opt)
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted hover:bg-muted/80'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
                 </div>
                 <div className="flex gap-3 pt-4">
-                  <button type="button" onClick={() => setShowModal(false)} className="flex-1 py-2.5 bg-muted rounded-lg hover:bg-muted/80 transition-colors">
+                  <button
+                    type="button"
+                    onClick={() => setShowModal(false)}
+                    className="flex-1 py-2.5 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+                  >
                     Cancel
                   </button>
-                  <button type="submit" className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors">
+                  <button
+                    type="submit"
+                    className="flex-1 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors"
+                  >
                     {editingRate ? 'Save Changes' : 'Create Plan'}
                   </button>
                 </div>

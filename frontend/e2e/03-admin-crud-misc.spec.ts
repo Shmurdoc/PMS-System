@@ -15,7 +15,7 @@ import {
 
 /**
  * Seg 4 — admin CRUD part 2.
- * Inventory, Expenses, Tax configs, Users, Tickets + G1 gap assertion.
+ * Inventory, Expenses, Tax configs, Users, Tickets + rate plan CRUD (G1).
  */
 test.describe.configure({ mode: 'serial' });
 
@@ -188,17 +188,32 @@ test('tickets: create via UI → API verify → API delete', async ({ page, requ
   await apiDelete(request, `/tickets/${created.id}`, 'admin');
 });
 
-test('G1 gap: RateManagement is mock-only (UI shows plans, API has none)', async ({ page, request }, testInfo) => {
+test('rate plans: create via UI → API verify → API delete (G1)', async ({ page, request }, testInfo) => {
   test.skip(testInfo.project.name !== 'admin');
+  const RATE_NAME = `E2E Rate ${SUFFIX}`;
   await page.goto('/');
   await waitForHydration(page);
   await gotoNav(page, 'Rates');
 
-  // UI shows mock plans (6 default)
-  await expect(page.getByText(/rate plan/i).first()).toBeVisible();
-  // API rate plans for our property (and globally) — expect empty because UI never syncs
-  const apiRes = await apiGet(request, `/ratePlans?propertyId=${b.propertyId}`, 'admin');
-  expect(apiRes.status).toBe(200);
-  const apiPlans = unwrap(apiRes.body) as unknown[];
-  expect(apiPlans.length, 'G1: RateManagement writes never reach the API').toBe(0);
+  await page.getByRole('button', { name: 'New Rate Plan', exact: true }).first().click();
+  const modal = page.locator('div.fixed.inset-0').last();
+  await expect(modal).toBeVisible();
+  await expect(modal.getByRole('heading', { name: 'New Rate Plan' })).toBeVisible();
+
+  await field(modal, /^Plan Name/).fill(RATE_NAME);
+  await field(modal, /^Season/).selectOption({ value: 'high' }).catch(() => undefined);
+  await field(modal, /^Min Stay/).fill('2');
+  await field(modal, /^Base Rate/).fill('1450');
+  await modal.getByRole('button', { name: /^Create Plan$/ }).click();
+
+  const plans = await waitForApiList(request, '/ratePlans', 'admin',
+    (rows) => rows.some((r) => r.name === RATE_NAME));
+  const created = plans.find((r) => r.name === RATE_NAME)!;
+  expect(Number(created.baseRate)).toBe(1450);
+  expect(Number(created.minStay)).toBe(2);
+  expect(created.season).toBe('high');
+
+  await apiDelete(request, `/ratePlans/${created.id}`, 'admin');
+  await waitForApiList(request, '/ratePlans', 'admin',
+    (rows) => !rows.some((r) => r.name === RATE_NAME)).catch(() => undefined);
 });

@@ -1,52 +1,95 @@
-import { useState, useMemo, type Dispatch, type SetStateAction } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
+import {
   Bell, X, Check, Clock, Calendar, AlertTriangle,
-  Info, DollarSign, Users, Settings, Trash2
+  Info, DollarSign, Users, Settings, Trash2, MessageSquare,
 } from 'lucide-react';
+import { useAppStore } from '../../store/useAppStore';
 
 interface Notification {
   id: string;
+  source: 'audit' | 'message';
+  rawId: string;
   type: 'success' | 'info' | 'warning' | 'error';
   title: string;
   message: string;
   time: string;
-  read: boolean;
-  category: 'booking' | 'payment' | 'system' | 'staff' | 'guest';
+  ts: number;
+  storeRead: boolean;
+  category: 'booking' | 'payment' | 'system' | 'staff' | 'guest' | 'message';
 }
 
 interface NotificationDropdownProps {
   isOpen: boolean;
   onClose: () => void;
   notifications: Notification[];
-  setNotifications: Dispatch<SetStateAction<Notification[]>>;
+  readIds: string[];
+  onMarkRead: (n: Notification) => void;
+  onMarkAllRead: () => void;
+  onDismiss: (n: Notification) => void;
 }
 
-const NotificationDropdown = ({ isOpen, onClose, notifications, setNotifications }: NotificationDropdownProps) => {
+const readKey = (uid: string) => `aquri.notif.read.${uid}`;
+const dismissedKey = (uid: string) => `aquri.notif.dismissed.${uid}`;
+
+function loadIds(key: string): string[] {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(key) ?? '[]');
+    return Array.isArray(parsed) ? parsed.filter((x): x is string => typeof x === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveIds(key: string, ids: string[]) {
+  try {
+    localStorage.setItem(key, JSON.stringify(ids));
+  } catch {
+    // Storage unavailable (private mode) — the bell just forgets between reloads.
+  }
+}
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  if (Number.isNaN(diff)) return '';
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 7) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString();
+}
+
+function typeForAction(action: string): Notification['type'] {
+  if (/(error|fail)/i.test(action)) return 'error';
+  if (/(delete|remove|refund|deactivate)/i.test(action)) return 'warning';
+  if (/(create|add|issue|complete|activate)/i.test(action)) return 'success';
+  return 'info';
+}
+
+const CATEGORY_BY_ENTITY: Record<string, Notification['category']> = {
+  booking: 'booking',
+  invoice: 'payment',
+  payment: 'payment',
+  guest: 'guest',
+  user: 'staff',
+};
+
+const NotificationDropdown = ({
+  isOpen, onClose, notifications, readIds, onMarkRead, onMarkAllRead, onDismiss,
+}: NotificationDropdownProps) => {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const isRead = (n: Notification) => n.source === 'message' ? n.storeRead : readIds.includes(n.id);
+  const unreadCount = notifications.filter(n => !isRead(n)).length;
 
   const filteredNotifications = useMemo(() => {
-    if (filter === 'unread') {
-      return notifications.filter(n => !n.read);
-    }
+    if (filter === 'unread') return notifications.filter(n => !isRead(n));
     return notifications;
-  }, [notifications, filter]);
-
-  const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    );
-  };
-
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
-  };
-
-  const deleteNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- isRead derives from readIds, already a dep
+  }, [notifications, filter, readIds]);
 
   const getTypeIcon = (type: Notification['type']) => {
     switch (type) {
@@ -63,6 +106,7 @@ const NotificationDropdown = ({ isOpen, onClose, notifications, setNotifications
       case 'payment': return <DollarSign className="w-4 h-4" />;
       case 'staff': return <Users className="w-4 h-4" />;
       case 'guest': return <Users className="w-4 h-4" />;
+      case 'message': return <MessageSquare className="w-4 h-4" />;
       default: return <Settings className="w-4 h-4" />;
     }
   };
@@ -94,7 +138,7 @@ const NotificationDropdown = ({ isOpen, onClose, notifications, setNotifications
                 <div className="flex items-center gap-2">
                   {unreadCount > 0 && (
                     <button
-                      onClick={markAllAsRead}
+                      onClick={onMarkAllRead}
                       className="text-xs text-primary hover:underline"
                     >
                       Mark all read
@@ -142,9 +186,9 @@ const NotificationDropdown = ({ isOpen, onClose, notifications, setNotifications
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       className={`group p-4 hover:bg-muted/50 transition-colors cursor-pointer ${
-                        !notification.read ? 'bg-primary/5' : ''
+                        !isRead(notification) ? 'bg-primary/5' : ''
                       }`}
-                      onClick={() => markAsRead(notification.id)}
+                      onClick={() => onMarkRead(notification)}
                     >
                       <div className="flex gap-3">
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
@@ -158,16 +202,16 @@ const NotificationDropdown = ({ isOpen, onClose, notifications, setNotifications
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
                             <div className="flex items-center gap-2">
-                              <h4 className={`text-sm font-medium ${!notification.read ? 'text-foreground' : 'text-muted-foreground'}`}>
+                              <h4 className={`text-sm font-medium ${!isRead(notification) ? 'text-foreground' : 'text-muted-foreground'}`}>
                                 {notification.title}
                               </h4>
-                              {!notification.read && (
+                              {!isRead(notification) && (
                                 <span className="w-2 h-2 bg-primary rounded-full flex-shrink-0" />
                               )}
                             </div>
                             <button
-                              onClick={(e) => { e.stopPropagation(); deleteNotification(notification.id); }}
-                              aria-label={`Delete notification: ${notification.title}`}
+                              onClick={(e) => { e.stopPropagation(); onDismiss(notification); }}
+                              aria-label={`Dismiss notification: ${notification.title}`}
                               className="p-1 hover:bg-muted rounded opacity-0 group-hover:opacity-100 transition-opacity"
                             >
                               <Trash2 className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
@@ -193,13 +237,6 @@ const NotificationDropdown = ({ isOpen, onClose, notifications, setNotifications
                 </div>
               )}
             </div>
-
-            {/* Footer */}
-            <div className="p-3 border-t border-border">
-              <button className="w-full py-2 text-sm text-primary hover:bg-primary/10 rounded-lg transition-colors">
-                View All Notifications
-              </button>
-            </div>
           </motion.div>
         </>
       )}
@@ -210,8 +247,87 @@ const NotificationDropdown = ({ isOpen, onClose, notifications, setNotifications
 // Notification Bell with Badge
 export const NotificationBell = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const unreadCount = notifications.filter(n => !n.read).length;
+  const me = useAppStore((s) => s.user);
+  const auditLogs = useAppStore((s) => s.auditLogs);
+  const messages = useAppStore((s) => s.messages);
+  const markMessageRead = useAppStore((s) => s.markMessageRead);
+  const meId = me?.id ?? '';
+
+  const [readIds, setReadIds] = useState<string[]>([]);
+  const [dismissedIds, setDismissedIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    setReadIds(loadIds(readKey(meId)));
+    setDismissedIds(loadIds(dismissedKey(meId)));
+  }, [meId]);
+
+  const notifications = useMemo(() => {
+    const fromAudit: Notification[] = auditLogs.slice(0, 30).map((log) => ({
+      id: `audit:${log.id}`,
+      source: 'audit',
+      rawId: log.id,
+      type: typeForAction(log.action),
+      title: log.entityName || log.entityType,
+      message: log.details,
+      time: relativeTime(log.timestamp),
+      ts: Date.parse(log.timestamp) || 0,
+      storeRead: false,
+      category: CATEGORY_BY_ENTITY[log.entityType] ?? 'system',
+    }));
+
+    const forMe = messages.filter(
+      (m) => m.senderId !== meId && (!m.channelId || m.channelId === meId),
+    );
+    const fromMessages: Notification[] = forMe.slice(0, 20).map((m) => ({
+      id: `msg:${m.id}`,
+      source: 'message',
+      rawId: m.id,
+      type: m.type === 'alert' ? 'warning' : 'info',
+      title: `Message from ${m.senderName}`,
+      message: m.content,
+      time: relativeTime(m.timestamp),
+      ts: Date.parse(m.timestamp) || 0,
+      storeRead: m.read,
+      category: 'message',
+    }));
+
+    return [...fromAudit, ...fromMessages]
+      .filter((n) => !dismissedIds.includes(n.id))
+      .sort((a, b) => b.ts - a.ts)
+      .slice(0, 40);
+  }, [auditLogs, messages, meId, dismissedIds]);
+
+  const unreadCount = notifications.filter((n) =>
+    n.source === 'message' ? !n.storeRead : !readIds.includes(n.id),
+  ).length;
+
+  const handleMarkRead = (n: Notification) => {
+    if (n.source === 'message') {
+      if (!n.storeRead) markMessageRead(n.rawId);
+      return;
+    }
+    if (!readIds.includes(n.id)) {
+      const next = [...readIds, n.id];
+      setReadIds(next);
+      saveIds(readKey(meId), next);
+    }
+  };
+
+  const handleMarkAllRead = () => {
+    for (const n of notifications) {
+      if (n.source === 'message' && !n.storeRead) markMessageRead(n.rawId);
+    }
+    const auditIds = notifications.filter((n) => n.source === 'audit').map((n) => n.id);
+    const next = Array.from(new Set([...readIds, ...auditIds]));
+    setReadIds(next);
+    saveIds(readKey(meId), next);
+  };
+
+  const handleDismiss = (n: Notification) => {
+    const next = [...dismissedIds, n.id];
+    setDismissedIds(next);
+    saveIds(dismissedKey(meId), next);
+  };
 
   return (
     <div className="relative">
@@ -233,7 +349,10 @@ export const NotificationBell = () => {
         isOpen={isOpen}
         onClose={() => setIsOpen(false)}
         notifications={notifications}
-        setNotifications={setNotifications}
+        readIds={readIds}
+        onMarkRead={handleMarkRead}
+        onMarkAllRead={handleMarkAllRead}
+        onDismiss={handleDismiss}
       />
     </div>
   );

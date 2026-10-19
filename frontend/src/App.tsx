@@ -5,8 +5,8 @@ import {
   LayoutDashboard, Calendar, Users, Building2, DoorOpen, LogIn, Wallet,
   BadgeCheck, Tag, BarChart3, FileText, TrendingUp, Plug, Settings,
   Ticket, Search, Plus, Eye, CheckCircle, Clock, Star, Mail,
-  Zap, Palette, Layers, Mic, Fingerprint, Type, ImageIcon, CreditCard, AlignLeft,
-  Moon, Sun, Sparkles, Wand2,
+  Zap, Palette, Layers, Mic, Type, ImageIcon, CreditCard, AlignLeft,
+  Moon, Sun, Sparkles,
   GitBranch, Workflow, Play, RefreshCw,
   Send, Paperclip, ArrowRight, Menu,
   X, Box, Activity, MessageSquare, Brain, Package, LogOut, GripVertical
@@ -868,7 +868,6 @@ function App() {
         { id: 'staff', label: 'Staff & RFID', icon: BadgeCheck, shortcut: 'S' },
         { id: 'employee-profiles', label: 'Employee Profiles', icon: Users, shortcut: '' },
         { id: 'staff-schedule', label: 'Staff Schedule', icon: Calendar, shortcut: '' },
-        { id: 'rfid-management', label: 'RFID System', icon: Fingerprint, shortcut: '' },
       ],
     },
     {
@@ -1174,7 +1173,6 @@ function App() {
       case 'settings': return <SettingsPage />;
       case 'employee-profiles': return <EmployeeProfiles />;
       case 'messaging': return <Messaging />;
-      case 'rfid-management': return <RfidManagement />;
       case 'staff-schedule': return <StaffScheduling />;
       case 'finances': return <FinancialManagement />;
       case 'inventory': return <InventoryManagement />;
@@ -1187,18 +1185,8 @@ function App() {
       case 'rates': return <RateManagement />;
       case 'reports': return <ReportsPage />;
       case 'forecast': return <ForecastingPage />;
-      default: return (
-        <div className="flex flex-col items-center justify-center h-96 text-center">
-          <div className="w-20 h-20 bg-muted rounded-2xl flex items-center justify-center mb-4">
-            <Wand2 className="w-10 h-10 text-muted-foreground" />
-          </div>
-          <h3 className="text-xl font-semibold mb-2">Coming Soon</h3>
-          <p className="text-muted-foreground max-w-md">
-            This feature is being enhanced with AI-powered capabilities. 
-            Check back soon for updates!
-          </p>
-        </div>
-      );
+      // A stale or unknown page key lands on the dashboard instead of a dead end.
+      default: return <DashboardView />;
     }
   };
 
@@ -1458,11 +1446,6 @@ function App() {
 
       {/* 3D Property View */}
       <Property3D isOpen={property3DOpen} onClose={() => setProperty3DOpen(false)} />
-
-      {/* Toast Container */}
-        <div className="fixed bottom-6 right-6 z-[2000]">
-          {/* Toasts are handled by sonner */}
-        </div>
         </div>
     </ErrorBoundary>
   );

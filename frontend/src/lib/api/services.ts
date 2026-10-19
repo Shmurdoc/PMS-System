@@ -873,6 +873,7 @@ export interface CreatePaymentInput {
   amount: number;
   method: string;
   processedBy: string;
+  reference?: string | null;
 }
 
 export function createPayment(input: CreatePaymentInput): Promise<ApiPayment> {
@@ -886,6 +887,7 @@ export function createPayment(input: CreatePaymentInput): Promise<ApiPayment> {
       amount: input.amount,
       method: input.method,
       processedBy: input.processedBy,
+      reference: input.reference ?? null,
     },
   });
 }

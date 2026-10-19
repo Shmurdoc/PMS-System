@@ -12,7 +12,7 @@ import {
 } from './helpers';
 
 /**
- * Seg 7b — Staff Schedule, RFID System, Employee Profiles.
+ * Seg 7b — Staff Schedule, Staff & RFID, Employee Profiles.
  *
  * Covered:
  *  - admin shift create (UI) → POST captured → API verify → API cleanup
@@ -85,7 +85,7 @@ test.describe('rfid — admin happy path', () => {
 
     await page.goto('/');
     await waitForHydration(page);
-    await gotoNav(page, 'RFID System');
+    await gotoNav(page, 'Staff & RFID');
 
     await page.getByRole('button', { name: 'Create Tag', exact: true }).first().click();
     const modal = page.locator('div.fixed.inset-0').last();
@@ -160,7 +160,7 @@ test.describe('staff/rfid/profiles — role access + RBAC', () => {
       await expect(page.getByRole('button', { name: 'Add Shift', exact: true })).toHaveCount(0);
     }
 
-    await gotoNav(page, 'RFID System');
+    await gotoNav(page, 'Staff & RFID');
     if (canManage) {
       await expect(page.getByRole('button', { name: 'Create Tag', exact: true }).first()).toBeVisible();
     } else {
@@ -209,7 +209,7 @@ test.describe('staff/rfid/profiles — role access + RBAC', () => {
 
     await page.goto('/');
     await waitForHydration(page);
-    await gotoNav(page, 'RFID System');
+    await gotoNav(page, 'Staff & RFID');
 
     // The "Create Tag" affordance is gone for front_desk (fixed)…
     await expect(page.getByRole('button', { name: 'Create Tag', exact: true })).toHaveCount(0);

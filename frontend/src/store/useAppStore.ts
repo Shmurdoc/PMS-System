@@ -120,6 +120,7 @@ import type {
   UpdateUserInput,
   UpdateWorkflowInput,
 } from '../lib/api/services';
+import { mapInvoice } from '../lib/api/mappers';
 import type {
   ApiAiInsight,
   ApiAttendance,
@@ -178,14 +179,21 @@ function normalizeAppRole(role: string): string {
 
 // Local-first sync: state is already updated; fire-and-forget the API call (demo sessions with no token skip it).
 // onOk, when given, receives the response — creates use it to swap the local id for the server's.
-// onErr, when given, surfaces the failure to the user instead of only logging it.
+// onErr, when given, handles the failure itself (custom message); without it the store shows a generic toast.
 function syncToApi(label: string, task: () => Promise<unknown>, onOk?: (data: unknown) => void, onErr?: (error: unknown) => void): void {
   if (!getAuthToken()) return;
   void task()
     .then((data) => onOk?.(data))
     .catch((error) => {
       console.warn(`[api] ${label} failed:`, error);
-      onErr?.(error);
+      if (onErr) {
+        onErr(error);
+      } else {
+        toast.error('Sync failed', {
+          description: `${label} didn't reach the server. The change stays on screen until it does.`,
+          duration: 5000,
+        });
+      }
     });
 }
 
@@ -592,7 +600,7 @@ export interface Payment {
 export interface AuditLog {
   id: string;
   action: string;
-  entityType: 'booking' | 'guest' | 'room' | 'invoice' | 'payment' | 'ticket' | 'user' | 'property' | 'expense' | 'inventory' | 'workflow' | 'rfid_tag';
+  entityType: 'booking' | 'guest' | 'room' | 'invoice' | 'payment' | 'ticket' | 'user' | 'property' | 'expense' | 'inventory' | 'workflow' | 'rfid_tag' | 'rate_plan';
   entityId: string;
   entityName: string;
   userId: string;
@@ -765,7 +773,8 @@ export interface AppState {
   // Invoices CRUD
   invoices: Invoice[];
   setInvoices: (invoices: Invoice[]) => void;
-  reconcileInvoice: (localId: string, serverId: string, serverInvoiceNumber: string) => void;
+  /** Swaps a just-created row's local id for the server row (totals/status are the server's, name/email kept from the local row when the DTO omits them). */
+  reconcileInvoice: (localId: string, server: Invoice) => void;
   addInvoice: (invoice: Invoice) => void;
   updateInvoice: (id: string, updates: Partial<Invoice>) => void;
   deleteInvoice: (id: string) => void;
@@ -2004,9 +2013,15 @@ export const useAppStore = create<AppState>()(
       // Invoices CRUD
       invoices: [],
       setInvoices: (invoices) => set({ invoices }),
-      reconcileInvoice: (localId, serverId, serverInvoiceNumber) => set((state) => ({
+      reconcileInvoice: (localId, server) => set((state) => ({
         invoices: state.invoices.map((i) => i.id === localId
-          ? { ...i, id: serverId, invoiceNumber: serverInvoiceNumber }
+          ? {
+              ...i,
+              ...server,
+              guestName: server.guestName || i.guestName,
+              guestEmail: server.guestEmail || i.guestEmail,
+              notes: server.notes ?? i.notes,
+            }
           : i)
       })),
       addInvoice: (invoice) => {
@@ -2034,7 +2049,7 @@ export const useAppStore = create<AppState>()(
         };
         syncToApi(`createInvoice(${invoice.id})`, () => createInvoice(input), (data) => {
           const dto = data as ApiInvoice;
-          get().reconcileInvoice(invoice.id, String(dto.id), dto.invoiceNumber);
+          get().reconcileInvoice(invoice.id, mapInvoice(dto));
         });
       },
       updateInvoice: (id, updates) => {
@@ -2083,10 +2098,16 @@ export const useAppStore = create<AppState>()(
           amount: payment.amount,
           method: payment.method,
           processedBy: payment.processedBy,
+          reference: payment.reference ?? null,
         };
         syncToApi(`createPayment(${payment.id})`, () => createPayment(input), (data) => {
           const dto = data as ApiPayment;
           get().reconcilePayment(payment.id, String(dto.id), dto.paymentNumber);
+          // The API creates payments as pending — if the row was logged as
+          // already settled, run the complete transition right after.
+          if (payment.status === 'completed') {
+            syncToApi(`completePayment(${dto.id})`, () => completePayment(dto.id, payment.transactionId ?? null));
+          }
         });
       },
       updatePayment: (id, updates) => {
@@ -2129,7 +2150,9 @@ export const useAppStore = create<AppState>()(
           oldValue: log.oldValue,
           newValue: log.newValue,
         };
-        syncToApi(`createAuditLog(${log.id})`, () => createAuditLog(input));
+        // Audit writes are admin/manager-only server-side — other roles keep
+        // their log locally, so a 403 here is expected and not worth a toast.
+        syncToApi(`createAuditLog(${log.id})`, () => createAuditLog(input), undefined, () => undefined);
       },
 
       // Tax Configs CRUD

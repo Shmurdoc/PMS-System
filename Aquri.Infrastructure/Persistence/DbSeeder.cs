@@ -34,6 +34,17 @@ namespace Aquri.Infrastructure.Persistence
                 logger.LogInformation("Seeded {Count} demo users.", users.Length);
             }
 
+            // Property-scoped writes (messages, bookings) carry a PropertyId foreign key,
+            // so an empty Properties table rejects every one of them. One baseline row
+            // keeps the demo flag self-sufficient on a fresh database.
+            if (!await db.Properties.AnyAsync())
+            {
+                db.Properties.Add(new Property("Nexus Grand Hotel", 1));
+                await db.SaveChangesAsync();
+
+                logger.LogInformation("Seeded 1 demo property.");
+            }
+
             if (!await db.Agents.AnyAsync())
             {
                 db.Agents.AddRange(

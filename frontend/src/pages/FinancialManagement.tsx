@@ -65,13 +65,13 @@ const getMonthLabel = (key: string) => {
 export default function FinancialManagement() {
   const { 
     expenses, addExpense, updateExpense, deleteExpense,
-    invoices, updateInvoice, deleteInvoice,
-    payments, addPayment,
-    bookings, properties,
+    invoices, addInvoice, updateInvoice, deleteInvoice,
+    payments, addPayment, updatePayment,
+    guests, bookings, properties,
     auditLogs, addAuditLog, taxConfigs, addTaxConfig, updateTaxConfig, deleteTaxConfig
   } = useAppStore();
   const me = useAppStore((s) => s.user);
-const role = useAppStore((s) => s.user?.role);
+  const role = useAppStore((s) => s.user?.role);
   const isAdmin = role === 'admin';
   
   const [activeTab, setActiveTab] = useState<'overview' | 'invoices' | 'payments' | 'expenses' | 'taxes' | 'audit'>('overview');
@@ -112,6 +112,25 @@ const role = useAppStore((s) => s.user?.role);
     active: true,
     included: false,
   });
+
+  const [showAddInvoice, setShowAddInvoice] = useState(false);
+  const [invoiceForm, setInvoiceForm] = useState({
+    guestId: '',
+    propertyId: '',
+    type: 'booking' as Invoice['type'],
+    dueDate: new Date(new Date().getTime() + 14 * 86400000).toISOString().split('T')[0],
+    description: '',
+    quantity: 1,
+    unitPrice: 0,
+    taxRate: 15,
+    category: 'Room',
+    discount: 0,
+    notes: '',
+  });
+
+  const invoiceSubtotal = invoiceForm.quantity * invoiceForm.unitPrice;
+  const invoiceTax = invoiceSubtotal * (invoiceForm.taxRate / 100);
+  const invoiceTotal = Math.max(invoiceSubtotal + invoiceTax - invoiceForm.discount, 0);
 
   /* ─── Computed Stats ─── */
   const totalRevenue = useMemo(() => {
@@ -549,6 +568,118 @@ const role = useAppStore((s) => s.user?.role);
       details: `Invoice cancelled`, timestamp: new Date().toISOString(),
     });
     toastHelpers.success('Invoice cancelled');
+  };
+
+  const resetInvoiceForm = () => {
+    setInvoiceForm({
+      guestId: '',
+      propertyId: properties[0]?.id ?? '',
+      type: 'booking',
+      dueDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
+      description: '',
+      quantity: 1,
+      unitPrice: 0,
+      taxRate: 15,
+      category: 'Room',
+      discount: 0,
+      notes: '',
+    });
+  };
+
+  const handleAddInvoice = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!invoiceForm.guestId || !invoiceForm.propertyId) {
+      toastHelpers.error('Validation Error', 'Select a guest and property');
+      return;
+    }
+    if (!invoiceForm.description.trim() || invoiceForm.quantity < 1 || invoiceForm.unitPrice <= 0) {
+      toastHelpers.error('Validation Error', 'Add a line item with description, quantity and unit price');
+      return;
+    }
+    const subtotal = invoiceForm.quantity * invoiceForm.unitPrice;
+    const taxAmount = subtotal * (invoiceForm.taxRate / 100);
+    const total = Math.max(subtotal + taxAmount - invoiceForm.discount, 0);
+    const guest = guests.find((g) => g.id === invoiceForm.guestId);
+    const today = new Date().toISOString().split('T')[0];
+    const invoice: Invoice = {
+      id: newId('INV'),
+      invoiceNumber: `INV-${Date.now()}`,
+      type: invoiceForm.type,
+      guestId: invoiceForm.guestId,
+      guestName: guest?.name ?? 'Guest',
+      guestEmail: guest?.email ?? '',
+      propertyId: invoiceForm.propertyId,
+      items: [{
+        id: newId('ITEM'),
+        description: invoiceForm.description.trim(),
+        quantity: invoiceForm.quantity,
+        unitPrice: invoiceForm.unitPrice,
+        taxRate: invoiceForm.taxRate,
+        amount: subtotal,
+        category: invoiceForm.category,
+      }],
+      subtotal,
+      taxAmount,
+      discountAmount: invoiceForm.discount,
+      total,
+      currency: 'ZAR',
+      status: 'draft',
+      issueDate: today,
+      dueDate: invoiceForm.dueDate,
+      notes: invoiceForm.notes.trim() || undefined,
+      createdAt: new Date().toISOString(),
+      createdBy: me?.id ?? '',
+    };
+    addInvoice(invoice);
+    addAuditLog({
+      id: newId('LOG'),
+      action: 'create',
+      entityType: 'invoice',
+      entityId: invoice.id,
+      entityName: `Invoice: ${invoice.invoiceNumber}`,
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
+      details: `Invoice created for ${invoice.guestName}: ${fmtR(total)}`,
+      timestamp: new Date().toISOString(),
+    });
+    toastHelpers.success('Invoice created', `${invoice.invoiceNumber} saved as draft`);
+    setShowAddInvoice(false);
+    resetInvoiceForm();
+  };
+
+  const handleCompletePayment = (p: Payment) => {
+    updatePayment(p.id, { status: 'completed', transactionId: newId('TXN'), processedAt: new Date().toISOString() });
+    addAuditLog({
+      id: newId('LOG'),
+      action: 'update',
+      entityType: 'payment',
+      entityId: p.id,
+      entityName: `Payment ${p.paymentNumber}`,
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
+      details: `Payment marked complete: ${fmtR(p.amount)} via ${p.method}`,
+      timestamp: new Date().toISOString(),
+    });
+    toastHelpers.success('Payment completed', `${p.paymentNumber} · ${fmtR(p.amount)}`);
+  };
+
+  const handleRefundPayment = (p: Payment) => {
+    updatePayment(p.id, { status: 'refunded' });
+    addAuditLog({
+      id: newId('LOG'),
+      action: 'update',
+      entityType: 'payment',
+      entityId: p.id,
+      entityName: `Payment ${p.paymentNumber}`,
+      userId: me?.id ?? '',
+      userName: me?.name ?? 'You',
+      userRole: me?.role ?? '',
+      details: `Payment refunded: ${fmtR(p.amount)}`,
+      timestamp: new Date().toISOString(),
+    });
+    toastHelpers.success('Payment refunded', `${p.paymentNumber} · ${fmtR(p.amount)}`);
   };
 
   /* ─── Export Handlers ─── */
@@ -1088,6 +1219,10 @@ ${inv.notes ? `<p style="margin-top:20px;font-size:12px;color:#666"><strong>Note
                 <Download className="w-4 h-4" />
                 CSV
               </button>
+              <button onClick={() => { resetInvoiceForm(); setShowAddInvoice(true); }} className="flex items-center gap-2 px-3 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm hover:bg-primary/90">
+                <Plus className="w-4 h-4" />
+                New Invoice
+              </button>
             </div>
           </div>
 
@@ -1252,11 +1387,12 @@ ${inv.notes ? `<p style="margin-top:20px;font-size:12px;color:#666"><strong>Note
                     <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
                     <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Date</th>
                     <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Processed By</th>
+                    <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredPayments.length === 0 && (
-                    <tr><td colSpan={8} className="py-8 text-center text-muted-foreground">No payments found</td></tr>
+                    <tr><td colSpan={9} className="py-8 text-center text-muted-foreground">No payments found</td></tr>
                   )}
                   {filteredPayments.map((payment) => (
                     <tr key={payment.id} className="border-b border-border/20 hover:bg-primary/5">
@@ -1279,6 +1415,32 @@ ${inv.notes ? `<p style="margin-top:20px;font-size:12px;color:#666"><strong>Note
                       </td>
                       <td className="py-3 px-4 text-sm">{payment.processedAt ? new Date(payment.processedAt).toLocaleDateString() : '-'}</td>
                       <td className="py-3 px-4 text-sm text-muted-foreground">{payment.processedBy}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-1">
+                          {(payment.status === 'pending' || payment.status === 'processing') && (
+                            <button
+                              onClick={() => handleCompletePayment(payment)}
+                              title="Mark Complete"
+                              className="p-1.5 hover:bg-success/10 rounded-lg text-success transition-colors"
+                            >
+                              <CheckCircle className="w-4 h-4" />
+                            </button>
+                          )}
+                          {payment.status === 'completed' && (isAdmin || role === 'manager') && (
+                            <button
+                              onClick={() => handleRefundPayment(payment)}
+                              title="Refund"
+                              className="p-1.5 hover:bg-danger/10 rounded-lg text-danger transition-colors"
+                            >
+                              <RefreshCw className="w-4 h-4" />
+                            </button>
+                          )}
+                          {!((payment.status === 'pending' || payment.status === 'processing') ||
+                            (payment.status === 'completed' && (isAdmin || role === 'manager'))) && (
+                            <span className="text-muted-foreground/50">—</span>
+                          )}
+                        </div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -1880,6 +2042,184 @@ ${inv.notes ? `<p style="margin-top:20px;font-size:12px;color:#666"><strong>Note
 
                 <p className="text-xs text-muted-foreground">Created {new Date(viewingInvoice.createdAt).toLocaleString()} by {viewingInvoice.createdBy}</p>
               </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══════════════════ NEW INVOICE MODAL ═══════════════════ */}
+      <AnimatePresence>
+        {showAddInvoice && (
+          <motion.div
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+            onClick={() => setShowAddInvoice(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="w-full max-w-lg bg-popover border border-border rounded-2xl shadow-overlay max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-5 border-b border-border/30">
+                <h3 className="text-lg font-semibold">New Invoice</h3>
+                <button onClick={() => setShowAddInvoice(false)} className="p-2 hover:bg-muted rounded-lg"><X className="w-5 h-5" /></button>
+              </div>
+              <form onSubmit={handleAddInvoice} className="p-5 space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Guest *</label>
+                    <select
+                      value={invoiceForm.guestId}
+                      onChange={(e) => setInvoiceForm({ ...invoiceForm, guestId: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 appearance-none"
+                    >
+                      <option value="">Select guest…</option>
+                      {guests.map((g) => (
+                        <option key={g.id} value={g.id}>{g.name} · {g.email}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Property *</label>
+                    <select
+                      value={invoiceForm.propertyId}
+                      onChange={(e) => setInvoiceForm({ ...invoiceForm, propertyId: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 appearance-none"
+                    >
+                      <option value="">Select property…</option>
+                      {properties.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Invoice Type</label>
+                    <select
+                      value={invoiceForm.type}
+                      onChange={(e) => setInvoiceForm({ ...invoiceForm, type: e.target.value as Invoice['type'] })}
+                      className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 appearance-none capitalize"
+                    >
+                      <option value="booking">Booking</option>
+                      <option value="service">Service</option>
+                      <option value="advance">Advance</option>
+                      <option value="final">Final</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Due Date *</label>
+                    <input
+                      type="date"
+                      value={invoiceForm.dueDate}
+                      onChange={(e) => setInvoiceForm({ ...invoiceForm, dueDate: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium mb-1.5 block">Line Item</label>
+                  <input
+                    type="text"
+                    value={invoiceForm.description}
+                    onChange={(e) => setInvoiceForm({ ...invoiceForm, description: e.target.value })}
+                    placeholder="e.g., Deluxe Suite — 2 nights"
+                    className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Quantity *</label>
+                    <input
+                      type="number" min="1" step="1"
+                      value={invoiceForm.quantity}
+                      onChange={(e) => setInvoiceForm({ ...invoiceForm, quantity: Math.max(parseInt(e.target.value, 10) || 1, 1) })}
+                      className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Unit Price (R) *</label>
+                    <input
+                      type="number" min="0" step="0.01"
+                      value={invoiceForm.unitPrice || ''}
+                      onChange={(e) => setInvoiceForm({ ...invoiceForm, unitPrice: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Tax Rate (%)</label>
+                    <input
+                      type="number" min="0" max="100" step="0.5"
+                      value={invoiceForm.taxRate}
+                      onChange={(e) => setInvoiceForm({ ...invoiceForm, taxRate: Math.min(Math.max(parseFloat(e.target.value) || 0, 0), 100) })}
+                      className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Category</label>
+                    <select
+                      value={invoiceForm.category}
+                      onChange={(e) => setInvoiceForm({ ...invoiceForm, category: e.target.value })}
+                      className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 appearance-none"
+                    >
+                      <option value="Room">Room</option>
+                      <option value="Food & Beverage">Food &amp; Beverage</option>
+                      <option value="Service">Service</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Discount (R)</label>
+                    <input
+                      type="number" min="0" step="0.01"
+                      value={invoiceForm.discount || ''}
+                      onChange={(e) => setInvoiceForm({ ...invoiceForm, discount: parseFloat(e.target.value) || 0 })}
+                      className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-1.5 block">Notes</label>
+                    <input
+                      type="text"
+                      value={invoiceForm.notes}
+                      onChange={(e) => setInvoiceForm({ ...invoiceForm, notes: e.target.value })}
+                      placeholder="Optional"
+                      className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50"
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 bg-muted rounded-xl grid grid-cols-3 gap-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Subtotal</p>
+                    <p className="font-semibold">{fmtR(invoiceSubtotal)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Tax</p>
+                    <p className="font-semibold">{fmtR(invoiceTax)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Total</p>
+                    <p className="font-bold text-primary">{fmtR(invoiceTotal)}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 pt-2">
+                  <button type="button" onClick={() => setShowAddInvoice(false)} className="flex-1 px-4 py-2.5 border border-border/30 rounded-xl text-sm font-medium hover:bg-muted">
+                    Cancel
+                  </button>
+                  <button type="submit" className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90">
+                    <Save className="w-4 h-4" />
+                    Create Invoice
+                  </button>
+                </div>
+              </form>
             </motion.div>
           </motion.div>
         )}

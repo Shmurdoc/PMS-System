@@ -303,8 +303,6 @@ export function canAccessRoute(routeId: string): boolean {
     staff: ['viewRfid'],
     'staff-schedule': ['viewSchedules'],
     'employee-profiles': ['viewUsers'],
-    'rfid-management': ['viewRfid'],
-    maintenance: ['viewMaintenance'],
     tickets: ['viewMaintenance'],
     messaging: ['viewMessaging'],
     checkin: ['viewBookings'],

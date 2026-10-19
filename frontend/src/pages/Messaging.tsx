@@ -923,8 +923,9 @@ export default function Messaging() {
               </div>
               <div className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium mb-2 block">To:</label>
+                  <label htmlFor="new-message-recipient" className="text-sm font-medium mb-2 block">To:</label>
                   <select
+                    id="new-message-recipient"
                     value={newMsgRecipient}
                     onChange={(e) => setNewMsgRecipient(e.target.value)}
                     className="w-full px-4 py-2.5 bg-muted border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"

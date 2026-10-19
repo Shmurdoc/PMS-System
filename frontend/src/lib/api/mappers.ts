@@ -988,7 +988,7 @@ export function mapAuditLog(dto: ApiAuditLog): AuditLog {
     action: dto.action,
     entityType: oneOf(dto.entityType, [
       'booking', 'guest', 'room', 'invoice', 'payment', 'ticket', 'user',
-      'property', 'expense', 'inventory', 'workflow',
+      'property', 'expense', 'inventory', 'workflow', 'rfid_tag', 'rate_plan',
     ] as const, 'booking'),
     entityId: dto.entityId,
     entityName: dto.entityName,

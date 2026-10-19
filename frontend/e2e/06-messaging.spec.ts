@@ -4,26 +4,27 @@ import { gotoNav, waitForHydration, uniqueSuffix, apiGet, unwrap, type Role } fr
 /**
  * S6 — Messaging (staff chat).
  *
- * Contract notes discovered from the source (recorded here because they drive
- * the assertions):
- *  - The page is a *demo* client: `CURRENT_USER_ID = '1'` is hardcoded, so every
- *    role acts as "Sarah Johnson" regardless of who is actually signed in
- *    (see the front_desk characterization test — BUG-S6-1).
- *  - The frontend encodes the DM recipient in `channelId` (not `recipientId`),
- *    and `CreateMessageInput` never sends `recipientId`, so every UI-sent
- *    message is stored server-side as a channel post (recipientId = null).
- *  - Messages *are* persisted: `addMessage` -> POST /messages, `markMessageRead`
- *    -> PUT /messages/{id}/read, `deleteMessage` -> DELETE /messages/{id}.
- *  - GET /messages is unscoped (any authenticated user reads every message) —
- *    recorded as BUG-S6-2 in the final report; not asserted here.
- *  - The inline composer never toasts (only the New Message modal does); the
- *    server also overrides senderId/senderName from the JWT, so a message the
- *    UI renders as "mine" is persisted under the *real* signer.
+ * Contract notes from the source (they drive the assertions):
+ *  - One conversation row per other signed-in user; the session user never
+ *    appears in their own list. Rows without history show "No messages yet",
+ *    and every row carries a "{role} · Active/On Leave/Inactive" status line.
+ *  - The DM recipient rides in `channelId` (`CreateMessageInput` never sends
+ *    `recipientId`), so every UI-sent message lands server-side as a channel
+ *    post with recipientId = null.
+ *  - addMessage -> POST /messages, markMessageRead -> PUT /messages/{id}/read,
+ *    deleteMessage -> DELETE /messages/{id} (the delete control only renders
+ *    for admin/manager — `canManage`).
+ *  - GET /messages is unscoped: any authenticated caller reads every message.
+ *    Known gap, not asserted here.
+ *  - The server stamps senderId/senderName from the JWT, so a message the UI
+ *    renders as "mine" is persisted under the real signer.
+ *  - Only the New Message modal toasts ("Message sent"); the inline composer
+ *    commits silently.
  */
 
-/** Conversation rows contain "{role} · Online/Offline" — unique to the list. */
+/** Conversation rows carry the "{role} · {status}" line — unique to the list. */
 function conversationRows(page: Page) {
-  return page.locator('button').filter({ hasText: /Online|Offline/ });
+  return page.locator('button').filter({ hasText: /· (Active|On Leave|Inactive)/ });
 }
 
 /** Thread bubbles use `p.whitespace-pre-wrap`; the sidebar preview does not. */
@@ -46,8 +47,6 @@ async function sendToFirstConversation(page: Page, content: string): Promise<voi
   await expect(input).toBeVisible();
   await input.fill(content);
   await input.press('Enter');
-  // The inline composer commits straight to store+API with NO toast (only the
-  // "New Message" modal toasts — see handleNewMessageSend vs handleSendMessage).
   await expect(bubble(page, content)).toBeVisible();
   await expect(input).toHaveValue('');
 }
@@ -82,7 +81,12 @@ test.describe('S6 messaging — admin', () => {
     // thread); the sidebar CTA is first in DOM order.
     await page.getByRole('button', { name: 'New Message' }).first().click();
     await expect(page.getByRole('heading', { name: 'New Message' })).toBeVisible();
+    const recipientPicker = page.locator('#new-message-recipient');
+    await expect(recipientPicker).toBeVisible();
+    // Picker is fed from the roster: placeholder plus at least one colleague.
+    expect(await recipientPicker.locator('option').count()).toBeGreaterThan(1);
     await expect(page.getByPlaceholder('Type your message...')).toBeVisible();
+    await page.getByRole('heading', { name: 'New Message' }).locator('..').getByRole('button').click();
   });
 
   test('admin: send a DM — appears, persists to API, survives reload', async ({ page, request }, testInfo) => {
@@ -171,7 +175,7 @@ test.describe('S6 messaging — manager', () => {
 });
 
 test.describe('S6 messaging — front_desk', () => {
-  test('front_desk: messaging accessible; documents hardcoded "Sarah Johnson" identity (BUG-S6-1)', async ({ page }, testInfo) => {
+  test('front_desk: roster conversations reflect the real signed-in user', async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== 'front_desk');
     await openMessaging(page);
 
@@ -179,14 +183,15 @@ test.describe('S6 messaging — front_desk', () => {
     await expect(rows.first()).toBeVisible();
     expect(await rows.count()).toBeGreaterThan(0);
 
-    // The signed-in front-desk user is treated as Sarah Johnson (id '1'): she
-    // can never appear in her own conversation list, and the roster is the mock
-    // fallback (front_desk cannot GET /users), not the real staff.
+    // The session user never appears as their own conversation, and the list
+    // comes from the API roster (GET /users is open to every signed-in role),
+    // not the old mock fallback.
     const main = page.getByRole('main');
-    await expect(main.getByText('Sarah Johnson', { exact: true })).toHaveCount(0);
-    await expect(rows.filter({ hasText: 'Mike Chen' })).toHaveCount(1);
+    await expect(main.getByText('Front Desk', { exact: true })).toHaveCount(0);
+    await expect(rows.filter({ hasText: 'Admin User' })).toHaveCount(1);
+    await expect(rows.filter({ hasText: 'Mike Chen' })).toHaveCount(0);
 
-    // And sending still works (any authenticated user may POST /messages).
+    // Sending still works (any authenticated user may POST /messages).
     const content = `QA fd msg ${uniqueSuffix()}`;
     await sendToFirstConversation(page, content);
   });

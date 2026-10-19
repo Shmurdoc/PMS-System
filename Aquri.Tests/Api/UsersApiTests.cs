@@ -27,11 +27,13 @@ namespace Aquri.Tests.Api
         }
 
         [Fact]
-        public async Task FrontDesk_Cannot_Read_Or_Write_Users()
+        public async Task FrontDesk_Can_List_But_Cannot_Write()
         {
             var client = await FrontDeskClientAsync();
 
-            (await client.GetAsync("/api/v1/users")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+            // The roster is open to every signed-in role — messaging needs to see
+            // colleagues. The admin page stays gated in the UI; only writes are locked.
+            (await client.GetAsync("/api/v1/users")).StatusCode.Should().Be(HttpStatusCode.OK);
             (await client.PostAsync("/api/v1/users", JsonBody(NewUser("fd.write@nexus.com"))))
                 .StatusCode.Should().Be(HttpStatusCode.Forbidden);
             (await client.PutAsync("/api/v1/users/1",

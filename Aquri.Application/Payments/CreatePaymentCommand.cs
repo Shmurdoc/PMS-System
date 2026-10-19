@@ -14,7 +14,8 @@ namespace Aquri.Application.Payments
         int? BookingId,
         decimal Amount,
         string Method,
-        string ProcessedBy) : IRequest<Result<PaymentDto>>;
+        string ProcessedBy,
+        string? Reference = null) : IRequest<Result<PaymentDto>>;
 
     public class CreatePaymentHandler : IRequestHandler<CreatePaymentCommand, Result<PaymentDto>>
     {
@@ -60,6 +61,9 @@ namespace Aquri.Application.Payments
             {
                 var payment = new Payment(paymentNumber, request.GuestId, request.PropertyId,
                     request.Amount, request.Method, request.ProcessedBy);
+
+                if (!string.IsNullOrWhiteSpace(request.Reference))
+                    payment.SetReference(request.Reference.Trim());
 
                 if (request.InvoiceId.HasValue)
                     payment.AttachToInvoice(request.InvoiceId.Value);

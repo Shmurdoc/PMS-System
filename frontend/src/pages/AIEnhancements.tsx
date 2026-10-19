@@ -146,7 +146,7 @@ const me = useAppStore((s) => s.user);
 
   const formatCurrency = (amount: number) => `R ${amount.toLocaleString('en-ZA', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-  // AI Chat with real data
+  // keyword match over the live store metrics; no model behind this
   const getAIResponse = (query: string): string => {
     const q = query.toLowerCase();
 

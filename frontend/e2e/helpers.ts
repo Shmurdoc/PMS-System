@@ -1,5 +1,8 @@
 import { type Page, type Locator, type APIRequestContext, expect } from '@playwright/test';
 
+/** API origin for direct checks; override with AQURI_API_URL when the API isn't on the documented 5080. */
+const API_BASE = process.env['AQURI_API_URL'] ?? 'http://localhost:5080';
+
 export type Role = 'admin' | 'manager' | 'front_desk';
 
 export const CREDENTIALS: Record<Role, { email: string; password: string }> = {
@@ -14,7 +17,7 @@ export const NAV_PER_ROLE: Record<Role, string[]> = {
     'Dashboard', 'Bookings', 'Guests', 'Check-In/Out', 'Rooms', 'Rates',
     'Properties', 'Facility', 'Inventory & POS',
     'Finances', 'Analytics', 'Reports', 'Forecasting',
-    'Staff & RFID', 'Employee Profiles', 'Staff Schedule', 'RFID System',
+    'Staff & RFID', 'Employee Profiles', 'Staff Schedule',
     'Tickets', 'Messaging', 'AI Enhancements',
     'Admin', 'Integrations', 'Settings',
   ],
@@ -22,14 +25,14 @@ export const NAV_PER_ROLE: Record<Role, string[]> = {
     'Dashboard', 'Bookings', 'Guests', 'Check-In/Out', 'Rooms', 'Rates',
     'Properties', 'Facility', 'Inventory & POS',
     'Finances', 'Analytics', 'Reports', 'Forecasting',
-    'Staff & RFID', 'Employee Profiles', 'Staff Schedule', 'RFID System',
+    'Staff & RFID', 'Employee Profiles', 'Staff Schedule',
     'Tickets', 'Messaging', 'AI Enhancements',
     'Integrations',
   ],
   front_desk: [
     'Dashboard', 'Bookings', 'Guests', 'Check-In/Out', 'Rooms', 'Rates',
     'Properties', 'Facility',
-    'Staff & RFID', 'Staff Schedule', 'RFID System',
+    'Staff & RFID', 'Staff Schedule',
     'Tickets', 'Messaging',
   ],
 };
@@ -60,7 +63,6 @@ export const PAGE_TO_NAV: Record<string, string> = {
   reports: 'Reports',
   forecast: 'Forecasting',
   staff: 'Staff & RFID',
-  'rfid-management': 'RFID System',
   'employee-profiles': 'Employee Profiles',
   'staff-schedule': 'Staff Schedule',
   tickets: 'Tickets',
@@ -110,7 +112,7 @@ export async function apiGet(
   role: Role,
 ): Promise<{ status: number; body: unknown }> {
   const token = await getToken(request);
-  const res = await request.get(`http://localhost:5080/api/v1${path}`, {
+  const res = await request.get(`${API_BASE}/api/v1${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   let body: unknown = null;
@@ -129,7 +131,7 @@ export async function apiPost(
   data: unknown,
 ): Promise<{ status: number; body: unknown }> {
   const token = await getToken(request);
-  const res = await request.post(`http://localhost:5080/api/v1${path}`, {
+  const res = await request.post(`${API_BASE}/api/v1${path}`, {
     headers: { Authorization: `Bearer ${token}` },
     data,
   });
@@ -149,7 +151,7 @@ export async function apiPut(
   data: unknown,
 ): Promise<{ status: number; body: unknown }> {
   const token = await getToken(request);
-  const res = await request.put(`http://localhost:5080/api/v1${path}`, {
+  const res = await request.put(`${API_BASE}/api/v1${path}`, {
     headers: { Authorization: `Bearer ${token}` },
     data,
   });
@@ -168,7 +170,7 @@ export async function apiDelete(
   role: Role,
 ): Promise<{ status: number }> {
   const token = await getToken(request);
-  const res = await request.delete(`http://localhost:5080/api/v1${path}`, {
+  const res = await request.delete(`${API_BASE}/api/v1${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   return { status: res.status() };
@@ -189,7 +191,7 @@ export async function apiPatch(
   data: unknown,
 ): Promise<{ status: number; body: unknown }> {
   const token = await getToken(request);
-  const res = await request.patch(`http://localhost:5080/api/v1${path}`, {
+  const res = await request.patch(`${API_BASE}/api/v1${path}`, {
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     data: JSON.stringify(data),
   });
@@ -210,7 +212,7 @@ export async function apiPostText(
   data: unknown,
 ): Promise<{ status: number; text: string }> {
   const token = await getToken(request);
-  const res = await request.post(`http://localhost:5080/api/v1${path}`, {
+  const res = await request.post(`${API_BASE}/api/v1${path}`, {
     headers: { Authorization: `Bearer ${token}` },
     data,
   });
@@ -312,7 +314,7 @@ async function pageToken(page: Page): Promise<string> {
 /** Read a list endpoint using the token held in the page's localStorage. */
 async function pageApiRows(page: Page, path: string): Promise<Row[]> {
   const token = await pageToken(page);
-  const res = await page.request.get(`http://localhost:5080/api/v1${path}`, {
+  const res = await page.request.get(`${API_BASE}/api/v1${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (res.status() !== 200) return [];
