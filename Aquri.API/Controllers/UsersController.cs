@@ -1,8 +1,8 @@
+using Aquri.Application.Common.Interfaces;
 using Aquri.Application.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Aquri.API.Controllers
 {
@@ -14,8 +14,13 @@ namespace Aquri.API.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IMediator _mediator;
+        private readonly ICurrentUser _currentUser;
 
-        public UsersController(IMediator mediator) => _mediator = mediator;
+        public UsersController(IMediator mediator, ICurrentUser currentUser)
+        {
+            _mediator = mediator;
+            _currentUser = currentUser;
+        }
 
         [HttpGet]
         [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
@@ -78,15 +83,12 @@ namespace Aquri.API.Controllers
         [ProducesResponseType(StatusCodes.Status409Conflict)]
         public async Task<IActionResult> Delete(int id)
         {
-            var result = await _mediator.Send(new DeleteUserCommand(id, CurrentUserId()));
+            var result = await _mediator.Send(new DeleteUserCommand(id, _currentUser.UserId));
             if (result.NotFound)
                 return NotFound();
             if (result.Conflict)
                 return Conflict(result.Error);
             return NoContent();
         }
-
-        private int CurrentUserId() =>
-            int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
     }
 }

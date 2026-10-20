@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using Aquri.Application.Auth;
+using Aquri.Application.Common.Interfaces;
 using Aquri.Application.DTOs;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -15,10 +15,12 @@ namespace Aquri.API.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IMediator _mediator;
+        private readonly ICurrentUser _currentUser;
 
-        public AuthController(IMediator mediator)
+        public AuthController(IMediator mediator, ICurrentUser currentUser)
         {
             _mediator = mediator;
+            _currentUser = currentUser;
         }
 
         /// <summary>Authenticates email + password and returns a signed JWT.</summary>
@@ -48,9 +50,9 @@ namespace Aquri.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<UserDto>> GetCurrentUser()
         {
-            var idClaim = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var userId = _currentUser.UserId;
 
-            if (!int.TryParse(idClaim, out var userId))
+            if (userId == 0)
                 return Unauthorized();
 
             var result = await _mediator.Send(new GetCurrentUserQuery(userId));

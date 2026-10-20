@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using Aquri.Application.Common.Interfaces;
 using Aquri.Application.Expenses;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -14,8 +14,13 @@ namespace Aquri.API.Controllers
     public class ExpensesController : ControllerBase
     {
         private readonly IMediator _mediator;
+        private readonly ICurrentUser _currentUser;
 
-        public ExpensesController(IMediator mediator) => _mediator = mediator;
+        public ExpensesController(IMediator mediator, ICurrentUser currentUser)
+        {
+            _mediator = mediator;
+            _currentUser = currentUser;
+        }
 
         /// <summary>Submits a new expense.</summary>
         [HttpPost]
@@ -24,7 +29,7 @@ namespace Aquri.API.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<ExpenseDto>> Create([FromBody] CreateExpenseRequest request)
         {
-            var result = await _mediator.Send(request.ToCommand(CurrentUserName()));
+            var result = await _mediator.Send(request.ToCommand(_currentUser.UserName));
             if (!result.Success)
                 return BadRequest(result.Error);
 
@@ -75,7 +80,7 @@ namespace Aquri.API.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<ExpenseDto>> Approve(int id)
         {
-            var result = await _mediator.Send(new ApproveExpenseCommand(id, CurrentUserName()));
+            var result = await _mediator.Send(new ApproveExpenseCommand(id, _currentUser.UserName));
             if (result.NotFound)
                 return NotFound();
             if (!result.Success)
@@ -90,7 +95,7 @@ namespace Aquri.API.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<ExpenseDto>> Reject(int id)
         {
-            var result = await _mediator.Send(new RejectExpenseCommand(id, CurrentUserName()));
+            var result = await _mediator.Send(new RejectExpenseCommand(id, _currentUser.UserName));
             if (result.NotFound)
                 return NotFound();
             if (!result.Success)
@@ -109,9 +114,6 @@ namespace Aquri.API.Controllers
                 return NotFound();
             return NoContent();
         }
-
-        private string CurrentUserName() =>
-            User.FindFirstValue(ClaimTypes.Name) ?? string.Empty;
     }
 
     /// <summary>Wire shape for expense creation; the submitted-by name comes from the JWT.</summary>

@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using Aquri.Application.Common.Interfaces;
 using Aquri.Application.Messages;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -14,8 +14,13 @@ namespace Aquri.API.Controllers
     public class MessagesController : ControllerBase
     {
         private readonly IMediator _mediator;
+        private readonly ICurrentUser _currentUser;
 
-        public MessagesController(IMediator mediator) => _mediator = mediator;
+        public MessagesController(IMediator mediator, ICurrentUser currentUser)
+        {
+            _mediator = mediator;
+            _currentUser = currentUser;
+        }
 
         [HttpPost]
         [ProducesResponseType(typeof(MessageDto), StatusCodes.Status201Created)]
@@ -24,8 +29,8 @@ namespace Aquri.API.Controllers
         {
             var stamped = command with
             {
-                SenderId = CurrentUserId(),
-                SenderName = CurrentUserName()
+                SenderId = _currentUser.UserId,
+                SenderName = _currentUser.UserName
             };
 
             var result = await _mediator.Send(stamped);
@@ -40,7 +45,7 @@ namespace Aquri.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<MessageDto>> Get(int id)
         {
-            var result = await _mediator.Send(new GetMessageQuery(id, CurrentUserId()));
+            var result = await _mediator.Send(new GetMessageQuery(id, _currentUser.UserId));
             if (result.NotFound)
                 return NotFound();
             if (!result.Success)
@@ -57,7 +62,7 @@ namespace Aquri.API.Controllers
             [FromQuery] string? channelId,
             [FromQuery] bool? unreadOnly)
         {
-            var messages = await _mediator.Send(new GetMessagesQuery(CurrentUserId(), propertyId, recipientId, channelId, unreadOnly));
+            var messages = await _mediator.Send(new GetMessagesQuery(_currentUser.UserId, propertyId, recipientId, channelId, unreadOnly));
             return Ok(messages);
         }
 
@@ -67,7 +72,7 @@ namespace Aquri.API.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<ActionResult<MessageDto>> MarkRead(int id)
         {
-            var result = await _mediator.Send(new MarkMessageReadCommand(id, CurrentUserId()));
+            var result = await _mediator.Send(new MarkMessageReadCommand(id, _currentUser.UserId));
             if (result.NotFound)
                 return NotFound();
             if (!result.Success)
@@ -86,11 +91,5 @@ namespace Aquri.API.Controllers
                 return NotFound();
             return NoContent();
         }
-
-        private int CurrentUserId() =>
-            int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
-
-        private string CurrentUserName() =>
-            User.FindFirstValue(ClaimTypes.Name) ?? string.Empty;
     }
 }

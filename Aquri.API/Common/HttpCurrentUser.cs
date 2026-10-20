@@ -25,5 +25,22 @@ namespace Aquri.API.Common
                     : null;
             }
         }
+
+        public int UserId
+        {
+            get
+            {
+                var claim = Principal?.FindFirst(ClaimTypes.NameIdentifier);
+                return claim is not null && int.TryParse(claim.Value, out var id)
+                    ? id
+                    : 0;
+            }
+        }
+
+        public string UserName =>
+            Principal?.FindFirst(ClaimTypes.Name)?.Value ?? string.Empty;
+
+        public string UserRole =>
+            Principal?.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
     }
 }

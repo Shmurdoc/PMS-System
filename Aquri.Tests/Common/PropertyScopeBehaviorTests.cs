@@ -29,6 +29,12 @@ namespace Aquri.Tests.Common
             public bool IsAuthenticated { get; }
 
             public int? PropertyId { get; }
+
+            public int UserId => 0;
+
+            public string UserName => string.Empty;
+
+            public string UserRole => string.Empty;
         }
 
         private static PropertyScopeBehavior<TRequest, string> BehaviorFor<TRequest>(ICurrentUser user)

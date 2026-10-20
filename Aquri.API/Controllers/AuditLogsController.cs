@@ -1,5 +1,5 @@
-using System.Security.Claims;
 using Aquri.Application.AuditLogs;
+using Aquri.Application.Common.Interfaces;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -14,8 +14,13 @@ namespace Aquri.API.Controllers
     public class AuditLogsController : ControllerBase
     {
         private readonly IMediator _mediator;
+        private readonly ICurrentUser _currentUser;
 
-        public AuditLogsController(IMediator mediator) => _mediator = mediator;
+        public AuditLogsController(IMediator mediator, ICurrentUser currentUser)
+        {
+            _mediator = mediator;
+            _currentUser = currentUser;
+        }
 
         [HttpPost]
         [Authorize(Roles = "admin,manager")]
@@ -25,9 +30,9 @@ namespace Aquri.API.Controllers
         {
             var stamped = command with
             {
-                UserId = CurrentUserId(),
-                UserName = CurrentUserName(),
-                UserRole = CurrentUserRole(),
+                UserId = _currentUser.UserId,
+                UserName = _currentUser.UserName,
+                UserRole = _currentUser.UserRole,
                 IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString()
             };
 
@@ -65,14 +70,5 @@ namespace Aquri.API.Controllers
             var logs = await _mediator.Send(new GetAuditLogsQuery(propertyId, entityType, entityId, userId, action));
             return Ok(logs);
         }
-
-        private int CurrentUserId() =>
-            int.TryParse(User.FindFirstValue(ClaimTypes.NameIdentifier), out var id) ? id : 0;
-
-        private string CurrentUserName() =>
-            User.FindFirstValue(ClaimTypes.Name) ?? string.Empty;
-
-        private string CurrentUserRole() =>
-            User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
     }
 }

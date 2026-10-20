@@ -1,4 +1,4 @@
-using System.Security.Claims;
+using Aquri.Application.Common.Interfaces;
 using Aquri.Application.Integrations;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -14,8 +14,13 @@ namespace Aquri.API.Controllers
     public class IntegrationsController : ControllerBase
     {
         private readonly IMediator _mediator;
+        private readonly ICurrentUser _currentUser;
 
-        public IntegrationsController(IMediator mediator) => _mediator = mediator;
+        public IntegrationsController(IMediator mediator, ICurrentUser currentUser)
+        {
+            _mediator = mediator;
+            _currentUser = currentUser;
+        }
 
         /// <summary>Wires up a new integration.</summary>
         [HttpPost]
@@ -24,7 +29,7 @@ namespace Aquri.API.Controllers
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<IntegrationDto>> Create([FromBody] CreateIntegrationRequest request)
         {
-            var result = await _mediator.Send(request.ToCommand(CurrentUserName()));
+            var result = await _mediator.Send(request.ToCommand(_currentUser.UserName));
             if (!result.Success)
                 return BadRequest(result.Error);
 
@@ -94,9 +99,6 @@ namespace Aquri.API.Controllers
                 return NotFound();
             return NoContent();
         }
-
-        private string CurrentUserName() =>
-            User.FindFirstValue(ClaimTypes.Name) ?? string.Empty;
     }
 
     /// <summary>Wire shape for integration creation; the configured-by name comes from the JWT.</summary>
