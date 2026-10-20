@@ -84,23 +84,8 @@ namespace Aquri.API.Middleware
 
                 // Caller is known but outside its property scope — 403 FORBIDDEN
                 // (not 401: authenticated; not 400: the request shape is fine).
-                context.Response.Body = originalBody;
-                context.Response.StatusCode = StatusCodes.Status403Forbidden;
-                context.Response.ContentType = "application/json; charset=utf-8";
-                context.Response.Headers.ContentLength = null;
-
-                var envelope = new ApiResponse<object>
-                {
-                    Success = false,
-                    Error = new ApiError
-                    {
-                        Code = ErrorCodes.Forbidden,
-                        Message = ex.Message
-                    },
-                    Timestamp = _timeProvider.GetUtcNow().UtcDateTime,
-                    RequestId = requestId
-                };
-                await context.Response.WriteAsJsonAsync(envelope);
+                await WriteErrorAsync(context, originalBody, requestId,
+                    StatusCodes.Status403Forbidden, ErrorCodes.Forbidden, ex.Message);
             }
             catch (DomainException ex)
             {
@@ -111,51 +96,23 @@ namespace Aquri.API.Middleware
                 // Business-rule violation (illegal transition, overpayment, …).
                 // The request was well-formed but the operation is not allowed —
                 // 400 VALIDATION, not a generic 500.
-                context.Response.Body = originalBody;
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                context.Response.ContentType = "application/json; charset=utf-8";
-                context.Response.Headers.ContentLength = null;
-
-                var envelope = new ApiResponse<object>
-                {
-                    Success = false,
-                    Error = new ApiError
-                    {
-                        Code = ErrorCodes.Validation,
-                        Message = ex.Message
-                    },
-                    Timestamp = _timeProvider.GetUtcNow().UtcDateTime,
-                    RequestId = requestId
-                };
-                await context.Response.WriteAsJsonAsync(envelope);
+                await WriteErrorAsync(context, originalBody, requestId,
+                    StatusCodes.Status400BadRequest, ErrorCodes.Validation, ex.Message);
             }
             catch (FluentValidation.ValidationException ex)
             {
+                // If the response already started streaming, we cannot rewrite it —
+                // rethrow and let the host log the failure.
+                if (context.Response.HasStarted) throw;
+
                 // Command input failed a FluentValidation rule on a response
                 // type that is not Result-shaped — 400 VALIDATION with the rule
                 // messages, same envelope as DomainException above. (Most
                 // commands return Result and never reach this catch: the
                 // pipeline behavior converts failures to Result.Failure.)
-                if (context.Response.HasStarted) throw;
-
-                context.Response.Body = originalBody;
-                context.Response.StatusCode = StatusCodes.Status400BadRequest;
-                context.Response.ContentType = "application/json; charset=utf-8";
-                context.Response.Headers.ContentLength = null;
-
-                var envelope = new ApiResponse<object>
-                {
-                    Success = false,
-                    Error = new ApiError
-                    {
-                        Code = ErrorCodes.Validation,
-                        Message = string.Join("; ",
-                            ex.Errors.Select(f => f.ErrorMessage).Distinct())
-                    },
-                    Timestamp = _timeProvider.GetUtcNow().UtcDateTime,
-                    RequestId = requestId
-                };
-                await context.Response.WriteAsJsonAsync(envelope);
+                await WriteErrorAsync(context, originalBody, requestId,
+                    StatusCodes.Status400BadRequest, ErrorCodes.Validation,
+                    string.Join("; ", ex.Errors.Select(f => f.ErrorMessage).Distinct()));
             }
             catch (DbUpdateException ex)
             {
@@ -164,27 +121,9 @@ namespace Aquri.API.Middleware
                 // Unique-constraint / primary-key violation (duplicate e-mail,
                 // colliding business number, …) — the contract says
                 // 409 CONFLICT, not a generic 500.
-                context.Response.Body = originalBody;
-                context.Response.StatusCode = StatusCodes.Status409Conflict;
-                context.Response.ContentType = "application/json; charset=utf-8";
-                context.Response.Headers.ContentLength = null;
-
-                var isDevelopment = context.RequestServices
-                    .GetService<IHostEnvironment>()?.IsDevelopment() == true;
-
-                var envelope = new ApiResponse<object>
-                {
-                    Success = false,
-                    Error = new ApiError
-                    {
-                        Code = ErrorCodes.Conflict,
-                        Message = DefaultMessage(StatusCodes.Status409Conflict),
-                        Details = isDevelopment ? ex.ToString() : null
-                    },
-                    Timestamp = _timeProvider.GetUtcNow().UtcDateTime,
-                    RequestId = requestId
-                };
-                await context.Response.WriteAsJsonAsync(envelope);
+                await WriteErrorAsync(context, originalBody, requestId,
+                    StatusCodes.Status409Conflict, ErrorCodes.Conflict,
+                    DefaultMessage(StatusCodes.Status409Conflict), DevelopmentDetails(context, ex));
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
@@ -193,29 +132,41 @@ namespace Aquri.API.Middleware
                 // Unhandled exception from below — emit an envelope-shaped 500
                 // instead of letting the raw exception bubble (which would break
                 // the client contract).
-                context.Response.Body = originalBody;
-                context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-                context.Response.ContentType = "application/json; charset=utf-8";
-                context.Response.Headers.ContentLength = null;
-
-                var isDevelopment = context.RequestServices
-                    .GetService<IHostEnvironment>()?.IsDevelopment() == true;
-
-                var envelope = new ApiResponse<object>
-                {
-                    Success = false,
-                    Error = new ApiError
-                    {
-                        Code = ErrorCodes.Internal,
-                        Message = "An unexpected error occurred.",
-                        Details = isDevelopment ? ex.ToString() : null
-                    },
-                    Timestamp = _timeProvider.GetUtcNow().UtcDateTime,
-                    RequestId = requestId
-                };
-                await context.Response.WriteAsJsonAsync(envelope);
+                await WriteErrorAsync(context, originalBody, requestId,
+                    StatusCodes.Status500InternalServerError, ErrorCodes.Internal,
+                    "An unexpected error occurred.", DevelopmentDetails(context, ex));
             }
         }
+
+        /// <summary>Writes an error envelope onto the response. Callers own the HasStarted check so the original exception can rethrow from its own catch block.</summary>
+        private async Task WriteErrorAsync(HttpContext context, Stream originalBody, string requestId,
+            int statusCode, string code, string message, string? details = null)
+        {
+            context.Response.Body = originalBody;
+            context.Response.StatusCode = statusCode;
+            context.Response.ContentType = "application/json; charset=utf-8";
+            context.Response.Headers.ContentLength = null;
+
+            var envelope = new ApiResponse<object>
+            {
+                Success = false,
+                Error = new ApiError
+                {
+                    Code = code,
+                    Message = message,
+                    Details = details
+                },
+                Timestamp = _timeProvider.GetUtcNow().UtcDateTime,
+                RequestId = requestId
+            };
+            await context.Response.WriteAsJsonAsync(envelope);
+        }
+
+        /// <summary>Stack traces only leak into error details in Development; production gets the generic message.</summary>
+        private static string? DevelopmentDetails(HttpContext context, Exception ex) =>
+            context.RequestServices.GetService<IHostEnvironment>()?.IsDevelopment() == true
+                ? ex.ToString()
+                : null;
 
         private ApiResponse<object> BuildEnvelope(int statusCode, byte[] bodyBytes, string requestId)
         {
