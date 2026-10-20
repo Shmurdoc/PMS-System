@@ -4,6 +4,7 @@ using Aquri.Application.Common;
 using Aquri.Application.Common.Interfaces;
 using Aquri.Application.DTOs;
 using Aquri.Application.Rooms.Commands;
+using Aquri.Domain.Entities;
 using Aquri.Domain.Enums;
 using Aquri.Domain.Exceptions;
 using AutoMapper;
@@ -11,117 +12,107 @@ using MediatR;
 
 namespace Aquri.Application.Rooms.Handlers
 {
-    /// <summary>Handler for updating room status.</summary>
-    public class UpdateRoomStatusHandler : IRequestHandler<UpdateRoomStatusCommand, Result<RoomDto>>
+    /// <summary>Shared plumbing for the per-field room update handlers: load the room, run the mutation, persist, map. Subclasses supply the command's room id and the mutation itself. Domain-rule failures (ArgumentException from argument checks, DomainException from illegal state transitions) come back as Result failures rather than escaping the Result pipeline as enveloped 500s. The amenities handler intentionally does not extend this — its amenity validation must run before the room load, and its add/remove branching has no try/catch equivalent.</summary>
+    public abstract class UpdateRoomHandlerBase<TCommand> : IRequestHandler<TCommand, Result<RoomDto>>
+        where TCommand : IRequest<Result<RoomDto>>
     {
-        private readonly IApplicationDbContext _context;
-        private readonly IMapper _mapper;
-
-        public UpdateRoomStatusHandler(IApplicationDbContext context, IMapper mapper)
+        protected UpdateRoomHandlerBase(IApplicationDbContext context, IMapper mapper)
         {
-            _context = context;
-            _mapper = mapper;
+            Context = context;
+            Mapper = mapper;
         }
 
-        public async Task<Result<RoomDto>> Handle(UpdateRoomStatusCommand request, CancellationToken cancellationToken)
+        protected IApplicationDbContext Context { get; }
+
+        protected IMapper Mapper { get; }
+
+        protected abstract int RoomId(TCommand request);
+
+        /// <summary>Applies the mutation; returns a failure message, or null on success.</summary>
+        protected abstract string? Mutate(Room room, TCommand request);
+
+        public async Task<Result<RoomDto>> Handle(TCommand request, CancellationToken cancellationToken)
         {
-            var room = await _context.Rooms
-                .FindAsync(request.RoomId, cancellationToken);
+            var roomId = RoomId(request);
+            var room = await Context.Rooms.FindAsync(roomId, cancellationToken);
 
             if (room == null)
             {
-                return Result<RoomDto>.Failure($"Room with ID {request.RoomId} not found.");
+                return Result<RoomDto>.Failure($"Room with ID {roomId} not found.");
             }
-
-            if (!RoomStatusExtensions.TryParseWire(request.Status, out var newStatus))
-                return Result<RoomDto>.Failure($"Unknown room status '{request.Status}'.");
 
             try
             {
-                room.ChangeStatus(newStatus);
+                var failure = Mutate(room, request);
+                if (failure is not null)
+                    return Result<RoomDto>.Failure(failure);
+            }
+            catch (ArgumentException ex)
+            {
+                return Result<RoomDto>.Failure(ex.Message);
             }
             catch (DomainException ex)
             {
                 return Result<RoomDto>.Failure(ex.Message);
             }
 
-            await _context.SaveChangesAsync(cancellationToken);
+            await Context.SaveChangesAsync(cancellationToken);
 
-            return Result<RoomDto>.SuccessResult(_mapper.Map<RoomDto>(room));
+            return Result<RoomDto>.SuccessResult(Mapper.Map<RoomDto>(room));
+        }
+    }
+
+    /// <summary>Handler for updating room status.</summary>
+    public class UpdateRoomStatusHandler : UpdateRoomHandlerBase<UpdateRoomStatusCommand>
+    {
+        public UpdateRoomStatusHandler(IApplicationDbContext context, IMapper mapper)
+            : base(context, mapper)
+        {
+        }
+
+        protected override int RoomId(UpdateRoomStatusCommand request) => request.RoomId;
+
+        protected override string? Mutate(Room room, UpdateRoomStatusCommand request)
+        {
+            if (!RoomStatusExtensions.TryParseWire(request.Status, out var newStatus))
+                return $"Unknown room status '{request.Status}'.";
+
+            room.ChangeStatus(newStatus);
+            return null;
         }
     }
 
     /// <summary>Handler for updating room price.</summary>
-    public class UpdateRoomPriceHandler : IRequestHandler<UpdateRoomPriceCommand, Result<RoomDto>>
+    public class UpdateRoomPriceHandler : UpdateRoomHandlerBase<UpdateRoomPriceCommand>
     {
-        private readonly IApplicationDbContext _context;
-        private readonly IMapper _mapper;
-
         public UpdateRoomPriceHandler(IApplicationDbContext context, IMapper mapper)
+            : base(context, mapper)
         {
-            _context = context;
-            _mapper = mapper;
         }
 
-        public async Task<Result<RoomDto>> Handle(UpdateRoomPriceCommand request, CancellationToken cancellationToken)
+        protected override int RoomId(UpdateRoomPriceCommand request) => request.RoomId;
+
+        protected override string? Mutate(Room room, UpdateRoomPriceCommand request)
         {
-            var room = await _context.Rooms
-                .FindAsync(request.RoomId, cancellationToken);
-
-            if (room == null)
-            {
-                return Result<RoomDto>.Failure($"Room with ID {request.RoomId} not found.");
-            }
-
-            try
-            {
-                room.UpdatePrice(request.Price);
-            }
-            catch (ArgumentException ex)
-            {
-                return Result<RoomDto>.Failure(ex.Message);
-            }
-
-            await _context.SaveChangesAsync(cancellationToken);
-
-            return Result<RoomDto>.SuccessResult(_mapper.Map<RoomDto>(room));
+            room.UpdatePrice(request.Price);
+            return null;
         }
     }
 
     /// <summary>Handler for updating room max occupancy.</summary>
-    public class UpdateRoomMaxOccupancyHandler : IRequestHandler<UpdateRoomMaxOccupancyCommand, Result<RoomDto>>
+    public class UpdateRoomMaxOccupancyHandler : UpdateRoomHandlerBase<UpdateRoomMaxOccupancyCommand>
     {
-        private readonly IApplicationDbContext _context;
-        private readonly IMapper _mapper;
-
         public UpdateRoomMaxOccupancyHandler(IApplicationDbContext context, IMapper mapper)
+            : base(context, mapper)
         {
-            _context = context;
-            _mapper = mapper;
         }
 
-        public async Task<Result<RoomDto>> Handle(UpdateRoomMaxOccupancyCommand request, CancellationToken cancellationToken)
+        protected override int RoomId(UpdateRoomMaxOccupancyCommand request) => request.RoomId;
+
+        protected override string? Mutate(Room room, UpdateRoomMaxOccupancyCommand request)
         {
-            var room = await _context.Rooms
-                .FindAsync(request.RoomId, cancellationToken);
-
-            if (room == null)
-            {
-                return Result<RoomDto>.Failure($"Room with ID {request.RoomId} not found.");
-            }
-
-            try
-            {
-                room.UpdateMaxOccupancy(request.MaxOccupancy);
-            }
-            catch (ArgumentException ex)
-            {
-                return Result<RoomDto>.Failure(ex.Message);
-            }
-
-            await _context.SaveChangesAsync(cancellationToken);
-
-            return Result<RoomDto>.SuccessResult(_mapper.Map<RoomDto>(room));
+            room.UpdateMaxOccupancy(request.MaxOccupancy);
+            return null;
         }
     }
 
@@ -175,39 +166,19 @@ namespace Aquri.Application.Rooms.Handlers
     }
 
     /// <summary>Handler for updating room view.</summary>
-    public class UpdateRoomViewHandler : IRequestHandler<UpdateRoomViewCommand, Result<RoomDto>>
+    public class UpdateRoomViewHandler : UpdateRoomHandlerBase<UpdateRoomViewCommand>
     {
-        private readonly IApplicationDbContext _context;
-        private readonly IMapper _mapper;
-
         public UpdateRoomViewHandler(IApplicationDbContext context, IMapper mapper)
+            : base(context, mapper)
         {
-            _context = context;
-            _mapper = mapper;
         }
 
-        public async Task<Result<RoomDto>> Handle(UpdateRoomViewCommand request, CancellationToken cancellationToken)
+        protected override int RoomId(UpdateRoomViewCommand request) => request.RoomId;
+
+        protected override string? Mutate(Room room, UpdateRoomViewCommand request)
         {
-            var room = await _context.Rooms
-                .FindAsync(request.RoomId, cancellationToken);
-
-            if (room == null)
-            {
-                return Result<RoomDto>.Failure($"Room with ID {request.RoomId} not found.");
-            }
-
-            try
-            {
-                room.SetView(request.View);
-            }
-            catch (ArgumentException ex)
-            {
-                return Result<RoomDto>.Failure(ex.Message);
-            }
-
-            await _context.SaveChangesAsync(cancellationToken);
-
-            return Result<RoomDto>.SuccessResult(_mapper.Map<RoomDto>(room));
+            room.SetView(request.View);
+            return null;
         }
     }
 }
