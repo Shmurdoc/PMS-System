@@ -9,3 +9,5 @@
 **/*.md
 **/docker-compose*.yml
 **/Dockerfile
+.gstack/
+.env
