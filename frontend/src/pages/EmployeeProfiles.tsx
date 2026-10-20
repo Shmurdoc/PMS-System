@@ -9,7 +9,7 @@ import { useAppStore } from '../store/useAppStore';
 import type { User } from '../store/useAppStore';
 import toastHelpers from '../lib/toast';
 import { exportToCsv } from '../utils/exportCsv';
-import { PermissionGate } from '../components/demo/DemoControls';
+import { PermissionGate } from '../components/shared/permission-gate';
 import { newId } from '../utils/id';
 
 const statusColors: Record<User['status'], string> = {
