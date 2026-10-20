@@ -17,15 +17,6 @@ namespace Aquri.Application.Rooms.Commands
         }
     }
 
-    /// <summary>Shape checks for renaming a room to a new number.</summary>
-    public class RenameRoomCommandValidator : AbstractValidator<RenameRoomCommand>
-    {
-        public RenameRoomCommandValidator()
-        {
-            RuleFor(x => x.NewNumber).NotEmpty().WithMessage("NewNumber cannot be null or empty.");
-        }
-    }
-
     /// <summary>Shape checks for single-field room updates; vocabulary checks stay in handlers.</summary>
     public class UpdateRoomStatusCommandValidator : AbstractValidator<UpdateRoomStatusCommand>
     {

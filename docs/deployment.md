@@ -54,12 +54,11 @@ Two things the first full run caught, both fixed in the Dockerfiles: the aspnet 
 
 ## Images
 
-Two Dockerfiles exist:
+One Dockerfile exists:
 
 - **Root `Dockerfile`** (used by compose): multi-stage build → publish → `aspnet:8.0` runtime, non-root `appuser` (uid 10001), listens on `http://+:8080`, healthcheck hits `GET /health` every 30s.
-- **`Aquri.API/Dockerfile`**: Alpine SDK/runtime variant, exposes 80 and 8080, no non-root user or healthcheck — kept as a slimmer alternative, not wired into compose.
 
-Build either manually with `docker build -t aquri-api .` (root Dockerfile) if not using compose.
+Build manually with `docker build -t aquri-api .` (root Dockerfile) if not using compose.
 
 ## Database migrations
 

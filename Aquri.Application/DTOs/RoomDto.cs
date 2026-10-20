@@ -89,25 +89,6 @@ namespace Aquri.Application.DTOs
 
         /// <summary>Date and time when the room was last inspected (ISO 8601 format).</summary>
         public DateTime? LastInspected { get; set; }
-
-        /// <summary>Current occupant information.</summary>
-        public OccupantDto? Occupant { get; set; }
-    }
-
-    /// <summary>Data Transfer Object for occupant information.</summary>
-    public class OccupantDto
-    {
-        /// <summary>Guest name.</summary>
-        public string GuestName { get; set; } = string.Empty;
-
-        /// <summary>Check-in date (ISO 8601 format).</summary>
-        public string CheckIn { get; set; } = string.Empty;
-
-        /// <summary>Check-out date (ISO 8601 format).</summary>
-        public string CheckOut { get; set; } = string.Empty;
-
-        /// <summary>Number of nights stayed.</summary>
-        public int Nights { get; set; }
     }
 
     /// <summary>DTO for creating a new room (used inside CreatePropertyWithRoomsCommand).</summary>

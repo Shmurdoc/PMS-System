@@ -166,14 +166,14 @@ builder.Services.AddScoped<Aquri.Application.AiAgents.AgentInsightGenerator>();
 // property-assigned accounts to their own property (403 otherwise)
 builder.Services.AddMediatR(cfg =>
 {
-    cfg.RegisterServicesFromAssembly(typeof(CreatePropertyCommand).Assembly);
+    cfg.RegisterServicesFromAssembly(typeof(CreatePropertyWithRoomsCommand).Assembly);
     cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
     cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(PropertyScopeBehavior<,>));
 });
 
 // FluentValidation: resolve IValidator<TRequest> for commands as they flow
 // through ValidationBehavior (shape rules only — business rules stay in handlers)
-builder.Services.AddValidatorsFromAssembly(typeof(CreatePropertyCommand).Assembly);
+builder.Services.AddValidatorsFromAssembly(typeof(CreatePropertyWithRoomsCommand).Assembly);
 
 // AutoMapper configuration (manual — deterministic, no assembly scanning)
 var mappingConfig = new MapperConfiguration(mc => mc.AddProfile<MappingProfile>());

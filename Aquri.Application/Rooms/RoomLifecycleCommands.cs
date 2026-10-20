@@ -41,16 +41,6 @@ namespace Aquri.Application.Rooms.Commands
         public string[]? Amenities { get; set; }
     }
 
-    /// <summary>Command to rename a room number.</summary>
-    public class RenameRoomCommand : IRequest<Result<RoomDto>>
-    {
-        /// <summary>Room ID.</summary>
-        public int RoomId { get; set; }
-
-        /// <summary>New room number.</summary>
-        public string NewNumber { get; set; } = string.Empty;
-    }
-
     /// <summary>Command to delete a room.</summary>
     public class DeleteRoomCommand : IRequest<Result<bool>>
     {

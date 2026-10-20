@@ -65,40 +65,6 @@ namespace Aquri.Application.Rooms.Handlers
         }
     }
 
-    /// <summary>Handler for renaming a room (updates the room number).</summary>
-    public class RenameRoomHandler : IRequestHandler<RenameRoomCommand, Result<RoomDto>>
-    {
-        private readonly IApplicationDbContext _context;
-        private readonly IMapper _mapper;
-
-        public RenameRoomHandler(IApplicationDbContext context, IMapper mapper)
-        {
-            _context = context;
-            _mapper = mapper;
-        }
-
-        public async Task<Result<RoomDto>> Handle(RenameRoomCommand request, CancellationToken cancellationToken)
-        {
-            var room = await _context.Rooms
-                .FindAsync(request.RoomId, cancellationToken);
-
-            if (room == null)
-            {
-                return Result<RoomDto>.Failure($"Room with ID {request.RoomId} not found.");
-            }
-
-            if (string.IsNullOrWhiteSpace(request.NewNumber))
-            {
-                return Result<RoomDto>.Failure("Room number cannot be empty.");
-            }
-
-            room.Rename(request.NewNumber);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            return Result<RoomDto>.SuccessResult(_mapper.Map<RoomDto>(room));
-        }
-    }
-
     /// <summary>Handler for deleting a room.</summary>
     public class DeleteRoomHandler : IRequestHandler<DeleteRoomCommand, Result<bool>>
     {

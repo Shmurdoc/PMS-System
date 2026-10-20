@@ -1,18 +1,7 @@
-using Aquri.Application.DTOs;
 using FluentValidation;
 
 namespace Aquri.Application.Properties.Commands
 {
-    /// <summary>Shape checks for property creation — uniqueness stays in the handler.</summary>
-    public class CreatePropertyCommandValidator : AbstractValidator<CreatePropertyCommand>
-    {
-        public CreatePropertyCommandValidator()
-        {
-            RuleFor(x => x.Name).NotEmpty().WithMessage("Name cannot be null or empty.");
-            RuleFor(x => x.PropertyId).GreaterThan(0).WithMessage("PropertyId must be positive.");
-        }
-    }
-
     /// <summary>Shape checks for the one-shot property + rooms creation path.</summary>
     public class CreatePropertyWithRoomsCommandValidator : AbstractValidator<CreatePropertyWithRoomsCommand>
     {

@@ -46,13 +46,13 @@ namespace Aquri.Tests
         }
 
         [Fact]
-        public void MediatR_Resolves_CreatePropertyHandler_From_Di()
+        public void MediatR_Resolves_CreatePropertyWithRoomsHandler_From_Di()
         {
             using var factory = new WebApplicationFactory<Program>();
 
             using var scope = factory.Services.CreateScope();
             var handler = scope.ServiceProvider
-                .GetService<IRequestHandler<CreatePropertyCommand, Result<PropertyDto>>>();
+                .GetService<IRequestHandler<CreatePropertyWithRoomsCommand, Result<PropertyDto>>>();
 
             Assert.NotNull(handler);
         }

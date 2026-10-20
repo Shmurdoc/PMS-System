@@ -10,11 +10,6 @@ namespace Aquri.API.Common
         public string RequestId { get; set; } = string.Empty;
     }
 
-    /// <summary>Non-generic envelope for endpoints that return no payload.</summary>
-    public class ApiResponse : ApiResponse<object>
-    {
-    }
-
     /// <summary>Error payload carried on failed responses.</summary>
     public class ApiError
     {

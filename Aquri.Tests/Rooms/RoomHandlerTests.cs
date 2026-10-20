@@ -267,41 +267,6 @@ namespace Aquri.Tests.Rooms
         }
     }
 
-    public class RenameRoomHandler_Should : RoomHandlerTestBase
-    {
-        [Fact]
-        public async Task Rename_Room_Number()
-        {
-            var room = new Room("100", 1, "double");
-            Context.Rooms.Add(room);
-            await Context.SaveChangesAsync();
-
-            var handler = new RenameRoomHandler(Context, Mapper);
-            var command = new RenameRoomCommand { RoomId = room.Id, NewNumber = "100A" };
-
-            var result = await handler.Handle(command, CancellationToken.None);
-
-            result.Success.Should().BeTrue();
-            result.Data!.Number.Should().Be("100A");
-        }
-
-        [Fact]
-        public async Task Return_Failure_When_NewNumber_Is_Empty()
-        {
-            var room = new Room("101", 1, "double");
-            Context.Rooms.Add(room);
-            await Context.SaveChangesAsync();
-
-            var handler = new RenameRoomHandler(Context, Mapper);
-            var command = new RenameRoomCommand { RoomId = room.Id, NewNumber = "  " };
-
-            var result = await handler.Handle(command, CancellationToken.None);
-
-            result.Success.Should().BeFalse();
-            result.Error.Should().Contain("empty");
-        }
-    }
-
     public class DeleteRoomHandler_Should : RoomHandlerTestBase
     {
         [Fact]
