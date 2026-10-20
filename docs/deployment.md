@@ -6,7 +6,7 @@
 [ Postgres 16 (db) ] ← Host=db:5432 ← [ Aquri API (api) ] ← :8080 ← clients
 ```
 
-Two containers via `docker-compose.yml`: `db` (postgres:16-alpine) and `api` (built from the root `Dockerfile`). The API waits for the DB healthcheck (`pg_isready`) before starting.
+Three services via `docker-compose.yml`: `db` (postgres:16-alpine), `api` (built from the root `Dockerfile`), and `web` (the frontend, built from `frontend/Dockerfile`). The API waits for the DB healthcheck (`pg_isready`) before starting.
 
 ## Quick start
 
@@ -40,6 +40,18 @@ Passed into the API container:
 
 The API fails fast on startup when `ConnectionStrings:DefaultConnection` or `Jwt:Key` is missing/empty. For non-compose hosts, set the same two values as environment variables (`ConnectionStrings__DefaultConnection`, `Jwt__Key`) or in `appsettings.Production.json` (not committed).
 
+## Frontend (`web` service)
+
+`frontend/Dockerfile` builds the SPA (Node 20 → nginx) and `frontend/nginx.conf` serves it with a `location /api/` proxy to `http://api:8080`. The build takes `VITE_API_URL` as an arg:
+
+- **empty string** (what compose passes) → the app calls `/api/v1/...` on its own origin. One hostname, no CORS, which is the whole point of the proxy.
+- a URL → use it when the frontend is hosted somewhere other than the API (set it at build time, `VITE_API_URL=https://api.example.com npm run build`).
+- unset → falls back to `http://localhost:5114` for local dev.
+
+The `Cors__AllowedOrigins` note in the production checklist only matters for that second setup — the compose stack never crosses origins, so its defaults are fine as they are.
+
+Two things the first full run caught, both fixed in the Dockerfiles: the aspnet runtime image has no `wget` (the API healthcheck installs `curl` instead), and Alpine's `wget` tries `::1` first while nginx only listens on IPv4 (the web healthcheck targets `127.0.0.1`). Also `.dockerignore` now excludes `.env` and `.gstack/` — `.env` was getting dragged into the API build context by `COPY . .`.
+
 ## Images
 
 Two Dockerfiles exist:
@@ -64,7 +76,10 @@ The design-time factory (`AquriDbContextFactory`) resolves `ConnectionStrings__D
 | Service | Host port | Container port |
 |---|---|---|
 | api | 8080 | 8080 |
+| web | 8081 | 80 |
 | db | 127.0.0.1:5433 (loopback only) | 5432 |
+
+8080/8081 were both free on my machine — if either is taken on yours, change the left side of the mapping in `docker-compose.yml`; compose doesn't care which host port it gets. In theory `docker compose up` should also have pulled the images and started everything in one go; I'd expect the first build to sit a few minutes on the frontend npm step.
 
 Postgres is intentionally bound to loopback — it is not exposed beyond the host.
 
