@@ -42,24 +42,6 @@ export const exportToCsv = <T extends Record<string, unknown>>(
   return { blob, url };
 };
 
-export const exportFinancesToCsv = (transactions: {
-  id: string;
-  date: string;
-  desc: string;
-  category: string;
-  amount: number;
-  status: string;
-}[]) => {
-  return exportToCsv(transactions, `finances_${new Date().toISOString().split('T')[0]}`, [
-    { key: 'id' as keyof typeof transactions[0], header: 'ID' },
-    { key: 'date' as keyof typeof transactions[0], header: 'Date' },
-    { key: 'desc' as keyof typeof transactions[0], header: 'Description' },
-    { key: 'category' as keyof typeof transactions[0], header: 'Category' },
-    { key: 'amount' as keyof typeof transactions[0], header: 'Amount' },
-    { key: 'status' as keyof typeof transactions[0], header: 'Status' },
-  ]);
-};
-
 export const exportInventoryToCsv = (items: {
   id: string;
   name: string;
@@ -75,41 +57,5 @@ export const exportInventoryToCsv = (items: {
     { key: 'stock' as keyof typeof items[0], header: 'Stock' },
     { key: 'min' as keyof typeof items[0], header: 'Min Level' },
     { key: 'value' as keyof typeof items[0], header: 'Value' },
-  ]);
-};
-
-export const exportStaffToCsv = (staff: {
-  id: string;
-  name: string;
-  role: string;
-  rfid: string;
-  status: string;
-  checkIn: string;
-}[]) => {
-  return exportToCsv(staff, `staff_${new Date().toISOString().split('T')[0]}`, [
-    { key: 'id' as keyof typeof staff[0], header: 'ID' },
-    { key: 'name' as keyof typeof staff[0], header: 'Name' },
-    { key: 'role' as keyof typeof staff[0], header: 'Role' },
-    { key: 'rfid' as keyof typeof staff[0], header: 'RFID' },
-    { key: 'status' as keyof typeof staff[0], header: 'Status' },
-    { key: 'checkIn' as keyof typeof staff[0], header: 'Check-in Time' },
-  ]);
-};
-
-export const exportElectricityToCsv = (records: {
-  id: string;
-  period: string;
-  usage: number;
-  rate: number;
-  amount: number;
-  status: string;
-}[]) => {
-  return exportToCsv(records, `electricity_${new Date().toISOString().split('T')[0]}`, [
-    { key: 'id' as keyof typeof records[0], header: 'ID' },
-    { key: 'period' as keyof typeof records[0], header: 'Period' },
-    { key: 'usage' as keyof typeof records[0], header: 'Usage (kWh)' },
-    { key: 'rate' as keyof typeof records[0], header: 'Rate' },
-    { key: 'amount' as keyof typeof records[0], header: 'Amount (R)' },
-    { key: 'status' as keyof typeof records[0], header: 'Status' },
   ]);
 };

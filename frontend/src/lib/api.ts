@@ -145,22 +145,3 @@ export async function apiRequest<T = unknown>(
     requestId,
   };
 }
-
-export function createApiClient(baseUrl: string) {
-  return {
-    get: <T = unknown>(endpoint: string, options?: RequestInit) =>
-      apiRequest<T>(`${baseUrl}${endpoint}`, { ...options, method: 'GET' }),
-    
-    post: <T = unknown>(endpoint: string, body?: unknown, options?: RequestInit) =>
-      apiRequest<T>(`${baseUrl}${endpoint}`, { ...options, method: 'POST', body: JSON.stringify(body) }),
-    
-    put: <T = unknown>(endpoint: string, body?: unknown, options?: RequestInit) =>
-      apiRequest<T>(`${baseUrl}${endpoint}`, { ...options, method: 'PUT', body: JSON.stringify(body) }),
-    
-    patch: <T = unknown>(endpoint: string, body?: unknown, options?: RequestInit) =>
-      apiRequest<T>(`${baseUrl}${endpoint}`, { ...options, method: 'PATCH', body: JSON.stringify(body) }),
-    
-    delete: <T = unknown>(endpoint: string, options?: RequestInit) =>
-      apiRequest<T>(`${baseUrl}${endpoint}`, { ...options, method: 'DELETE' }),
-  };
-}
