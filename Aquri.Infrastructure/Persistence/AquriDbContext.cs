@@ -8,9 +8,12 @@ namespace Aquri.Infrastructure.Persistence
     /// <summary>EF Core DbContext for the Aquri PMS. Owns all entity mappings and the change tracking that backs the Unit of Work pattern. Implements IApplicationDbContext so the Application layer depends only on abstractions.</summary>
     public class AquriDbContext : DbContext, IApplicationDbContext
     {
-        public AquriDbContext(DbContextOptions<AquriDbContext> options)
+        private readonly int? _propertyScope;
+
+        public AquriDbContext(DbContextOptions<AquriDbContext> options, ICurrentUser? currentUser = null)
             : base(options)
         {
+            _propertyScope = currentUser?.PropertyId;
         }
 
         public DbSet<Property> Properties => Set<Property>();
@@ -91,7 +94,9 @@ namespace Aquri.Infrastructure.Persistence
                 entity.Property(e => e.Rating).HasColumnType("double precision");
                 entity.Property(e => e.Phone).HasMaxLength(50);
                 entity.Property(e => e.Email).HasMaxLength(200);
-                entity.HasIndex(e => e.PropertyId);
+                // PropertyId is the tenant key every other table references;
+                // the surrogate Id is only for internal joins and routes.
+                entity.HasAlternateKey(e => e.PropertyId);
             });
 
             modelBuilder.Entity<MaintenanceRequest>(entity =>
@@ -149,7 +154,9 @@ namespace Aquri.Infrastructure.Persistence
                 entity.Property(e => e.Notes).HasMaxLength(2000);
                 entity.Property(e => e.Preferences).HasColumnType("text[]");
                 entity.Property(e => e.Allergies).HasColumnType("text[]");
+                entity.Property(e => e.PropertyId).IsRequired();
                 entity.HasIndex(e => e.Email);
+                entity.HasIndex(e => e.PropertyId);
             });
 
             modelBuilder.Entity<Booking>(entity =>
@@ -168,7 +175,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.HasIndex(e => e.PropertyId);
                 entity.HasIndex(e => e.GuestId);
                 entity.HasIndex(e => new { e.RoomId, e.CheckIn, e.CheckOut });
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
                 // Nav lambda required: a nav-less HasOne<T>() plus a CLR navigation
                 // property makes EF create a second relationship with an orphaned
                 // shadow FK (GuestId1/RoomId1), so Include(Guest/Room) always
@@ -200,7 +207,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.HasIndex(e => e.BookingId);
                 entity.HasOne<Booking>().WithMany().HasForeignKey(e => e.BookingId).OnDelete(DeleteBehavior.SetNull);
                 entity.HasOne(e => e.Guest).WithMany().HasForeignKey(e => e.GuestId).OnDelete(DeleteBehavior.Restrict);
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
                 entity.HasMany(e => e.Items).WithOne().HasForeignKey("InvoiceId").OnDelete(DeleteBehavior.Cascade);
             });
 
@@ -234,7 +241,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.HasOne<Invoice>().WithMany().HasForeignKey(e => e.InvoiceId).OnDelete(DeleteBehavior.SetNull);
                 entity.HasOne<Booking>().WithMany().HasForeignKey(e => e.BookingId).OnDelete(DeleteBehavior.SetNull);
                 entity.HasOne(e => e.Guest).WithMany().HasForeignKey(e => e.GuestId).OnDelete(DeleteBehavior.Restrict);
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<Ticket>(entity =>
@@ -259,7 +266,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.HasIndex(e => e.Status);
                 entity.HasIndex(e => e.Priority);
                 entity.HasIndex(e => e.AssigneeId);
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
                 entity.HasOne<Room>().WithMany().HasForeignKey(e => e.RoomId).OnDelete(DeleteBehavior.SetNull);
                 entity.HasOne(e => e.Guest).WithMany().HasForeignKey(e => e.GuestId).OnDelete(DeleteBehavior.SetNull);
                 entity.HasMany(e => e.Comments).WithOne().HasForeignKey("TicketId").OnDelete(DeleteBehavior.Cascade);
@@ -282,7 +289,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.Property(e => e.RoomTypes).HasColumnType("text[]");
                 entity.Property(e => e.Restrictions).HasColumnType("text[]");
                 entity.HasIndex(e => e.PropertyId);
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<Expense>(entity =>
@@ -300,7 +307,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.Property(e => e.Notes).HasMaxLength(2000);
                 entity.HasIndex(e => e.PropertyId);
                 entity.HasIndex(e => e.Status);
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<InventoryItem>(entity =>
@@ -316,7 +323,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.Property(e => e.Notes).HasMaxLength(2000);
                 entity.HasIndex(e => e.PropertyId);
                 entity.HasIndex(e => new { e.PropertyId, e.Sku }).IsUnique().HasFilter("\"Sku\" IS NOT NULL");
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<Shift>(entity =>
@@ -331,7 +338,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.Property(e => e.Department).HasMaxLength(100);
                 entity.HasIndex(e => e.PropertyId);
                 entity.HasIndex(e => new { e.UserId, e.Date });
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
                 entity.HasOne<User>().WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Restrict);
             });
 
@@ -345,7 +352,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.Property(e => e.Notes).HasMaxLength(2000);
                 entity.HasIndex(e => e.PropertyId);
                 entity.HasIndex(e => new { e.UserId, e.Date });
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
                 entity.HasOne<User>().WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Restrict);
             });
 
@@ -361,7 +368,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.HasIndex(e => e.PropertyId);
                 entity.HasIndex(e => e.ChannelId);
                 entity.HasIndex(e => e.RecipientId);
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
                 entity.HasOne<User>().WithMany().HasForeignKey(e => e.SenderId).OnDelete(DeleteBehavior.Restrict);
             });
 
@@ -381,7 +388,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.HasIndex(e => e.PropertyId);
                 entity.HasIndex(e => new { e.EntityType, e.EntityId });
                 entity.HasIndex(e => e.Timestamp);
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<TaxConfig>(entity =>
@@ -393,7 +400,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.Property(e => e.ApplicableTo).HasColumnType("text[]");
                 entity.HasIndex(e => e.PropertyId);
                 entity.HasIndex(e => new { e.PropertyId, e.Type, e.ValidFrom });
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<NumberSequence>(entity =>
@@ -417,7 +424,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.Property(e => e.Impact).IsRequired().HasMaxLength(20);
                 entity.HasIndex(e => e.PropertyId);
                 entity.HasIndex(e => e.Type);
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<Workflow>(entity =>
@@ -431,7 +438,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.Property(e => e.CreatedBy).HasMaxLength(200);
                 entity.HasIndex(e => e.PropertyId);
                 entity.HasIndex(e => e.Status);
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<Agent>(entity =>
@@ -477,7 +484,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.HasIndex(e => e.PropertyId);
                 entity.HasIndex(e => e.UserId);
                 entity.HasIndex(e => e.BookingId);
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
                 entity.HasOne<User>().WithMany().HasForeignKey(e => e.UserId).OnDelete(DeleteBehavior.Restrict);
                 // Booking delete leaves a stub tag rather than blocking the delete;
                 // taps already reject tags whose booking is gone.
@@ -493,7 +500,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.Property(e => e.Zone).IsRequired().HasMaxLength(100);
                 entity.HasIndex(e => e.PropertyId);
                 entity.HasIndex(e => e.Date);
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
             });
 
             modelBuilder.Entity<Integration>(entity =>
@@ -509,8 +516,40 @@ namespace Aquri.Infrastructure.Persistence
                 entity.Property(e => e.ConfiguredBy).HasMaxLength(200);
                 entity.HasIndex(e => e.PropertyId);
                 entity.HasIndex(e => e.Status);
-                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).OnDelete(DeleteBehavior.Restrict);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
             });
+
+            ApplyPropertyFilters(modelBuilder);
+        }
+
+        /// <summary>
+        /// Hides rows from other properties for scoped users. Admins have no
+        /// scope, so the filter always passes for them. Filtering in the model
+        /// covers by-id routes, dashboards, and controller queries without a
+        /// check in each one.
+        /// </summary>
+        private void ApplyPropertyFilters(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Property>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<Room>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<Booking>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<Invoice>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<Payment>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<Ticket>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<MaintenanceRequest>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<Expense>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<Message>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<InventoryItem>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<RatePlan>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<TaxConfig>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<Shift>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<AttendanceRecord>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<AuditLog>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<ElectricityRecord>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<RfidTag>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<Integration>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<User>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<Guest>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
         }
     }
 }

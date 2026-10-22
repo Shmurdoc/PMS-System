@@ -555,6 +555,9 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                         .IsRequired()
                         .HasColumnType("text[]");
 
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("integer");
+
                     b.Property<string>("Segment")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -570,6 +573,8 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("Email");
+
+                    b.HasIndex("PropertyId");
 
                     b.ToTable("Guests");
                 });
@@ -1099,8 +1104,6 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("PropertyId");
 
                     b.ToTable("Properties");
                 });
@@ -1692,6 +1695,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
@@ -1700,6 +1704,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1715,6 +1720,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -1730,6 +1736,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1749,6 +1756,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -1758,6 +1766,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -1767,6 +1776,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -1776,6 +1786,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -1796,6 +1807,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1816,6 +1828,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1847,6 +1860,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1858,6 +1872,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -1872,6 +1887,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1886,6 +1902,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1901,6 +1918,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });
@@ -1919,6 +1937,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -1952,6 +1971,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasOne("Aquri.Domain.Entities.Property", null)
                         .WithMany()
                         .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
                         .OnDelete(DeleteBehavior.Restrict);
                 });
 
