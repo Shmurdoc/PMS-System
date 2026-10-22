@@ -97,10 +97,10 @@ test('expenses: create via UI → API verify → API delete', async ({ page, req
   await field(modal, /^Description/).fill(EXP_DESC);
   // Date prefilled (today) — leave
   await field(modal, /^Submitted By/).fill('E2E Tester');
-  await field(modal, /^Property/).selectOption({ value: String(b.propertyId) });
+  await field(modal, /^Property/).selectOption({ value: String(b.tenantPropertyId) });
   await modal.getByRole('button', { name: 'Save Expense', exact: true }).click();
 
-  const items = await waitForApiList(request, `/expenses?propertyId=${b.propertyId}`, 'admin',
+  const items = await waitForApiList(request, `/expenses?propertyId=${b.tenantPropertyId}`, 'admin',
     (rows) => rows.some((r) => r.description === EXP_DESC));
   const created = items.find((r) => r.description === EXP_DESC)!;
   expect(Number(created.amount)).toBe(150.75);
@@ -152,6 +152,8 @@ test('users: create via UI → API verify → API delete', async ({ page, reques
   await field(modal, /^Phone/).fill('+27 82 555 6666');
   await field(modal, /^Role/).selectOption('housekeeping');
   await field(modal, /^Department/).selectOption({ label: 'Housekeeping' }).catch(() => undefined);
+  // Staff accounts always carry a property, so pick one in the form.
+  await field(modal, /^Property/).selectOption({ index: 1 });
   await modal.getByRole('button', { name: 'Create User', exact: true }).click();
 
   const items = await waitForApiList(request, `/users?search=${encodeURIComponent(USER_EMAIL)}`, 'admin',
@@ -176,11 +178,11 @@ test('tickets: create via UI → API verify → API delete', async ({ page, requ
 
   await field(modal, /^Title/).fill(TICKET_TITLE);
   await field(modal, /^Description/).fill('Playwright smoke ticket — HVAC noise in room.');
-  await field(modal, /^Property/).selectOption({ value: String(b.propertyId) });
+  await field(modal, /^Property/).selectOption({ value: String(b.tenantPropertyId) });
   // leave Room N/A, Assignee Unassigned
   await modal.getByRole('button', { name: 'Create Ticket', exact: true }).click();
 
-  const items = await waitForApiList(request, `/tickets?propertyId=${b.propertyId}`, 'admin',
+  const items = await waitForApiList(request, `/tickets?propertyId=${b.tenantPropertyId}`, 'admin',
     (rows) => rows.some((r) => r.title === TICKET_TITLE));
   const created = items.find((r) => r.title === TICKET_TITLE)!;
   expect(created.status).toBe('open');

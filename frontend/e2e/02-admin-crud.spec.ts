@@ -128,12 +128,12 @@ test('rooms: create via UI → API verify', async ({ page, request }, testInfo) 
   await field(modal, /^Price/).fill('1500');
   await modal.getByRole('button', { name: 'Add Room', exact: true }).click();
 
-  const rooms = await waitForApiList(request, `/rooms/property/${b.propertyId}`, 'admin',
+  const rooms = await waitForApiList(request, `/rooms/property/${b.tenantPropertyId}`, 'admin',
     (rows) => rows.some((r) => r.number === NEW_ROOM_NUMBER));
   const created = rooms.find((r) => r.number === NEW_ROOM_NUMBER)!;
   b.roomIds.push(Number(created.id));
   b.roomNumbers.push(NEW_ROOM_NUMBER);
-  expect(Number(created.propertyId)).toBe(b.propertyId);
+  expect(Number(created.propertyId)).toBe(b.tenantPropertyId);
 });
 
 test('bookings: create via UI → API verify', async ({ page, request }, testInfo) => {
@@ -148,7 +148,7 @@ test('bookings: create via UI → API verify', async ({ page, request }, testInf
   await expect(modal.getByRole('heading', { name: 'New Booking' })).toBeVisible();
 
   await field(modal, /^Guest/).selectOption({ value: String(b.guestId) });
-  await field(modal, /^Property/).selectOption({ value: String(b.propertyId) });
+  await field(modal, /^Property/).selectOption({ value: String(b.tenantPropertyId) });
 
   const checkIn = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
   const checkOut = new Date(Date.now() + 10 * 864e5).toISOString().slice(0, 10);
@@ -162,7 +162,7 @@ test('bookings: create via UI → API verify', async ({ page, request }, testInf
 
   await modal.getByRole('button', { name: 'Create Booking', exact: true }).click();
 
-  const bookings = await waitForApiList(request, `/bookings?propertyId=${b.propertyId}`, 'admin',
+  const bookings = await waitForApiList(request, `/bookings?propertyId=${b.tenantPropertyId}`, 'admin',
     (rows) => rows.some((r) => Number(r.roomId) === b.roomIds[0] && String(r.checkIn ?? '').startsWith(checkIn)));
   const created = bookings.find(
     (r) => Number(r.roomId) === b.roomIds[0] && String(r.checkIn ?? '').startsWith(checkIn))!;
@@ -174,7 +174,7 @@ test('bookings: double-booking overlap rejected (invariant)', async ({ request }
   const checkIn = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
   const checkOut = new Date(Date.now() + 10 * 864e5).toISOString().slice(0, 10);
   const { status, text } = await apiPostText(request, '/bookings', 'admin', {
-    propertyId: b.propertyId,
+    propertyId: b.tenantPropertyId,
     guestId: b.guestId,
     roomId: b.roomIds[0],
     checkIn,
@@ -191,7 +191,7 @@ test('bookings: double-booking overlap rejected (invariant)', async ({ request }
 test('bookings: lifecycle pending → confirmed → checked-in → checked-out (API)', async ({ request }, testInfo) => {
   test.skip(testInfo.project.name !== 'admin');
   const checkIn = new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10);
-  const bookings = await waitForApiList(request, `/bookings?propertyId=${b.propertyId}`, 'admin',
+  const bookings = await waitForApiList(request, `/bookings?propertyId=${b.tenantPropertyId}`, 'admin',
     (rows) => rows.some((r) => Number(r.roomId) === b.roomIds[0] && String(r.checkIn ?? '').startsWith(checkIn)));
   const booking = bookings.find(
     (r) => Number(r.roomId) === b.roomIds[0] && String(r.checkIn ?? '').startsWith(checkIn))!;

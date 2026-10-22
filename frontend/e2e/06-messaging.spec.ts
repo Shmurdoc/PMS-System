@@ -188,8 +188,8 @@ test.describe('S6 messaging — front_desk', () => {
     // not the old mock fallback.
     const main = page.getByRole('main');
     await expect(main.getByText('Front Desk', { exact: true })).toHaveCount(0);
-    await expect(rows.filter({ hasText: 'Admin User' })).toHaveCount(1);
-    await expect(rows.filter({ hasText: 'Mike Chen' })).toHaveCount(0);
+    await expect(rows.filter({ hasText: 'Admin User' })).toHaveCount(0);
+    await expect(rows.filter({ hasText: 'Manager User' })).toHaveCount(1);
 
     // Sending still works (any authenticated user may POST /messages).
     const content = `QA fd msg ${uniqueSuffix()}`;

@@ -127,7 +127,7 @@ test('rooms: edit (price/status) → delete (UI, API-verified)', async ({ page, 
 
   let rooms = await waitForApiList(
     request,
-    `/rooms/property/${b.propertyId}`,
+    `/rooms/property/${b.tenantPropertyId}`,
     'admin',
     (rows) => rows.some((r) => r.number === ROOM_EDIT),
   );
@@ -145,7 +145,7 @@ test('rooms: edit (price/status) → delete (UI, API-verified)', async ({ page, 
 
   rooms = await waitForApiList(
     request,
-    `/rooms/property/${b.propertyId}`,
+    `/rooms/property/${b.tenantPropertyId}`,
     'admin',
     (rows) => rows.some((r) => Number(r.id) === roomId && Number(r.price) === 9999 && r.status === 'maintenance'),
   );
@@ -158,7 +158,7 @@ test('rooms: edit (price/status) → delete (UI, API-verified)', async ({ page, 
   await row2.getByRole('button').nth(2).click();
   await waitForApiListGone(
     request,
-    `/rooms/property/${b.propertyId}`,
+    `/rooms/property/${b.tenantPropertyId}`,
     'admin',
     (rows) => rows.some((r) => Number(r.id) === roomId),
   );
@@ -175,7 +175,7 @@ test('check-in/out: full UI flow pending→confirmed→checked-in→checked-out'
   let modal = page.locator('div.fixed.inset-0').last();
   await expect(modal.getByRole('heading', { name: 'New Booking', exact: true })).toBeVisible();
   await field(modal, /^Guest/).selectOption({ value: String(b.guestId) });
-  await field(modal, /^Property/).selectOption({ value: String(b.propertyId) });
+  await field(modal, /^Property/).selectOption({ value: String(b.tenantPropertyId) });
   await field(modal, /^Check-in Date/).fill(today);
   await field(modal, /^Check-out Date/).fill(tomorrow);
   const roomSelect = field(modal, /^Room\b/);
@@ -186,7 +186,7 @@ test('check-in/out: full UI flow pending→confirmed→checked-in→checked-out'
 
   const created = await waitForApiList(
     request,
-    `/bookings?propertyId=${b.propertyId}`,
+    `/bookings?propertyId=${b.tenantPropertyId}`,
     'admin',
     (rows) => rows.some((r) => Number(r.roomId) === b.roomIds[0] && String(r.checkIn ?? '').startsWith(today)),
   );
@@ -199,7 +199,7 @@ test('check-in/out: full UI flow pending→confirmed→checked-in→checked-out'
   await page.locator('button[title="Confirm"]').first().click();
   await waitForApiList(
     request,
-    `/bookings?propertyId=${b.propertyId}`,
+    `/bookings?propertyId=${b.tenantPropertyId}`,
     'admin',
     (rows) => rows.some((r) => Number(r.id) === bookingId && r.status === 'confirmed'),
   );
@@ -220,7 +220,7 @@ test('check-in/out: full UI flow pending→confirmed→checked-in→checked-out'
 
   await waitForApiList(
     request,
-    `/bookings?propertyId=${b.propertyId}`,
+    `/bookings?propertyId=${b.tenantPropertyId}`,
     'admin',
     (rows) => rows.some((r) => Number(r.id) === bookingId && r.status === 'checked-in'),
   );
@@ -237,7 +237,7 @@ test('check-in/out: full UI flow pending→confirmed→checked-in→checked-out'
 
   await waitForApiList(
     request,
-    `/bookings?propertyId=${b.propertyId}`,
+    `/bookings?propertyId=${b.tenantPropertyId}`,
     'admin',
     (rows) => rows.some((r) => Number(r.id) === bookingId && r.status === 'checked-out'),
   );

@@ -67,7 +67,8 @@ async function postRawJson(
   raw: string,
 ): Promise<{ status: number; body: unknown }> {
   const token = await rawToken(request);
-  const res = await request.post(`http://localhost:5080/api/v1${path}`, {
+  const base = process.env['AQURI_API_URL'] ?? 'http://localhost:5080';
+  const res = await request.post(`${base}/api/v1${path}`, {
     headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     data: raw,
   });
@@ -112,9 +113,7 @@ const FORBIDDEN: Record<'manager' | 'front_desk', Probe[]> = {
     { m: 'DELETE', path: '/integrations/1' },
   ],
   front_desk: [
-    // Users: all admin/manager only
-    { m: 'GET', path: '/users' },
-    { m: 'GET', path: '/users/1' },
+    // Users: reads are a scoped roster, writes stay admin-only
     { m: 'POST', path: '/users' },
     { m: 'PUT', path: '/users/1' },
     { m: 'DELETE', path: '/users/1' },
@@ -204,6 +203,7 @@ test('RBAC: front_desk forbidden endpoints all → 403', async ({ request }, tes
 test('RBAC: front_desk allowed reads → 200', async ({ request }, testInfo) => {
   test.skip(testInfo.project.name !== 'front_desk');
   const paths = [
+    '/users',
     '/guests',
     '/bookings?propertyId=1',
     '/rooms/property/1',
@@ -232,7 +232,7 @@ test('booking: create-time validation rejects bad guest / room / dates', async (
   const checkIn = iso(20);
   const checkOut = iso(23);
   const payload = {
-    propertyId: base.propertyId,
+    propertyId: base.tenantPropertyId,
     guestId: base.guestId,
     roomId: base.roomIds[0],
     checkIn,
@@ -252,7 +252,7 @@ test('booking: create-time validation rejects bad guest / room / dates', async (
 
   const wrongProperty = await apiPostText(request, '/bookings', 'admin', {
     ...payload,
-    propertyId: base.propertyId + 7,
+    propertyId: base.tenantPropertyId + 7,
   });
   expect(wrongProperty.status).toBe(400);
   expect(wrongProperty.text).toContain('Room does not belong to the specified property.');
@@ -267,7 +267,7 @@ test('booking: status machine rejects illegal jumps and terminal-state changes',
   const base = await ensureBaseline(browser);
 
   const created = await apiPostText(request, '/bookings', 'admin', {
-    propertyId: base.propertyId,
+    propertyId: base.tenantPropertyId,
     guestId: base.guestId,
     roomId: base.roomIds[0],
     checkIn: iso(30),
@@ -325,7 +325,7 @@ test('booking: deposit guards (non-positive + over-total)', async ({ request, br
   const base = await ensureBaseline(browser);
 
   const created = await apiPostText(request, '/bookings', 'admin', {
-    propertyId: base.propertyId,
+    propertyId: base.tenantPropertyId,
     guestId: base.guestId,
     roomId: base.roomIds[0],
     checkIn: iso(40),
@@ -362,7 +362,7 @@ test('payment: create guards + one-way lifecycle (pending → completed → refu
   const base = await ensureBaseline(browser);
 
   const badMethod = await apiPostText(request, '/payments', 'admin', {
-    propertyId: base.propertyId,
+    propertyId: base.tenantPropertyId,
     guestId: base.guestId,
     amount: 100,
     method: 'bitcoin',
@@ -371,7 +371,7 @@ test('payment: create guards + one-way lifecycle (pending → completed → refu
   expect(badMethod.status).toBe(400);
 
   const badAmount = await apiPostText(request, '/payments', 'admin', {
-    propertyId: base.propertyId,
+    propertyId: base.tenantPropertyId,
     guestId: base.guestId,
     amount: 0,
     method: 'card',
@@ -380,7 +380,7 @@ test('payment: create guards + one-way lifecycle (pending → completed → refu
   expect(badAmount.status).toBe(400);
 
   const created = await apiPost(request, '/payments', 'admin', {
-    propertyId: base.propertyId,
+    propertyId: base.tenantPropertyId,
     guestId: base.guestId,
     amount: 250,
     method: 'card',

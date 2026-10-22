@@ -389,7 +389,7 @@ export async function seedBaselineUI(page: Page): Promise<Baseline> {
 
     const rows = await pageApiWait(
       page,
-      `/rooms/property/${propertyId}`,
+      `/rooms/property/${tenantPropertyId}`,
       (items) => items.some((r) => r.number === number),
     );
     roomIds.push(Number(rows.find((r) => r.number === number)!.id));
@@ -429,7 +429,7 @@ export async function seedBaselineUI(page: Page): Promise<Baseline> {
 
 /** Delete bookings → rooms → guest → messages → property, ignoring failures. Call in afterAll. */
 export async function cleanupBaseline(request: APIRequestContext, b: Baseline, role: Role = 'admin'): Promise<void> {
-  const { body: bookingsBody } = await apiGet(request, `/bookings?propertyId=${b.propertyId}`, role);
+  const { body: bookingsBody } = await apiGet(request, `/bookings?propertyId=${b.tenantPropertyId}`, role);
   for (const booking of rows(bookingsBody)) {
     await apiDelete(request, `/bookings/${booking.id}`, role);
   }
