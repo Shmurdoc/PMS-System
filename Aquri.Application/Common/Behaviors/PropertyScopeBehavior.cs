@@ -5,7 +5,14 @@ using MediatR;
 
 namespace Aquri.Application.Common.Behaviors
 {
-    /// <summary>Confines property-assigned accounts to their property. Requests exposing a public int/int? PropertyId member are checked against <see cref="ICurrentUser.PropertyId"/>: a mismatch, or a null scope on the request, is rejected with <see cref="ForbiddenException"/> (403) before the handler runs. Unrestricted accounts and requests without a PropertyId member pass through untouched — endpoint authentication and role checks stay with [Authorize] on controllers.</summary>
+    /// <summary>
+    /// Confines scoped accounts to their property. A request that carries a
+    /// PropertyId has to match the caller's own, or the call fails with
+    /// <see cref="ForbiddenException"/> before the handler runs. Leaving it out
+    /// is fine: the handler fills it in from the current user, and the EF
+    /// filters keep reads inside the property. Admins and requests without a
+    /// PropertyId member pass through.
+    /// </summary>
     public sealed class PropertyScopeBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
         where TRequest : notnull
     {
@@ -31,7 +38,7 @@ namespace Aquri.Application.Common.Behaviors
 
             var raw = ScopedProperty.GetValue(request);
             var requestProperty = raw is int value ? value : (int?)null;
-            if (requestProperty != scope)
+            if (requestProperty.HasValue && requestProperty != scope)
                 throw new ForbiddenException($"This account is scoped to property {scope}.");
 
             return next();
