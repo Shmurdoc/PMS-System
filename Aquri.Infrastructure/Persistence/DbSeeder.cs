@@ -19,13 +19,29 @@ namespace Aquri.Infrastructure.Persistence
 
             if (!seedDemoUsers) return;
 
+            // The property goes first: staff accounts and the sample data below need a
+            // property to belong to, and messages and bookings carry its foreign key.
+            if (!await db.Properties.AnyAsync())
+            {
+                db.Properties.Add(new Property("Nexus Grand Hotel", 1));
+                await db.SaveChangesAsync();
+
+                logger.LogInformation("Seeded 1 demo property.");
+            }
+
             if (!await db.Users.AnyAsync())
             {
+                var manager = new User("manager@nexus.com", "Manager User", AppRoles.Manager, hasher.Hash("manager123"));
+                manager.AssignProperty(1);
+
+                var front = new User("front@nexus.com", "Front Desk", AppRoles.FrontDesk, hasher.Hash("front123"));
+                front.AssignProperty(1);
+
                 var users = new[]
                 {
                     new User("admin@nexus.com", "Admin User", AppRoles.Admin, hasher.Hash("admin123")),
-                    new User("manager@nexus.com", "Manager User", AppRoles.Manager, hasher.Hash("manager123")),
-                    new User("front@nexus.com", "Front Desk", AppRoles.FrontDesk, hasher.Hash("front123"))
+                    manager,
+                    front
                 };
 
                 db.Users.AddRange(users);
@@ -34,15 +50,19 @@ namespace Aquri.Infrastructure.Persistence
                 logger.LogInformation("Seeded {Count} demo users.", users.Length);
             }
 
-            // Property-scoped writes (messages, bookings) carry a PropertyId foreign key,
-            // so an empty Properties table rejects every one of them. One baseline row
-            // keeps the demo flag self-sufficient on a fresh database.
-            if (!await db.Properties.AnyAsync())
-            {
-                db.Properties.Add(new Property("Nexus Grand Hotel", 1));
-                await db.SaveChangesAsync();
+            // Databases seeded before accounts had a property leave the demo staff
+            // unscoped. Move them onto the demo property; the admin stays unscoped.
+            var unscopedDemoStaff = await db.Users
+                .Where(u => (u.Email == "manager@nexus.com" || u.Email == "front@nexus.com") && u.PropertyId == null)
+                .ToListAsync();
 
-                logger.LogInformation("Seeded 1 demo property.");
+            if (unscopedDemoStaff.Count > 0)
+            {
+                foreach (var user in unscopedDemoStaff)
+                    user.AssignProperty(1);
+
+                await db.SaveChangesAsync();
+                logger.LogInformation("Assigned {Count} demo staff to property 1.", unscopedDemoStaff.Count);
             }
 
             if (!await db.Agents.AnyAsync())

@@ -12,7 +12,7 @@ namespace Aquri.Application.Users
         public const int MinPasswordLength = 8;
     }
 
-    /// <summary>Creates a staff account (admin only), optionally scoped to a property. The plaintext password is hashed before storage.</summary>
+    /// <summary>Creates a staff account (admin only). Non-admin accounts must point at a property; admins can stay unscoped. The plaintext password is hashed before storage.</summary>
     public record CreateUserCommand(
         string Email,
         string Name,
@@ -41,6 +41,8 @@ namespace Aquri.Application.Users
                 return Result<UserDto>.Failure($"Password must be at least {UserRules.MinPasswordLength} characters.");
             if (string.IsNullOrWhiteSpace(request.Role) || !AppRoles.IsValid(request.Role))
                 return Result<UserDto>.Failure($"Role must be one of: {string.Join(", ", AppRoles.All)}.");
+            if (request.Role != AppRoles.Admin && !request.PropertyId.HasValue)
+                return Result<UserDto>.Failure("PropertyId is required unless the account is an admin.");
 
             // Unique login identity — proactive check so the invariant holds on
             // every provider (the InMemory test provider does not enforce the
@@ -63,8 +65,7 @@ namespace Aquri.Application.Users
                 if (!string.IsNullOrWhiteSpace(request.Department) || !string.IsNullOrWhiteSpace(request.Phone))
                     user.UpdateProfile(request.Name, request.Department, request.Phone);
 
-                if (request.PropertyId.HasValue)
-                    user.AssignProperty(request.PropertyId.Value);
+                user.AssignProperty(request.PropertyId);
 
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync(cancellationToken);
