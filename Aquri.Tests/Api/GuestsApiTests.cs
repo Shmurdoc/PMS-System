@@ -7,12 +7,12 @@ namespace Aquri.Tests.Api
     {
         public GuestsApiTests(AquriApiFactory factory) : base(factory) { }
 
-        private static object NewGuest(string email, string name = "WS2 Guest") =>
-            new { name, email, phone = "+27111111111", idNumber = "9001015800089", nationality = "South African" };
+        private static object NewGuest(string email, int propertyId, string name = "WS2 Guest") =>
+            new { name, email, propertyId, phone = "+27111111111", idNumber = "9001015800089", nationality = "South African" };
 
-        private async Task<int> CreateGuestAsync(HttpClient client, string email)
+        private async Task<int> CreateGuestAsync(HttpClient client, string email, int propertyId)
         {
-            var response = await client.PostAsync("/api/v1/guests", JsonBody(NewGuest(email)));
+            var response = await client.PostAsync("/api/v1/guests", JsonBody(NewGuest(email, propertyId)));
             response.EnsureSuccessStatusCode();
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
             return doc.RootElement.GetProperty("data").GetProperty("id").GetInt32();
@@ -35,7 +35,8 @@ namespace Aquri.Tests.Api
                 }));
             response.EnsureSuccessStatusCode();
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            return doc.RootElement.GetProperty("data").GetProperty("id").GetInt32();
+            // Everything downstream (rooms, guests, bookings, tags) points at the tenant id.
+            return doc.RootElement.GetProperty("data").GetProperty("propertyId").GetInt32();
         }
 
         private async Task<int> CreateRoomAsync(HttpClient client, int propertyId, string number)
@@ -51,7 +52,7 @@ namespace Aquri.Tests.Api
         public async Task Delete_Unreferenced_Guest_Returns_204_Then_404()
         {
             var client = await AdminClientAsync();
-            var guestId = await CreateGuestAsync(client, "ws2.lonely@nexus.com");
+            var guestId = await CreateGuestAsync(client, "ws2.lonely@nexus.com", 1);
 
             var delete = await client.DeleteAsync($"/api/v1/guests/{guestId}");
             delete.StatusCode.Should().Be(HttpStatusCode.NoContent);
@@ -65,7 +66,7 @@ namespace Aquri.Tests.Api
             var client = await AdminClientAsync();
             var propertyId = await CreatePropertyAsync(client, 601);
             var roomId = await CreateRoomAsync(client, propertyId, "901");
-            var guestId = await CreateGuestAsync(client, "ws2.booked@nexus.com");
+            var guestId = await CreateGuestAsync(client, "ws2.booked@nexus.com", propertyId);
 
             var booking = await client.PostAsync("/api/v1/bookings", JsonBody(new
             {

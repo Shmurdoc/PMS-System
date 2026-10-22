@@ -24,7 +24,8 @@ namespace Aquri.Tests.Api
                 }));
             response.EnsureSuccessStatusCode();
             using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
-            return doc.RootElement.GetProperty("data").GetProperty("id").GetInt32();
+            // Everything downstream (rooms, guests, bookings, tags) points at the tenant id.
+            return doc.RootElement.GetProperty("data").GetProperty("propertyId").GetInt32();
         }
 
         private async Task<int> CreateRoomAsync(HttpClient client, int propertyId, string number)
@@ -36,12 +37,13 @@ namespace Aquri.Tests.Api
             return doc.RootElement.GetProperty("data").GetProperty("id").GetInt32();
         }
 
-        private async Task<int> CreateGuestAsync(HttpClient client, string email)
+        private async Task<int> CreateGuestAsync(HttpClient client, string email, int propertyId)
         {
             var response = await client.PostAsync("/api/v1/guests", JsonBody(new
             {
                 name = "Booking Guest",
                 email,
+                propertyId,
                 phone = "+27222222222",
                 idNumber = "8502025800082",
                 nationality = "South African"
@@ -84,7 +86,7 @@ namespace Aquri.Tests.Api
             var client = await AdminClientAsync();
             var propertyId = await CreatePropertyAsync(client, 701);
             var roomId = await CreateRoomAsync(client, propertyId, "910");
-            var guestId = await CreateGuestAsync(client, "ws2.bk.free@nexus.com");
+            var guestId = await CreateGuestAsync(client, "ws2.bk.free@nexus.com", propertyId);
             var bookingId = await CreateBookingAsync(client, propertyId, roomId, guestId,
                 "2026-12-10T00:00:00", "2026-12-14T00:00:00");
 
@@ -103,8 +105,8 @@ namespace Aquri.Tests.Api
             var client = await AdminClientAsync();
             var propertyId = await CreatePropertyAsync(client, 702);
             var roomId = await CreateRoomAsync(client, propertyId, "911");
-            var guestA = await CreateGuestAsync(client, "ws2.bk.a@nexus.com");
-            var guestB = await CreateGuestAsync(client, "ws2.bk.b@nexus.com");
+            var guestA = await CreateGuestAsync(client, "ws2.bk.a@nexus.com", propertyId);
+            var guestB = await CreateGuestAsync(client, "ws2.bk.b@nexus.com", propertyId);
             var bookingA = await CreateBookingAsync(client, propertyId, roomId, guestA,
                 "2026-12-10T00:00:00", "2026-12-14T00:00:00");
             await CreateBookingAsync(client, propertyId, roomId, guestB,

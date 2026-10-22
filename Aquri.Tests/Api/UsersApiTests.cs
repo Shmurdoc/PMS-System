@@ -9,7 +9,7 @@ namespace Aquri.Tests.Api
 
         private static object NewUser(string email, string name = "WS2 Test User",
             string password = "secret123", string role = "housekeeping") =>
-            new { email, name, password, role, department = "Housekeeping", phone = "+27123456789" };
+            new { email, name, password, role, department = "Housekeeping", phone = "+27123456789", propertyId = 1 };
 
         [Fact]
         public async Task List_As_Admin_Returns_Users_Without_Password_Fields()

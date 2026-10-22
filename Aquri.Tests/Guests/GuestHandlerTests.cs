@@ -31,7 +31,7 @@ namespace Aquri.Tests.Guests
         public async Task Create_Guest_And_Return_Dto()
         {
             var handler = new CreateGuestHandler(Context);
-            var command = new CreateGuestCommand("Jane Doe", "jane@mail.com", "0820000000", "9001015800089", "South African");
+            var command = new CreateGuestCommand("Jane Doe", "jane@mail.com", "0820000000", "9001015800089", "South African", PropertyId: 1);
 
             var result = await handler.Handle(command, CancellationToken.None);
 
@@ -47,7 +47,7 @@ namespace Aquri.Tests.Guests
         public async Task Fail_On_Empty_Name()
         {
             var handler = new CreateGuestHandler(Context);
-            var command = new CreateGuestCommand("", "jane@mail.com", "0820000000", "9001015800089", "South African");
+            var command = new CreateGuestCommand("", "jane@mail.com", "0820000000", "9001015800089", "South African", PropertyId: 1);
 
             var result = await handler.Handle(command, CancellationToken.None);
 
@@ -62,7 +62,7 @@ namespace Aquri.Tests.Guests
         public async Task Update_Existing_Guest()
         {
             var created = await new CreateGuestHandler(Context).Handle(
-                new CreateGuestCommand("Jane Doe", "jane@mail.com", "0820000000", "9001015800089", "South African"),
+                new CreateGuestCommand("Jane Doe", "jane@mail.com", "0820000000", "9001015800089", "South African", PropertyId: 1),
                 CancellationToken.None);
 
             var handler = new UpdateGuestHandler(Context);
@@ -97,9 +97,9 @@ namespace Aquri.Tests.Guests
         public async Task Filter_By_Search_Term()
         {
             await new CreateGuestHandler(Context).Handle(
-                new CreateGuestCommand("Jane Doe", "jane@mail.com", "0820000000", "9001015800089", "SA"), CancellationToken.None);
+                new CreateGuestCommand("Jane Doe", "jane@mail.com", "0820000000", "9001015800089", "SA", PropertyId: 1), CancellationToken.None);
             await new CreateGuestHandler(Context).Handle(
-                new CreateGuestCommand("John Roe", "john@mail.com", "0830000000", "8502025800080", "SA"), CancellationToken.None);
+                new CreateGuestCommand("John Roe", "john@mail.com", "0830000000", "8502025800080", "SA", PropertyId: 1), CancellationToken.None);
 
             var handler = new GetGuestsHandler(Context);
 

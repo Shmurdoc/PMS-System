@@ -7,12 +7,13 @@ namespace Aquri.Tests.Api
     {
         public InvoicesApiTests(AquriApiFactory factory) : base(factory) { }
 
-        private async Task<int> CreateGuestAsync(HttpClient client, string email)
+        private async Task<int> CreateGuestAsync(HttpClient client, string email, int propertyId)
         {
             var response = await client.PostAsync("/api/v1/guests", JsonBody(new
             {
                 name = "Invoice Guest",
                 email,
+                propertyId,
                 phone = "+27333333333",
                 idNumber = "7903035800085",
                 nationality = "South African"
@@ -48,7 +49,7 @@ namespace Aquri.Tests.Api
         public async Task Delete_Returns_204_Then_404()
         {
             var client = await AdminClientAsync();
-            var guestId = await CreateGuestAsync(client, "ws2.inv.bye@nexus.com");
+            var guestId = await CreateGuestAsync(client, "ws2.inv.bye@nexus.com", 1);
             var invoiceId = await CreateInvoiceAsync(client, guestId);
 
             var delete = await client.DeleteAsync($"/api/v1/invoices/{invoiceId}");
