@@ -733,6 +733,12 @@ function App() {
   const [selectedPropertyId, setSelectedPropertyId] = useState<string>('all');
   
   const { properties, user } = useAppStore();
+  const canViewAllProperties = user
+    ? (ROLE_PERMISSIONS[user.role as UserRole]?.viewAllProperties ?? false)
+    : false;
+  const assignedProperty = user?.propertyId
+    ? properties.find((p) => p.propertyId === user.propertyId)
+    : undefined;
   const userInitials = user?.name
     ? user.name.split(/\s+/).map((part) => part[0]).join('').slice(0, 2).toUpperCase()
     : '?';
@@ -746,6 +752,11 @@ function App() {
     document.documentElement.setAttribute('data-theme', darkMode ? 'dark' : 'light');
     localStorage.setItem('nexus_theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
+
+  useEffect(() => {
+    if (canViewAllProperties) return;
+    if (user?.propertyId) setSelectedPropertyId(user.propertyId);
+  }, [canViewAllProperties, user?.propertyId]);
 
   // Login handler — API-first; demo credentials fall back to offline mode.
   const handleLogin = async (email: string, password: string): Promise<void> => {
@@ -916,7 +927,7 @@ function App() {
     
     const currentProperty = selectedPropertyId === 'all' 
       ? null 
-      : properties.find((p) => p.id === selectedPropertyId);
+      : properties.find((p) => p.propertyId === selectedPropertyId);
     
     const today = new Date().toISOString().split('T')[0];
     const activeBookings = filteredBookings.filter(b => b.status === 'checked-in' || b.status === 'confirmed').length;
@@ -1307,20 +1318,27 @@ function App() {
 
             <div className="flex items-center gap-2">
               {/* Property Selector */}
-              <div className="relative">
-                <select
-                  value={selectedPropertyId}
-                  onChange={(e) => setSelectedPropertyId(e.target.value)}
-                  aria-label="Select property"
-                  className="appearance-none pl-2.5 pr-7 py-1.5 bg-muted border border-border rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring/50 cursor-pointer"
-                >
-                  <option value="all">{properties.length} Properties</option>
-                  {properties.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
-                </select>
-                <Building2 className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" aria-hidden="true" />
-              </div>
+              {canViewAllProperties ? (
+                <div className="relative">
+                  <select
+                    value={selectedPropertyId}
+                    onChange={(e) => setSelectedPropertyId(e.target.value)}
+                    aria-label="Select property"
+                    className="appearance-none pl-2.5 pr-7 py-1.5 bg-muted border border-border rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring/50 cursor-pointer"
+                  >
+                    <option value="all">{properties.length} Properties</option>
+                    {properties.map(p => (
+                      <option key={p.id} value={p.propertyId}>{p.name}</option>
+                    ))}
+                  </select>
+                  <Building2 className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" aria-hidden="true" />
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 px-2.5 py-1.5 bg-muted border border-border rounded-lg text-xs font-medium" title="Your property">
+                  <Building2 className="w-3 h-3 text-muted-foreground" aria-hidden="true" />
+                  <span>{assignedProperty?.name ?? 'No property'}</span>
+                </div>
+              )}
 
               {/* Search */}
               <button
