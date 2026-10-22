@@ -109,7 +109,7 @@ const role = useAppStore((s) => s.user?.role);
   const canManage = role === 'admin' || role === 'manager';
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(null);
+  const [selectedPropertyId, setSelectedPropertyId] = useState<string | null>(me?.propertyId ?? null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [showMaintenance, setShowMaintenance] = useState(false);
@@ -129,9 +129,10 @@ const role = useAppStore((s) => s.user?.role);
   const [roomErrors, setRoomErrors] = useState<Record<string, string>>({});
 
   // ── derived data ──────────────────────────────────────────────────────────
-  const currentProperty = selectedPropertyId ? properties.find(p => p.id === selectedPropertyId) : properties[0];
+  const currentProperty = selectedPropertyId ? properties.find(p => p.propertyId === selectedPropertyId) : properties[0];
+  const visibleProperties = isAdmin ? properties : properties.filter(p => p.propertyId === me?.propertyId);
   const propertyRooms = useMemo(
-    () => currentProperty ? rooms.filter(r => r.propertyId === currentProperty.id) : [],
+    () => currentProperty ? rooms.filter(r => r.propertyId === currentProperty.propertyId) : [],
     [currentProperty, rooms]
   );
 
@@ -222,6 +223,7 @@ const role = useAppStore((s) => s.user?.role);
       const newId = 'PROP' + Date.now().toString(36).toUpperCase();
       addProperty({
         id: newId,
+        propertyId: newId,
         name: propForm.name.trim(),
         address: propForm.address.trim(),
         image: propForm.image,
@@ -311,7 +313,7 @@ const role = useAppStore((s) => s.user?.role);
       const newId = 'RM' + Date.now().toString(36).toUpperCase();
       addRoom({
         id: newId,
-        propertyId: currentProperty!.id,
+        propertyId: currentProperty!.propertyId,
         number: roomForm.number.trim(),
         type: roomForm.type,
         floor: roomForm.floor,
@@ -349,11 +351,12 @@ const role = useAppStore((s) => s.user?.role);
   const handleDeleteConfirm = () => {
     if (!showDeleteConfirm) return;
     if (showDeleteConfirm.type === 'property') {
+      const prop = properties.find(p => p.id === showDeleteConfirm.id);
       // Delete all rooms for this property
-      const propRooms = rooms.filter(r => r.propertyId === showDeleteConfirm.id);
+      const propRooms = prop ? rooms.filter(r => r.propertyId === prop.propertyId) : [];
       propRooms.forEach(r => deleteRoom(r.id));
       deleteProperty(showDeleteConfirm.id);
-      if (selectedPropertyId === showDeleteConfirm.id) setSelectedPropertyId(null);
+      if (prop && selectedPropertyId === prop.propertyId) setSelectedPropertyId(null);
       toast.success('Property and all its rooms deleted');
     } else {
       deleteRoom(showDeleteConfirm.id);
@@ -420,17 +423,17 @@ const role = useAppStore((s) => s.user?.role);
 
       {/* Property Selector */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {properties.map((property) => {
-          const isSelected = selectedPropertyId === property.id || (!selectedPropertyId && properties[0]?.id === property.id);
-          const propRoomCount = rooms.filter(r => r.propertyId === property.id).length;
-          const propOccupied = rooms.filter(r => r.propertyId === property.id && r.status === 'occupied').length;
+        {visibleProperties.map((property) => {
+          const isSelected = selectedPropertyId === property.propertyId || (!selectedPropertyId && properties[0]?.propertyId === property.propertyId);
+          const propRoomCount = rooms.filter(r => r.propertyId === property.propertyId).length;
+          const propOccupied = rooms.filter(r => r.propertyId === property.propertyId && r.status === 'occupied').length;
           return (
             <motion.div
               key={property.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               className={`bg-card border border-border rounded-xl p-4 cursor-pointer transition-colors hover:border-primary/50 ${isSelected ? 'border-primary ring-2 ring-primary/20' : ''}`}
-              onClick={() => setSelectedPropertyId(property.id)}
+              onClick={() => setSelectedPropertyId(property.propertyId)}
             >
               <div className="aspect-video bg-muted rounded-lg mb-3 overflow-hidden">
                 <img src={property.image} alt={property.name} className="w-full h-full object-cover" />

@@ -370,6 +370,7 @@ export interface CreateUserInput {
   role: string;
   department?: string;
   phone?: string;
+  propertyId?: number | null;
 }
 
 /** Sparse — Name always sent (handler requires it); null keeps current server-side. */
@@ -379,6 +380,7 @@ export interface UpdateUserInput {
   phone?: string | null;
   role?: string;
   password?: string | null;
+  propertyId?: number | null;
 }
 
 export function createUser(input: CreateUserInput): Promise<ApiUser> {
@@ -391,6 +393,7 @@ export function createUser(input: CreateUserInput): Promise<ApiUser> {
       role: input.role,
       department: input.department ?? null,
       phone: input.phone ?? null,
+      propertyId: input.propertyId ?? null,
     },
   });
 }
@@ -406,6 +409,7 @@ export function updateUser(id: number, input: UpdateUserInput): Promise<ApiUser>
       phone: input.phone ?? null,
       role: input.role ?? null,
       password: input.password ?? null,
+      propertyId: input.propertyId ?? null,
     },
   });
 }
@@ -422,6 +426,7 @@ export interface CreateGuestInput {
   phone: string;
   idNumber: string;
   nationality: string;
+  propertyId?: number;
 }
 
 /** Name, phone, nationality, notes always sent (handler overwrites them unconditionally). */
@@ -445,6 +450,7 @@ export function createGuest(input: CreateGuestInput): Promise<ApiGuest> {
       phone: input.phone,
       idNumber: input.idNumber,
       nationality: input.nationality,
+      propertyId: input.propertyId,
     },
   });
 }

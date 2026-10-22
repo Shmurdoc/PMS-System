@@ -133,6 +133,7 @@ export function seedDatabase(): void {
   const properties = [
     {
       id: '1',
+      propertyId: '1',
       name: 'Nexus Grand Hotel',
       address: '1 Luxury Lane, Cape Town, 8001, South Africa',
       totalRooms: 50,
@@ -148,6 +149,7 @@ export function seedDatabase(): void {
     },
     {
       id: '2',
+      propertyId: '2',
       name: 'Nexus Beach Resort',
       address: '100 Beach Road, Durban, 4056, South Africa',
       totalRooms: 30,
@@ -163,6 +165,7 @@ export function seedDatabase(): void {
     },
     {
       id: '3',
+      propertyId: '3',
       name: 'Nexus City Lodge',
       address: '50 Urban Street, Johannesburg, 2001, South Africa',
       totalRooms: 20,
@@ -205,7 +208,7 @@ export function seedDatabase(): void {
 
       rooms.push({
         id: `RM-${String(roomId++).padStart(3, '0')}`,
-        propertyId: property.id,
+        propertyId: property.propertyId,
         number: `${Math.floor((i - 1) / 10 + 1)}${String(((i - 1) % 10) + 1).padStart(2, '0')}`,
         type,
         floor: Math.floor((i - 1) / 10) + 1,
@@ -277,7 +280,7 @@ export function seedDatabase(): void {
       guestPhone: guest.phone,
       guestSegment: guest.segment,
       propertyId: room.propertyId,
-      propertyName: properties.find(p => p.id === room.propertyId)?.name || '',
+      propertyName: properties.find(p => p.propertyId === room.propertyId)?.name || '',
       roomId: room.id,
       roomNumber: room.number,
       roomType: room.type,

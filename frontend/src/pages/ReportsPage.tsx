@@ -194,7 +194,7 @@ const ReportsPage = () => {
   /* ─── Occupancy by Property ─── */
   const occupancyByProperty = useMemo(() => {
     return properties.map((p, idx) => {
-      const propRooms = rooms.filter(r => r.propertyId === p.id);
+      const propRooms = rooms.filter(r => r.propertyId === p.propertyId);
       const occ = propRooms.filter(r => r.status === 'occupied').length;
       return {
         name: p.name.length > 20 ? p.name.substring(0, 18) + '...' : p.name,
