@@ -8,6 +8,7 @@ using Aquri.Application.Rooms.Commands;
 using Aquri.Domain.Entities;
 using AutoMapper;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Rooms.Handlers
 {
@@ -26,7 +27,7 @@ namespace Aquri.Application.Rooms.Handlers
         public async Task<Result<RoomDto>> Handle(CreateRoomCommand request, CancellationToken cancellationToken)
         {
             var property = await _context.Properties
-                .FindAsync(request.PropertyId, cancellationToken);
+                .FirstOrDefaultAsync(p => p.PropertyId == request.PropertyId, cancellationToken);
 
             if (property == null)
             {
