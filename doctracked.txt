@@ -1,0 +1,179 @@
+doctracked.txt
+This file is a working reference, written while the app was running and each claim was checked in the browser or against the API directly. Three demo accounts cover the roles that matter day to day: admin, manager and front desk (called "user" everywhere below). Everything in here was observed, not assumed. Where the UI and the server disagree, the disagreement is listed under "Verified gaps".
+
+Account setup
+----------------------------
+The dev database seeds three staff accounts, all on property 1:
+- admin@nexus.com / admin123
+- manager@nexus.com / manager123
+- front@nexus.com / front123
+
+The login screen asks for email and password (fields say "Enter your email" and "Enter your password", button says "Sign In"). After sign in the app lands on the dashboard and the sidebar only shows the items that role is allowed to open. If a stale link or a shortcut sends a role to a page it cannot use, the app silently falls back to the dashboard.
+
+Login calls POST /api/v1/auth/login. The response wraps the token under "data", and the token is stored in localStorage under the key aquri_token. /auth/me then returns id, email, name, role, department, phone and created. Note it does not return propertyId, which turns out to matter later (see gaps).
+
+What the roles can see at a glance
+----------------------------
+admin      22 sidebar items. Everything below.
+manager    20 sidebar items. Everything except Admin and Settings.
+front_desk 12 sidebar items. Dashboard, Bookings, Guests, Check-In/Out, Rooms, Rates, Properties, Facility, Staff & RFID, Staff Schedule, Tickets, Messaging.
+
+Only admin gets the property dropdown in the top bar. When admin is signed in it reads "11 Properties" and lists every property in the dev environment (Nexus Grand Hotel plus the QA Hotel test properties left over from end to end test runs). admin can switch scope at any point and every list on every page follows that choice.
+
+Staff roles instead get a small chip in the top bar meant to show "your property". For manager and front_desk this chip currently says "No property". The reason is verified: /auth/me returns no propertyId, so the chip cannot resolve a name. Not for lack of property, the drop-down variant of the component is fine.
+
+The manager is scoped server side. A signed in manager requesting the property list gets exactly one record back: Nexus Grand Hotel, tenant propertyId 1. The server handles the narrowing; the UI just renders whatever it gets.
+
+The admin's day
+----------------------------
+Dashboard
+Eight stat cards, a monthly summary and an AI recommendation block with "Apply Recommendation" and "View Details" buttons. There is also an Export button here. Numbers are computed from the loaded store, so they change with the selected property.
+
+Bookings
+"New Booking" opens the booking form. "Export CSV" writes the visible table. Row actions allow status changes and deposit recording (POST /bookings/{id}/deposit), all of which the server allows for admin, manager and front desk. Deleting a booking is server restricted to admin and manager, and the UI respects that.
+
+Guests
+"Add Guest" plus row actions for viewing and editing. Guest deletion is an admin and manager capability at the API level.
+
+Check-In/Out
+Arrivals, in-house and departures with a "Self-Service Kiosk" and "Print Queue". One admin extra on this page: an approval path for requests that staff roles cannot approve. Invoices and payments created here carry the tenant propertyId, per the earlier scoping work.
+
+Rooms
+"Add Room" is available, and each room card has status and price controls. Only admin can delete a room, both in code and in the UI.
+
+Rates
+"New Rate Plan" opens a full form: plan name, season, minimum stay, base rate in rand, room types, restrictions. Saving goes to /rateplans, which accepts admin and manager only. So admin can proceed end to end.
+
+Properties
+Property cards with "Add Property" and "Add Room", plus a "Maintenance (0)" counter. Property deletion is admin only.
+
+Inventory & POS
+Tabs for Inventory, Point Of Sale and Suppliers. "Add Item" and "Open POS" buttons, plus an export. Admin and manager both manage; housekeeping also has write access at the API even though staff below front desk rarely see this page.
+
+Finances
+"Add Expense", tabs for Overview, Invoices, Payments and Expenses. Approving and rejecting expenses is admin and manager only. Refunding a payment likewise. Deleting an expense or an integration is a single admin action at the API.
+
+Staff & RFID
+Tag list (9 rows are seeded), attendance, "Create Tag", "Manual Check-in" and tap endpoints. Issue and revoke tags are admin and manager capabilities.
+
+Payroll
+"New Payroll Run" opens a period picker. The run is built from active pay packages and the hours clocked in that period. Salaried staff are paid their package; hourly staff are paid for clocked hours, capped at their contracted month, with overtime at the package multiplier. Approving is admin only and the run must be approved by someone other than whoever created it, so the button turns into "Needs a second admin" when you are looking at your own draft. Paying is the last step and cannot be undone. Payslips open per run and show base, overtime, allowances, gross, PAYE, UIF, other deductions and net. The pay package editor sits below the runs table; a new package starts today and retires the old one, while historic payslips keep the rate they were priced at.
+
+Employee Profiles
+Roster view with staff names, roles and status flags. Editing profiles happens through the Admin page, since only admin can POST/PUT/DELETE /users.
+
+Staff Schedule
+"Add Shift" and shift cards for the week. Every write on /shifts is admin and manager; there are no staff-side write endpoints at all.
+
+Tickets
+"Create Ticket". Any authed staff role can create and comment and change status. Assigning a ticket is admin and manager.
+
+Messaging
+Inbox with threads, "New Message". Reads and writes to message content are open to any signed in user; only deleting a message is restricted.
+
+AI Enhancements
+"AI Chat" and "AI Insights". Insights, agents and workflows are admin and manager resources.
+
+Admin page ("User Management")
+The only place user accounts are managed. Table shows three users: the seeded demo team. Create, update and delete user accounts are admin-only at the API. There is no user impersonation anywhere in the system, so admin cannot sign in as another user to try their view. Roles are fixed at creation time.
+
+Integrations
+"Add Integration", with sync and delete. Sync is an admin/manager action, delete an admin one.
+
+Analytics / Reports / Forecasting
+Charts plus "Refresh Model", "Generate Report" and export buttons. These read the same scoping, so the selected property filters what is crunched.
+
+Facility
+Electricity records, zones and maintenance, "Add Record", plus an alerts panel. Writes to /electricity are open to front_desk, housekeeping and maintenance except delete which belongs to admin.
+
+Settings
+Tabs including General. Property scoped settings; admin changes things manager would in Settings only through this page or the property actions.
+
+The manager's day
+----------------------------
+Same surface as admin minus two items: the Admin page and Settings. Integrations stays visible.
+
+Practically this means the manager runs NEXUS Grand Hotel day to day: bookings, guests, check-in, rooms, rates, properties (everything except property deletion), inventory, finances, staff and RFID, schedules, tickets, messaging and the AI panel. What the manager cannot do that admin can:
+- Manage user accounts (no User Management admin page).
+- Delete properties, rooms, bookings, guests, expenses, integrations. All are admin-gated, some are admin+manager. Booking, guest and invoice deletes are admin AND manager, so the manager really loses only the true admin-only items: single-user management and property, room and expense deletion.
+- Delete electricity records, integrations, inventory overage. Admin only.
+- See other properties: the manager only ever gets their own list from the server.
+
+Employee Profiles is visible (read/roster). Staff Schedule is visible and the manager holds every write right on /shifts. RFID: the manager can issue and revoke tags ("Create Tag" appears in the browser), which front desk cannot. Payroll: the manager can set up the draft and cancel an unpaid run, but cannot approve or pay. On their own draft the row reads "Awaiting admin".
+
+The front desk user's day
+----------------------------
+Sidebar shows exactly these 12 items, verified by rendering:
+Dashboard, Bookings, Guests, Check-In/Out, Rooms, Rates, Properties, Facility, Staff & RFID, Staff Schedule, Tickets, Messaging.
+
+Page by page as seen signed in as front@nexus.com:
+
+Dashboard
+Same card layout as admin but without edit powers; includes AI recommendations with "Apply Recommendation" / "View Details" buttons and a "View All" action. AI commands themselves are gated off for this role in the permission table, but the recommendation card still shows. See gaps.
+
+Bookings
+"New Booking" and "Export CSV", row actions, and the totals strip (Total / Pending / Checked In / Arriving etc.). No delete booking.
+
+Guests
+"Add Guest", and per guest a View and an Edit action. No delete.
+
+Check-In/Out
+"Self-Service Kiosk", "Print Queue", and the Arrivals (0) / In-House (0) / Departures (0) tabs. Working title "Checkin" heading (internally the page is called that, navigation label says Check-In/Out).
+
+Rooms
+Read only. 0 Total Rooms in the current dev DB, filters for types (Standard, Suite, Deluxe, Executive) render but there is nothing to manage. "Add Room" correctly does not appear.
+
+Rates
+This is the unexpected one: "New Rate Plan" IS rendered, and clicking it opens the full create form (Plan Name, Season Low/Shoulder/High/Peak, Min Stay, Base Rate in rand, room types, five restrictions). Saving would POST to /rateplans, which is admin+manager only, so the server refuses with 403. The button should not exist for this role. Documented as a gap.
+
+Properties
+A "Maintenance (0)" chip, room availability stats, nothing to edit. Property creation and editing are correctly hidden.
+
+Facility
+Electricity and zones, "Add Record" works (writes allowed for front desk while deletes are admin, verified in code).
+
+Staff & RFID
+"Manual Check-in", RFID Tags (9), Attendance tab, "Tap Station". Cannot create or revoke tags. Taps (staff and guests) are allowed, matching the API.
+
+Staff Schedule
+Reads shifts. "Today" and "Export CSV" render, no "Add Shift". Every write on shifts is admin/manager, and the UI agrees.
+
+Tickets
+"Create Ticket", status filter dropdowns, comment flows. Assigning is not offered (admin/manager API right).
+
+Messaging
+Thread list with message history, "New Message" works. Deletion of messages is admin/manager.
+
+No Finances, no Payroll, no Inventory & POS, no Analytics or Reports or Forecasting, no Employee Profiles, no AI Enhancements, no Admin, no Integrations, no Settings appear in the sidebar for front desk, and going there by URL falls back to the dashboard. If you ask the API for payslips as front desk, it returns only your own, and only from runs that have been approved or paid.
+
+Verified gaps
+----------------------------
+These are things I checked twice because the UI and the server did not agree. Items 1 to 3 are fixed and verified in the browser. Item 4 was wrong when I wrote it, and is corrected below.
+
+1. "No property" chip for staff. Fixed.
+/auth/me did not return propertyId, so the top bar chip resolved nothing and printed "No property" for manager and front desk. The DTO now carries propertyId (login and /auth/me both), the store maps it, and the chip shows Nexus Grand Hotel. The dashboard subtitle uses the same value now, which also fixes item 3.
+
+2. "New Rate Plan" showed for front desk. Fixed.
+The full create modal used to open even though POST /rateplans is admin and manager only, so the save failed with 403 after the user had filled the form. The button, the empty-state button, and the per-card Edit, Duplicate, and Delete actions are now gated by a role check in RateManagement.tsx. Front desk sees the plans read-only.
+
+3. Dashboard header for staff read "All Properties Overview". Fixed.
+The subtitle now falls back from the selected property to the signed-in user's own property, so staff see their hotel name and admins with "all" selected still see the overview label.
+
+4. The logged-in flag. Corrected, not a bug.
+When I first wrote this I claimed the flag was set even when login failed with a 500. Reading the code again, that is not what happens: handleLogin only sets nexus_logged_in after a successful API call, or after the explicit demo fallback, which is a deliberate offline mode. The fallback is worth knowing about because demo credentials still work with the API down, but it is not a broken flag.
+
+Non bug notes worth remembering
+- The dev database right now has 0 rooms and 0 bookings under property 1, which is why manager and front desk see zeroed stats. The seed data grew on the QA Hotel test properties created by earlier test runs, so the "empty branch" is real data, not a hydration failure. I checked the API directly: admin querying rooms/property/1 also gets an empty array.
+- The "your" property id and the primary key are two different values. Tenant id (propertyId) is what list endpoints and scoped writes accept. Primary key id is for property update/delete and React keys. A lot of this session was spent making the server enforce that split, and it now behaves as designed: a request with no propertyId gets its property resolved by the handler, and a request carrying someone else's propertyId is rejected with 403 before the handler even runs.
+
+Server enforcement quick reference (checked against Controllers)
+----------------------------
+[Any signed in user]      me, properties + rooms + rateplans + inventory + messages + attendance + shifts + tags READS, user list
+[admin, manager]          create/update/delete of most business objects; refunds; expense approve/reject; tag issue/revoke; shift writes; ticket assign; user READS; messages delete; invoice/booking/guest deletes; payroll runs and packages READ
+[admin only]              user create/update/delete; property delete; room delete; expense delete; integration delete; electricity record delete; pay package writes; payroll approve and pay
+[admin, manager, front_desk]     bookings CRUD minus delete, invoices minus delete, payments minus refund, guests minus delete, attendance writes, expense create, ticket writes, rfid taps
+[+ housekeeping]                 inventory writes, electricity create
+[+ maintenance]                  maintenance requests, ticket writes, electricity create
+Property scope rule              any scoped request either omits propertyId (handler fills it) or must belong to the caller's property, otherwise 403 before the handler runs
+
+End of file
