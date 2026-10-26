@@ -1001,7 +1001,7 @@ function App() {
       {/* Dashboard Header */}
       <PageHeader
         title="Dashboard"
-        subtitle={currentProperty ? currentProperty.name : 'All Properties Overview'}
+        subtitle={currentProperty?.name ?? assignedProperty?.name ?? 'All Properties Overview'}
         meta={<p>{new Date().toLocaleDateString('en-ZA', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>}
       />
 
