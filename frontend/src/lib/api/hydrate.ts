@@ -3,7 +3,7 @@
 // ============================================
 // Loads every collection the store persists, replacing whatever the store
 // already holds with live data. Failure policy (per collection): keep the
-// current rows, record the failure, keep going — one broken endpoint never
+// current rows, record the failure, keep going  -  one broken endpoint never
 // blanks the app. A successful fetch with zero rows REPLACES the store
 // (empty is a valid truth).
 //
@@ -161,9 +161,13 @@ export async function hydrateFromApi(): Promise<HydrateResult> {
 
   const store = useAppStore.getState();
 
-  // Audit-trail reads are admin/manager only — other roles skip the fetch
+  // Audit-trail reads are admin/manager only  -  other roles skip the fetch
   // instead of collecting a guaranteed 403 in `failed`.
-  const canReadAudit = getTokenRole() === 'admin' || getTokenRole() === 'manager';
+  const tokenRole = getTokenRole();
+  const canReadAudit = tokenRole === 'admin' || tokenRole === 'manager';
+  // Insights, workflows, and agents are admin/manager resources. Asking for
+  // them as front desk only produces a 403 on every login.
+  const canReadAi = tokenRole === 'admin' || tokenRole === 'manager';
 
   // Properties first. Their tenant ids key everything below.
   let propertiesDto: ApiProperty[] | undefined;
@@ -220,8 +224,8 @@ export async function hydrateFromApi(): Promise<HydrateResult> {
     settle('guests', fetchGuests(), failed),
     settle('maintenanceRequests', fetchMaintenanceRequests(), failed),
     settle('ratePlans', fetchRatePlans(), failed),
-    settle('aiInsights', fetchAiInsights(), failed),
-    settle('workflows', fetchWorkflows(), failed),
+    settle('aiInsights', canReadAi ? fetchAiInsights() : Promise.resolve(undefined), failed),
+    settle('workflows', canReadAi ? fetchWorkflows() : Promise.resolve(undefined), failed),
     settle('shifts', fetchShifts(), failed),
     settle('attendance', fetchAttendance(), failed),
     settle('messages', fetchMessages(), failed),
