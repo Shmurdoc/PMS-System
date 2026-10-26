@@ -67,6 +67,9 @@ namespace Aquri.Infrastructure.Persistence
         public DbSet<RfidTag> RfidTags => Set<RfidTag>();
         public DbSet<ElectricityRecord> ElectricityRecords => Set<ElectricityRecord>();
         public DbSet<Integration> Integrations => Set<Integration>();
+        public DbSet<EmployeeCompensation> EmployeeCompensations => Set<EmployeeCompensation>();
+        public DbSet<PayrollRun> PayrollRuns => Set<PayrollRun>();
+        public DbSet<Payslip> Payslips => Set<Payslip>();
 
         protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
         {
@@ -491,6 +494,76 @@ namespace Aquri.Infrastructure.Persistence
                 entity.HasOne<Booking>().WithMany().HasForeignKey(e => e.BookingId).OnDelete(DeleteBehavior.SetNull);
             });
 
+            modelBuilder.Entity<EmployeeCompensation>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.UserName).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.PayType).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.BaseAmount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.OvertimeMultiplier).HasColumnType("decimal(9,4)");
+                entity.Property(e => e.StandardHours).HasColumnType("decimal(9,2)");
+                entity.Property(e => e.Currency).IsRequired().HasMaxLength(3);
+                entity.HasIndex(e => e.PropertyId);
+                entity.HasIndex(e => new { e.PropertyId, e.UserId });
+                // One live package per person per property; history stays inactive.
+                entity.HasIndex(e => new { e.PropertyId, e.UserId })
+                    .HasDatabaseName("IX_EmployeeCompensations_OneActive")
+                    .IsUnique()
+                    .HasFilter("\"Active\" = true");
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<PayrollRun>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Status).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.TotalGross).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.TotalDeductions).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.TotalNet).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Currency).IsRequired().HasMaxLength(3);
+                entity.Property(e => e.CreatedBy).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.ApprovedBy).HasMaxLength(200);
+                entity.Property(e => e.PaidBy).HasMaxLength(200);
+                entity.Property(e => e.CancellationReason).HasMaxLength(500);
+                entity.HasIndex(e => e.PropertyId);
+                entity.HasIndex(e => new { e.PropertyId, e.PeriodStart, e.PeriodEnd })
+                    .HasDatabaseName("IX_PayrollRuns_UniquePeriod")
+                    .IsUnique()
+                    .HasFilter("\"Status\" <> 'cancelled'");
+                entity.HasMany(e => e.Payslips)
+                    .WithOne(p => p.PayrollRun!)
+                    .HasForeignKey(p => p.PayrollRunId)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
+            });
+
+            modelBuilder.Entity<Payslip>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.UserName).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.PayType).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.BaseRate).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.OvertimeMultiplier).HasColumnType("decimal(9,4)");
+                entity.Property(e => e.StandardHours).HasColumnType("decimal(9,2)");
+                entity.Property(e => e.HoursWorked).HasColumnType("decimal(9,2)");
+                entity.Property(e => e.OvertimeHours).HasColumnType("decimal(9,2)");
+                entity.Property(e => e.BaseAmount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.OvertimeAmount).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Allowances).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.GrossPay).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Paye).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Uif).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.OtherDeductions).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.TotalDeductions).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.NetPay).HasColumnType("decimal(18,2)");
+                entity.Property(e => e.Currency).IsRequired().HasMaxLength(3);
+                entity.Property(e => e.TaxYear).IsRequired().HasMaxLength(20);
+                entity.HasIndex(e => e.PropertyId);
+                entity.HasIndex(e => e.PayrollRunId);
+                entity.HasIndex(e => new { e.PayrollRunId, e.UserId }).IsUnique();
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
+            });
+
             modelBuilder.Entity<ElectricityRecord>(entity =>
             {
                 entity.HasKey(e => e.Id);
@@ -548,6 +621,9 @@ namespace Aquri.Infrastructure.Persistence
             modelBuilder.Entity<ElectricityRecord>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
             modelBuilder.Entity<RfidTag>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
             modelBuilder.Entity<Integration>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<EmployeeCompensation>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<PayrollRun>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<Payslip>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
             modelBuilder.Entity<User>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
             modelBuilder.Entity<Guest>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
         }

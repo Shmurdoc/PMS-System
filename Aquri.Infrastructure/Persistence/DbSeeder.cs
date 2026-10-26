@@ -65,6 +65,33 @@ namespace Aquri.Infrastructure.Persistence
                 logger.LogInformation("Assigned {Count} demo staff to property 1.", unscopedDemoStaff.Count);
             }
 
+            // Pay packages for the two scoped demo accounts, so payroll can be run
+            // on a fresh database without setup. An existing package is left alone.
+            if (!await db.EmployeeCompensations.AnyAsync())
+            {
+                var staff = await db.Users
+                    .Where(u => u.PropertyId == 1 && (u.Email == "manager@nexus.com" || u.Email == "front@nexus.com"))
+                    .ToListAsync();
+
+                foreach (var person in staff)
+                {
+                    var isManager = person.Email == "manager@nexus.com";
+                    db.EmployeeCompensations.Add(new EmployeeCompensation(
+                        1,
+                        person.Id,
+                        person.Name,
+                        "salary",
+                        isManager ? 32000m : 18500m,
+                        1.5m,
+                        EmployeeCompensation.DefaultStandardHours,
+                        new DateTime(2026, 1, 1),
+                        allowances: isManager ? 2500m : 1200m));
+                }
+
+                await db.SaveChangesAsync();
+                logger.LogInformation("Seeded {Count} demo pay packages.", staff.Count);
+            }
+
             if (!await db.Agents.AnyAsync())
             {
                 db.Agents.AddRange(
