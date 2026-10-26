@@ -50,6 +50,13 @@ import type {
   ApiUser,
   ApiWorkflow,
 } from './mappers';
+import type {
+  ApiCompensation,
+  ApiPayrollRun,
+  ApiPayslip,
+  CreatePayrollRunInput,
+  UpsertCompensationInput,
+} from './payrollTypes';
 
 // ---------- error ----------
 
@@ -1541,5 +1548,69 @@ export function tapGuestTag(propertyId: number, tagNumber: string): Promise<ApiG
   return unwrap<ApiGuestTapContext>('/rfidtags/tap/guest', {
     method: 'POST',
     body: { propertyId, tagNumber },
+  });
+}
+
+// ---------- payroll ----------
+
+export function fetchPayrollRuns(propertyId?: number | null, status?: string, year?: number): Promise<ApiPayrollRun[]> {
+  const params = new URLSearchParams();
+  if (propertyId != null) params.set('propertyId', String(propertyId));
+  if (status) params.set('status', status);
+  if (year != null) params.set('year', String(year));
+  const query = params.toString();
+  return unwrap<ApiPayrollRun[]>(`/payroll/runs${query ? `?${query}` : ''}`);
+}
+
+export function fetchPayrollRun(id: number): Promise<ApiPayrollRun> {
+  return unwrap<ApiPayrollRun>(`/payroll/runs/${id}`);
+}
+
+export function createPayrollRun(input: CreatePayrollRunInput): Promise<ApiPayrollRun> {
+  return unwrap<ApiPayrollRun>('/payroll/runs', {
+    method: 'POST',
+    body: {
+      propertyId: input.propertyId,
+      periodStart: input.periodStart,
+      periodEnd: input.periodEnd,
+      rebuildExisting: input.rebuildExisting ?? false,
+    },
+  });
+}
+
+export function approvePayrollRun(id: number): Promise<ApiPayrollRun> {
+  return unwrap<ApiPayrollRun>(`/payroll/runs/${id}/approve`, { method: 'POST' });
+}
+
+export function payPayrollRun(id: number): Promise<ApiPayrollRun> {
+  return unwrap<ApiPayrollRun>(`/payroll/runs/${id}/pay`, { method: 'POST' });
+}
+
+export function cancelPayrollRun(id: number, reason: string): Promise<ApiPayrollRun> {
+  return unwrap<ApiPayrollRun>(`/payroll/runs/${id}/cancel`, {
+    method: 'POST',
+    body: { reason },
+  });
+}
+
+export function fetchPayslips(propertyId?: number | null, userId?: number | null): Promise<ApiPayslip[]> {
+  const params = new URLSearchParams();
+  if (propertyId != null) params.set('propertyId', String(propertyId));
+  if (userId != null) params.set('userId', String(userId));
+  const query = params.toString();
+  return unwrap<ApiPayslip[]>(`/payroll/payslips${query ? `?${query}` : ''}`);
+}
+
+export function fetchCompensations(propertyId?: number | null, activeOnly = true): Promise<ApiCompensation[]> {
+  const params = new URLSearchParams();
+  if (propertyId != null) params.set('propertyId', String(propertyId));
+  params.set('activeOnly', String(activeOnly));
+  return unwrap<ApiCompensation[]>(`/payroll/compensations?${params.toString()}`);
+}
+
+export function upsertCompensation(input: UpsertCompensationInput): Promise<ApiCompensation> {
+  return unwrap<ApiCompensation>('/payroll/compensations', {
+    method: 'PUT',
+    body: input,
   });
 }

@@ -9,7 +9,7 @@ import {
   Moon, Sun, Sparkles,
   GitBranch, Workflow, Play, RefreshCw,
   Send, Paperclip, ArrowRight, Menu,
-  X, Box, Activity, MessageSquare, Brain, Package, LogOut, GripVertical
+  X, Box, Activity, MessageSquare, Brain, Package, LogOut, GripVertical, Banknote
 } from 'lucide-react';
 import { PieChart, Pie, Cell, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { toast } from 'sonner';
@@ -23,6 +23,7 @@ import Messaging from './pages/Messaging';
 import RfidManagement from './pages/RfidManagement';
 import StaffScheduling from './pages/StaffScheduling';
 import FinancialManagement from './pages/FinancialManagement';
+import PayrollPage from './pages/Payroll';
 import InventoryManagement from './pages/InventoryManagement';
 import FacilityManagement from './pages/FacilityManagement';
 import AIEnhancements from './pages/AIEnhancements';
@@ -868,6 +869,7 @@ function App() {
       label: 'Finance',
       items: [
         { id: 'finances', label: 'Finances', icon: Wallet, shortcut: 'F' },
+        { id: 'payroll', label: 'Payroll', icon: Banknote, shortcut: '' },
         { id: 'analytics', label: 'Analytics', icon: BarChart3, shortcut: 'A' },
         { id: 'reports', label: 'Reports', icon: FileText, shortcut: 'E' },
         { id: 'forecast', label: 'Forecasting', icon: TrendingUp, shortcut: 'O' },
@@ -1186,6 +1188,7 @@ function App() {
       case 'messaging': return <Messaging />;
       case 'staff-schedule': return <StaffScheduling />;
       case 'finances': return <FinancialManagement />;
+      case 'payroll': return <PayrollPage />;
       case 'inventory': return <InventoryManagement />;
       case 'facility': return <FacilityManagement />;
       case 'ai-enhancements': return <AIEnhancements />;

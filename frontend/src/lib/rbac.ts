@@ -253,7 +253,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermission> = {
     useAICommands: false,
     viewInventory: true,
     manageInventory: false,
-    viewPayroll: true,
+    viewPayroll: false,
     viewAllProperties: false,
   },
   guest: {
@@ -307,6 +307,7 @@ export function canAccessRoute(routeId: string): boolean {
     guests: ['viewGuests'],
     rooms: ['viewRooms'],
     finances: ['viewFinances'],
+    payroll: ['viewPayroll'],
     reports: ['viewReports'],
     staff: ['viewRfid'],
     'staff-schedule': ['viewSchedules'],
