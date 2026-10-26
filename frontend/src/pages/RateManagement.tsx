@@ -34,6 +34,7 @@ const emptyForm = {
 const RateManagementPage = () => {
   const { ratePlans, addRatePlan, updateRatePlan, deleteRatePlan, addAuditLog } = useAppStore();
   const me = useAppStore((s) => s.user);
+  const canManage = me?.role === 'admin' || me?.role === 'manager';
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all');
@@ -167,13 +168,15 @@ const RateManagementPage = () => {
           <h1 className="text-2xl font-bold">Rate Management</h1>
           <p className="text-muted-foreground">Manage room rates, seasonal pricing, and rate plans</p>
         </div>
-        <button
-          onClick={openCreate}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors"
-        >
-          <Plus className="w-4 h-4" />
-          New Rate Plan
-        </button>
+        {canManage && (
+          <button
+            onClick={openCreate}
+            className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            New Rate Plan
+          </button>
+        )}
       </div>
 
       {/* Stats */}
@@ -312,49 +315,51 @@ const RateManagementPage = () => {
               </div>
 
               {/* Actions */}
-              <div className="p-4 border-t border-border/30 flex gap-2">
-                {confirmDeleteId === rate.id ? (
-                  <>
-                    <button
-                      onClick={() => handleDelete(rate)}
-                      className="flex-1 py-2 bg-danger text-white rounded-lg hover:bg-danger/90 transition-colors flex items-center justify-center gap-2 text-sm"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                      Confirm delete
-                    </button>
-                    <button
-                      onClick={() => setConfirmDeleteId(null)}
-                      className="px-3 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors text-sm"
-                    >
-                      Cancel
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <button
-                      onClick={() => openEdit(rate)}
-                      className="flex-1 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors flex items-center justify-center gap-2 text-sm"
-                    >
-                      <Edit className="w-4 h-4" />
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleCopy(rate)}
-                      aria-label={`Duplicate ${rate.name}`}
-                      className="p-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => setConfirmDeleteId(rate.id)}
-                      aria-label={`Delete ${rate.name}`}
-                      className="p-2 bg-danger/15 text-danger rounded-lg hover:bg-danger/30 transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </>
-                )}
-              </div>
+              {canManage && (
+                <div className="p-4 border-t border-border/30 flex gap-2">
+                  {confirmDeleteId === rate.id ? (
+                    <>
+                      <button
+                        onClick={() => handleDelete(rate)}
+                        className="flex-1 py-2 bg-danger text-white rounded-lg hover:bg-danger/90 transition-colors flex items-center justify-center gap-2 text-sm"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                        Confirm delete
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(null)}
+                        className="px-3 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors text-sm"
+                      >
+                        Cancel
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => openEdit(rate)}
+                        className="flex-1 py-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors flex items-center justify-center gap-2 text-sm"
+                      >
+                        <Edit className="w-4 h-4" />
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleCopy(rate)}
+                        aria-label={`Duplicate ${rate.name}`}
+                        className="p-2 bg-muted rounded-lg hover:bg-muted/80 transition-colors"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => setConfirmDeleteId(rate.id)}
+                        aria-label={`Delete ${rate.name}`}
+                        className="p-2 bg-danger/15 text-danger rounded-lg hover:bg-danger/30 transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
+                </div>
+              )}
             </motion.div>
           ))}
         </div>
@@ -363,9 +368,9 @@ const RateManagementPage = () => {
           <Tag className="w-8 h-8 text-muted-foreground mx-auto mb-3" />
           <p className="font-medium">No rate plans found</p>
           <p className="text-sm text-muted-foreground mt-1">
-            {ratePlans.length ? 'Try a different search or filter.' : 'Create your first plan to get started.'}
+            {ratePlans.length ? 'Try a different search or filter.' : canManage ? 'Create your first plan to get started.' : 'Rate plan templates are set up by admin or a manager.'}
           </p>
-          {!ratePlans.length && (
+          {!ratePlans.length && canManage && (
             <button
               onClick={openCreate}
               className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors text-sm"
