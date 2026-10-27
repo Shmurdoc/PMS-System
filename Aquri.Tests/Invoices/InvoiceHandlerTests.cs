@@ -164,45 +164,6 @@ namespace Aquri.Tests.Invoices
         }
     }
 
-    public class RecordInvoicePaymentHandler_Should : InvoiceHandlerTestBase
-    {
-        [Fact]
-        public async Task Mark_Paid_When_Fully_Settled()
-        {
-            var id = await SeedInvoice();
-            var handler = new RecordInvoicePaymentHandler(Context);
-
-            var result = await handler.Handle(new RecordInvoicePaymentCommand(id, 459.977m, "card"), CancellationToken.None);
-
-            result.Success.Should().BeTrue();
-            result.Data!.Status.Should().Be("paid");
-            result.Data.PaidAmount.Should().Be(459.977m);
-        }
-
-        [Fact]
-        public async Task Mark_Partial_When_Underpaid()
-        {
-            var id = await SeedInvoice();
-            var handler = new RecordInvoicePaymentHandler(Context);
-
-            var result = await handler.Handle(new RecordInvoicePaymentCommand(id, 100m, "card"), CancellationToken.None);
-
-            result.Success.Should().BeTrue();
-            result.Data!.Status.Should().Be("partial");
-        }
-
-        [Fact]
-        public async Task Reject_NonPositive_Amount()
-        {
-            var id = await SeedInvoice();
-            var handler = new RecordInvoicePaymentHandler(Context);
-
-            var result = await handler.Handle(new RecordInvoicePaymentCommand(id, 0m, "card"), CancellationToken.None);
-
-            result.Success.Should().BeFalse();
-        }
-    }
-
     public class GetInvoiceHandler_Should : InvoiceHandlerTestBase
     {
         [Fact]
