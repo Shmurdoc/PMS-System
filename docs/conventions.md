@@ -167,3 +167,68 @@ DTOs live next to the feature that owns them, not in a shared dumping ground. Ex
 ## Money, dates, currency
 
 Currency is ZAR. VAT 15%, tourism levy 1% (from frontend `AppSettings`). Store amounts as `decimal(18,2)`. Stamp `CreatedAt`/`UpdatedAt` with `DateTime.UtcNow` in the handler or domain method, not in the controller.
+
+## Git and review
+
+`main` is protected. Every change lands through a pull request, including a one line doc fix. A direct push is rejected with `GH006: Changes must be made through a pull request`, so there is no "just this once" path.
+
+### Branch names
+
+- `feat/<topic>` for a new capability
+- `fix/<topic>` for a defect
+- `chore/<topic>`, `docs/<topic>`, `test/<topic>` for the obvious cases
+
+Short topic, lowercase, hyphens: `feat/payroll`, `fix/invoice-ledger`.
+
+### The cycle
+
+```bash
+git switch main
+git pull --ff-only
+git switch -c feat/invoice-ledger
+
+# work, commit in small pieces
+
+git push -u origin feat/invoice-ledger
+gh pr create --base main --fill
+```
+
+Wait for both checks, read the diff on GitHub, then merge. Delete the branch when it lands:
+
+```bash
+gh pr merge <number> --merge --delete-branch
+```
+
+Merge with a merge commit, not a squash. The commits in a branch are written to be read, and squashing throws that away. Reserve squash for a branch that is one messy commit anyway.
+
+### What blocks a merge
+
+Branch protection on `main` requires:
+
+- a pull request, no direct pushes, admins included
+- `Backend build & test` and `Frontend build` from `.github/workflows/ci.yml` to pass
+- the branch to be up to date with `main` first (strict mode)
+- no force pushes, no branch deletion, no unresolved conversations
+
+Required approvals is 0 because this is a solo repo. Raise it to 1 when a second maintainer joins.
+
+### Run the gates locally first
+
+CI runs the same commands you can run yourself, so a red PR is avoidable:
+
+```bash
+dotnet build Aquri.sln -nodeReuse:false
+dotnet test Aquri.sln --no-build
+cd frontend && npx eslint src && npm run build
+```
+
+`npm run build` does not run eslint. Two `react-hooks` errors reached a PR because only the build was checked locally, so run eslint as well.
+
+### Commits
+
+Conventional prefix, lowercase, specific: `fix(payroll): refuse a run the creator approved`. The body says what broke and why this change fixes it. One logical change per commit, and do not hide a refactor inside a behaviour change.
+
+### Pull requests
+
+The body answers three things: what changed, how it was verified, and what is knowingly left out. Verification means commands and figures, not "tested". A PR that touches money or tenancy names the invariant it protects and the test that proves it.
+
