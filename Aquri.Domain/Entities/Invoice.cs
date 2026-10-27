@@ -173,6 +173,39 @@ namespace Aquri.Domain.Entities
             LastModified = DateTime.UtcNow;
         }
 
+        /// <summary>
+        /// Takes back money that was recorded against this invoice, used when a
+        /// payment is refunded. Settlement is derived from what is left: nothing
+        /// paid means refunded, anything below the total means partial. This
+        /// deliberately does not go through <see cref="ChangeStatus"/>, because
+        /// the transition table describes manual moves and a refund can land on
+        /// Partial from either Paid or Partial.
+        /// </summary>
+        public void ReversePayment(decimal amount)
+        {
+            if (amount <= 0)
+                throw new ArgumentException("Reversal amount must be positive.", nameof(amount));
+            if (amount > PaidAmount)
+                throw new DomainException(
+                    $"Cannot reverse {amount:0.00}. Only {PaidAmount:0.00} has been recorded as paid on this invoice.");
+
+            PaidAmount -= amount;
+
+            if (PaidAmount <= 0)
+            {
+                PaidAmount = 0;
+                Status = InvoiceStatus.Refunded;
+            }
+            else
+            {
+                Status = InvoiceStatus.Partial;
+            }
+
+            // Whatever is left is no longer settled, so the paid date goes away.
+            PaidDate = null;
+            LastModified = DateTime.UtcNow;
+        }
+
         public void SetNotes(string? notes)
         {
             Notes = notes;
