@@ -492,18 +492,24 @@ export default function FinancialManagement() {
 
   const handleMarkPaid = () => {
     if (!selectedInvoice) return;
-    const amt = paymentAmount > 0 ? paymentAmount : selectedInvoice.total - (selectedInvoice.paidAmount || 0);
-    const alreadyPaid = selectedInvoice.paidAmount || 0;
-    const newPaid = alreadyPaid + amt;
-    const isFullyPaid = newPaid >= selectedInvoice.total;
-    
-    updateInvoice(selectedInvoice.id, { 
-      status: isFullyPaid ? 'paid' : 'partial', 
-      paidDate: new Date().toISOString().split('T')[0],
-      paidAmount: Math.min(newPaid, selectedInvoice.total),
-      paymentMethod: paymentMethod,
-    });
-    
+    const outstanding = selectedInvoice.total - (selectedInvoice.paidAmount || 0);
+    const amt = paymentAmount > 0 ? paymentAmount : outstanding;
+
+    // The server refuses an overpayment, so fail here with a clear message
+    // instead of letting the request bounce.
+    if (amt <= 0) {
+      toastHelpers.error('Nothing to pay', 'This invoice is already settled.');
+      return;
+    }
+    if (amt > outstanding) {
+      toastHelpers.error('Amount is too high', `Only ${fmtR(outstanding)} is still outstanding.`);
+      return;
+    }
+
+    const settles = amt >= outstanding;
+
+    // The payment row is the only thing written here. The API settles the
+    // invoice when the payment completes, and the store re-reads it after.
     const payment: Payment = {
       id: `PAY-${Date.now()}`,
       paymentNumber: `PAY-${String(payments.length + 1).padStart(4, '0')}`,
@@ -536,7 +542,7 @@ export default function FinancialManagement() {
       timestamp: new Date().toISOString(),
     });
     
-    toastHelpers.success('Payment recorded', isFullyPaid ? 'Invoice fully paid' : `Partial payment: ${fmtR(amt)}`);
+    toastHelpers.success('Payment recorded', settles ? 'Invoice settled' : `Partial payment: ${fmtR(amt)}`);
     setShowPaymentModal(false);
     setPaymentMethod('card');
     setPaymentAmount(0);
