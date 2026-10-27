@@ -7,6 +7,7 @@ namespace Aquri.Application.Guests
     public class GuestDto
     {
         public int Id { get; init; }
+        public int PropertyId { get; init; }
         public string Name { get; init; } = string.Empty;
         public string Email { get; init; } = string.Empty;
         public string Phone { get; init; } = string.Empty;
@@ -30,6 +31,7 @@ namespace Aquri.Application.Guests
         public static GuestDto FromEntity(Guest guest) => new()
         {
             Id = guest.Id,
+            PropertyId = guest.PropertyId,
             Name = guest.Name,
             Email = guest.Email,
             Phone = guest.Phone,

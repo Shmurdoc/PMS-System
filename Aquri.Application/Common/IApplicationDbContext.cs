@@ -34,6 +34,9 @@ namespace Aquri.Application.Common.Interfaces
         DbSet<RfidTag> RfidTags { get; }
         DbSet<ElectricityRecord> ElectricityRecords { get; }
         DbSet<Integration> Integrations { get; }
+        DbSet<EmployeeCompensation> EmployeeCompensations { get; }
+        DbSet<PayrollRun> PayrollRuns { get; }
+        DbSet<Payslip> Payslips { get; }
 
         /// <summary>Change tracker of the underlying DbContext (exposed for retry loops that need to detach stale entities — e.g. NumberGenerator's conflict-reload). Satisfied automatically by EF's DbContext.</summary>
         ChangeTracker ChangeTracker { get; }

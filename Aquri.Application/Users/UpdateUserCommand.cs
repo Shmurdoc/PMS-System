@@ -6,7 +6,13 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Users
 {
-    /// <summary>Updates a staff account (admin only). Sparse semantics: Role, Password, and the property scope are applied only when supplied (non-null); Name/Department/Phone are always applied. Email is the login identity and is immutable — a new address means a new account. An empty Password string is ignored (never clears a password). ClearProperty unscopes the account (null wins only when PropertyId is not also supplied). The pipeline confines scoped admins to accounts within their own property — an unrestricted account cannot be minted or unscoped by a scoped caller.</summary>
+    /// <summary>
+    /// Updates a staff account (admin only). Role, password, and property change
+    /// only when supplied; name, department, and phone always apply. Email is
+    /// the login id and cannot be edited, and an empty password is ignored.
+    /// ClearProperty drops the scope, which only works while the account stays
+    /// an admin, and passing it together with PropertyId is rejected.
+    /// </summary>
     public record UpdateUserCommand(
         int Id,
         string Name,
@@ -45,6 +51,13 @@ namespace Aquri.Application.Users
                 return Result<UserDto>.Failure($"Role must be one of: {string.Join(", ", AppRoles.All)}.");
             if (request.ClearProperty && request.PropertyId.HasValue)
                 return Result<UserDto>.Failure("Supply a PropertyId or ClearProperty, not both.");
+
+            var targetRole = string.IsNullOrEmpty(request.Role) ? user.Role : request.Role;
+            var targetProperty = request.ClearProperty
+                ? null
+                : request.PropertyId ?? user.PropertyId;
+            if (targetRole != AppRoles.Admin && targetProperty is null)
+                return Result<UserDto>.Failure("PropertyId is required unless the account is an admin.");
 
             try
             {

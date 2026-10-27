@@ -32,7 +32,6 @@ const MANAGER_FORBIDDEN: ForbiddenCall[] = [
 const FRONT_DESK_FORBIDDEN: ForbiddenCall[] = [
   { label: 'create property', method: 'POST', path: '/properties', data: {} },
   { label: 'delete room', method: 'DELETE', path: '/rooms/999999' },
-  { label: 'list users', method: 'GET', path: '/users' },
   { label: 'create tax config', method: 'POST', path: '/taxconfigs', data: {} },
 ];
 
@@ -160,6 +159,7 @@ test.describe('front_desk role flows', () => {
 
   test('front_desk: allowed endpoints return 200', async ({ request }, testInfo) => {
     test.skip(testInfo.project.name !== 'front_desk');
+    expect((await apiGet(request, '/users', 'front_desk')).status).toBe(200);
     expect((await apiGet(request, '/guests', 'front_desk')).status).toBe(200);
     expect((await apiGet(request, '/properties', 'front_desk')).status).toBe(200);
   });

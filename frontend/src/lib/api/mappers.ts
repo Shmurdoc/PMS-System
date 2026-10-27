@@ -48,12 +48,14 @@ export interface ApiUser {
   role: string;
   department?: string | null;
   phone?: string | null;
+  propertyId?: number | null;
   created: string;
   lastModified?: string | null;
 }
 
 export interface ApiGuest {
   id: number;
+  propertyId: number;
   name: string;
   email: string;
   phone: string;
@@ -602,6 +604,7 @@ export function mapUser(dto: ApiUser): User {
     role: dto.role,
     department: dto.department ?? '',
     phone: dto.phone ?? '',
+    propertyId: dto.propertyId != null ? String(dto.propertyId) : null,
     hireDate: dateOnly(dto.created),
     status: 'active',
   };
@@ -610,6 +613,7 @@ export function mapUser(dto: ApiUser): User {
 export function mapGuest(dto: ApiGuest): Guest {
   return {
     id: String(dto.id),
+    propertyId: String(dto.propertyId),
     name: dto.name,
     email: dto.email,
     phone: dto.phone,
@@ -639,6 +643,7 @@ export function mapProperty(
 ): Property {
   return {
     id: String(dto.id),
+    propertyId: String(dto.propertyId),
     name: dto.name,
     address: dto.address ?? '',
     totalRooms: stats?.totalRooms ?? 0,

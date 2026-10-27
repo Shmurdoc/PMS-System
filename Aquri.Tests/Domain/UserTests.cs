@@ -68,6 +68,7 @@ namespace Aquri.Tests.Users
         public void ChangeRole_Accepts_Valid_Role()
         {
             var user = new User("a@b.c", "Name", AppRoles.Admin, "hash");
+            user.AssignProperty(1);
 
             user.ChangeRole(AppRoles.Manager);
 

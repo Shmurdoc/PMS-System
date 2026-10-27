@@ -216,6 +216,7 @@ export interface User {
   phone: string;
   hireDate: string;
   status: 'active' | 'inactive' | 'on_leave';
+  propertyId?: string | null;
   address?: string;
   emergencyContact?: string;
   emergencyPhone?: string;
@@ -256,6 +257,7 @@ export interface Booking {
 
 export interface Guest {
   id: string;
+  propertyId?: string;
   name: string;
   email: string;
   phone: string;
@@ -299,6 +301,7 @@ export interface Room {
 
 export interface Property {
   id: string;
+  propertyId: string;
   name: string;
   address: string;
   totalRooms: number;
@@ -673,7 +676,7 @@ export interface AppState {
   updateProperty: (id: string, updates: Partial<Property>) => void;
   deleteProperty: (id: string) => void;
   /** Swaps a just-created row's local id for the one the API assigned. */
-  reconcileProperty: (localId: string, serverId: string) => void;
+  reconcileProperty: (localId: string, serverId: string, propertyId?: string) => void;
 
   // Rooms CRUD
   rooms: Room[];
@@ -917,6 +920,7 @@ export const useAppStore = create<AppState>()(
           role: normalizeAppRole(user.role),
           department: user.department || undefined,
           phone: user.phone || undefined,
+          propertyId: user.propertyId ? toNumericId(user.propertyId) : null,
         };
         syncToApi(`createUser(${user.id})`, () => createUser(input), (data) => {
           const dto = data as ApiUser;
@@ -937,6 +941,9 @@ export const useAppStore = create<AppState>()(
           department: (updates.department ?? current.department) || null,
           phone: (updates.phone ?? current.phone) || null,
           role: updates.role !== undefined ? normalizeAppRole(updates.role) : undefined,
+          propertyId: updates.propertyId === undefined
+            ? undefined
+            : (updates.propertyId ? toNumericId(updates.propertyId) : null),
         };
         syncToApi(`updateUser(${id})`, () => apiUpdateUser(numericId, input));
       },
@@ -953,8 +960,8 @@ export const useAppStore = create<AppState>()(
       // Properties CRUD
       properties: [],
       setProperties: (properties) => set({ properties }),
-      reconcileProperty: (localId, serverId) => set((state) => ({
-        properties: state.properties.map((p) => p.id === localId ? { ...p, id: serverId } : p)
+      reconcileProperty: (localId, serverId, propertyId) => set((state) => ({
+        properties: state.properties.map((p) => p.id === localId ? { ...p, id: serverId, ...(propertyId ? { propertyId } : {}) } : p)
       })),
       addProperty: (property) => {
         set((state) => ({ properties: [...state.properties, property] }));
@@ -974,7 +981,7 @@ export const useAppStore = create<AppState>()(
         };
         syncToApi(`createProperty(${property.id})`, () => createProperty(input), (data) => {
           const dto = data as ApiProperty;
-          get().reconcileProperty(property.id, String(dto.id));
+          get().reconcileProperty(property.id, String(dto.id), String(dto.propertyId));
         });
       },
       updateProperty: (id, updates) => {
@@ -1105,7 +1112,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({ messages: [message, ...state.messages] }));
         // A numeric id means the row already lives server-side — only local ids create.
         if (toNumericId(message.id) !== null) return;
-        const propertyId = toNumericId(get().properties[0]?.id ?? '') ?? 1;
+        const propertyId = toNumericId(get().user?.propertyId ?? get().properties[0]?.propertyId ?? '') ?? 1;
         const input: CreateMessageInput = {
           propertyId,
           content: message.content,
@@ -1266,7 +1273,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({ attendance: [...state.attendance, record] }));
         // A numeric id means the row already lives server-side — only local ids create.
         if (toNumericId(record.id) !== null) return;
-        const propertyId = toNumericId(get().properties[0]?.id ?? '') ?? 1;
+        const propertyId = toNumericId(get().user?.propertyId ?? get().properties[0]?.propertyId ?? '') ?? 1;
         const input: CreateAttendanceInput = {
           propertyId,
           userId: toNumericId(record.userId) ?? 0,
@@ -1318,7 +1325,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({ shifts: [...state.shifts, shift] }));
         // A numeric id means the row already lives server-side — only local ids create.
         if (toNumericId(shift.id) !== null) return;
-        const propertyId = toNumericId(get().properties[0]?.id ?? '') ?? 1;
+        const propertyId = toNumericId(get().user?.propertyId ?? get().properties[0]?.propertyId ?? '') ?? 1;
         const input: CreateShiftInput = {
           propertyId,
           userId: toNumericId(shift.userId) ?? 0,
@@ -1452,7 +1459,7 @@ export const useAppStore = create<AppState>()(
       addInventoryItem: (item) => {
         set((state) => ({ inventory: [...state.inventory, item] }));
         if (toNumericId(item.id) !== null) return;
-        const propertyId = toNumericId(get().properties[0]?.id ?? '') ?? 1;
+        const propertyId = toNumericId(get().user?.propertyId ?? get().properties[0]?.propertyId ?? '') ?? 1;
         const input: CreateInventoryItemInput = {
           propertyId,
           name: item.name,
@@ -1521,7 +1528,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({ electricity: [...state.electricity, record] }));
         // A numeric id means the row already lives server-side — only local ids create.
         if (toNumericId(record.id) !== null) return;
-        const propertyId = toNumericId(get().properties[0]?.id ?? '') ?? 1;
+        const propertyId = toNumericId(get().user?.propertyId ?? get().properties[0]?.propertyId ?? '') ?? 1;
         const input: CreateElectricityInput = {
           propertyId,
           date: record.date,
@@ -1775,12 +1782,16 @@ export const useAppStore = create<AppState>()(
         set((state) => ({ guests: [...state.guests, guest] }));
         // A numeric id means the row already lives server-side — only local ids create.
         if (toNumericId(guest.id) !== null) return;
+        const propertyId = toNumericId(
+          guest.propertyId ?? get().user?.propertyId ?? get().properties[0]?.propertyId ?? '',
+        );
         const input: CreateGuestInput = {
           name: guest.name,
           email: guest.email,
           phone: guest.phone,
           idNumber: guest.idNumber,
           nationality: guest.nationality,
+          propertyId: propertyId ?? undefined,
         };
         syncToApi(`createGuest(${guest.id})`, () => createGuest(input), (data) => {
           const dto = data as ApiGuest;
@@ -1829,7 +1840,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({ ratePlans: [...state.ratePlans, plan] }));
         // A numeric id means the row already lives server-side — only local ids create.
         if (toNumericId(plan.id) !== null) return;
-        const propertyId = toNumericId(get().properties[0]?.id ?? '') ?? 1;
+        const propertyId = toNumericId(get().user?.propertyId ?? get().properties[0]?.propertyId ?? '') ?? 1;
         const input: CreateRatePlanInput = {
           propertyId,
           name: plan.name,
@@ -1879,7 +1890,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({ integrations: [...state.integrations, integration] }));
         // A numeric id means the row already lives server-side — only local ids create.
         if (toNumericId(integration.id) !== null) return;
-        const propertyId = toNumericId(get().properties[0]?.id ?? '') ?? 1;
+        const propertyId = toNumericId(get().user?.propertyId ?? get().properties[0]?.propertyId ?? '') ?? 1;
         const input: CreateIntegrationInput = {
           propertyId,
           name: integration.name,
@@ -2139,7 +2150,7 @@ export const useAppStore = create<AppState>()(
         set((state) => ({ auditLogs: [log, ...state.auditLogs] }));
         // Append-only server-side — no reconcile, the API stamps id and timestamp itself.
         if (toNumericId(log.id) !== null) return;
-        const propertyId = toNumericId(get().properties[0]?.id ?? '') ?? 1;
+        const propertyId = toNumericId(get().user?.propertyId ?? get().properties[0]?.propertyId ?? '') ?? 1;
         const input: CreateAuditLogInput = {
           propertyId,
           action: log.action,
@@ -2164,7 +2175,7 @@ export const useAppStore = create<AppState>()(
       addTaxConfig: (config) => {
         set((state) => ({ taxConfigs: [...state.taxConfigs, config] }));
         if (toNumericId(config.id) !== null) return;
-        const propertyId = toNumericId(get().properties[0]?.id ?? '') ?? 1;
+        const propertyId = toNumericId(get().user?.propertyId ?? get().properties[0]?.propertyId ?? '') ?? 1;
         const input: CreateTaxConfigInput = {
           propertyId,
           name: config.name,

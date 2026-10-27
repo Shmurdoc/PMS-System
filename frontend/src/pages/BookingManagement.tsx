@@ -231,7 +231,7 @@ const role = useAppStore((s) => s.user?.role);
   };
 
   const openNewBooking = () => {
-    setForm({ ...emptyForm, propertyId: properties[0]?.id ?? '' });
+    setForm({ ...emptyForm, propertyId: me?.propertyId ?? properties[0]?.propertyId ?? '' });
     setFormErrors({});
     setEditBookingId(null);
     setShowNewModal(true);
@@ -262,7 +262,7 @@ const role = useAppStore((s) => s.user?.role);
 
     const guest = guests.find(g => g.id === form.guestId);
     const room = rooms.find(r => r.id === form.roomId);
-    const property = properties.find(p => p.id === form.propertyId);
+    const property = properties.find(p => p.propertyId === form.propertyId);
     if (!guest || !room || !property) {
       toast.error('Invalid guest, room, or property selection');
       return;
@@ -280,7 +280,7 @@ const role = useAppStore((s) => s.user?.role);
         guestEmail: guest.email,
         guestPhone: guest.phone,
         guestSegment: guest.segment,
-        propertyId: property.id,
+        propertyId: property.propertyId,
         propertyName: property.name,
         roomId: room.id,
         roomNumber: room.number,
@@ -324,7 +324,7 @@ const role = useAppStore((s) => s.user?.role);
         guestEmail: guest.email,
         guestPhone: guest.phone,
         guestSegment: guest.segment,
-        propertyId: property.id,
+        propertyId: property.propertyId,
         propertyName: property.name,
         roomId: room.id,
         roomNumber: room.number,
@@ -673,7 +673,7 @@ const role = useAppStore((s) => s.user?.role);
             className="px-3 py-2 bg-muted border border-border/30 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
           >
             <option value="all">All Properties</option>
-            {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {properties.map(p => <option key={p.id} value={p.propertyId}>{p.name}</option>)}
           </select>
         </div>
         <div className="flex items-center gap-2">
@@ -1112,7 +1112,7 @@ const role = useAppStore((s) => s.user?.role);
                         className={`w-full px-4 py-2.5 bg-muted border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors ${formErrors.propertyId ? 'border-danger/50' : 'border-border/30'}`}
                       >
                         <option value="">Select property...</option>
-                        {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        {properties.map(p => <option key={p.id} value={p.propertyId}>{p.name}</option>)}
                       </select>
                       {formErrors.propertyId && <p className="text-xs text-danger mt-1">{formErrors.propertyId}</p>}
                     </div>

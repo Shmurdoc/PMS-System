@@ -243,7 +243,7 @@ export default function FinancialManagement() {
   const revenueByProperty = useMemo(() => {
     const propMap: Record<string, { name: string; revenue: number; invoiceCount: number }> = {};
     invoices.filter(i => i.status === 'paid').forEach(inv => {
-      const prop = properties.find(p => p.id === inv.propertyId);
+      const prop = properties.find(p => p.propertyId === inv.propertyId);
       const propName = prop?.name || 'Unknown Property';
       if (!propMap[inv.propertyId]) propMap[inv.propertyId] = { name: propName, revenue: 0, invoiceCount: 0 };
       propMap[inv.propertyId].revenue += inv.total;
@@ -325,7 +325,7 @@ export default function FinancialManagement() {
     setExpenseForm({
       category: 'Supplies', amount: 0, description: '',
       date: new Date().toISOString().split('T')[0], submittedBy: '',
-      vendor: '', paymentMethod: 'cash', notes: '', propertyId: '',
+      vendor: '', paymentMethod: 'cash', notes: '', propertyId: me?.propertyId ?? properties[0]?.propertyId ?? '',
     });
   };
 
@@ -573,7 +573,7 @@ export default function FinancialManagement() {
   const resetInvoiceForm = () => {
     setInvoiceForm({
       guestId: '',
-      propertyId: properties[0]?.id ?? '',
+      propertyId: me?.propertyId ?? properties[0]?.propertyId ?? '',
       type: 'booking',
       dueDate: new Date(Date.now() + 14 * 86400000).toISOString().split('T')[0],
       description: '',
@@ -778,7 +778,7 @@ export default function FinancialManagement() {
   };
 
   const handlePrintInvoice = (inv: Invoice) => {
-    const prop = properties.find(p => p.id === inv.propertyId);
+    const prop = properties.find(p => p.propertyId === inv.propertyId);
     const printWin = window.open('', '_blank', 'width=800,height=900');
     if (!printWin) { toastHelpers.error('Popup blocked', 'Allow popups to print'); return; }
     printWin.document.write(`
@@ -1794,7 +1794,7 @@ ${inv.notes ? `<p style="margin-top:20px;font-size:12px;color:#666"><strong>Note
                   <select value={expenseForm.propertyId} onChange={(e) => setExpenseForm({ ...expenseForm, propertyId: e.target.value })}
                     className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors">
                     <option value="">All Properties</option>
-                    {properties.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    {properties.map(p => <option key={p.id} value={p.propertyId}>{p.name}</option>)}
                   </select>
                 </div>
                 <div>
@@ -1933,7 +1933,7 @@ ${inv.notes ? `<p style="margin-top:20px;font-size:12px;color:#666"><strong>Note
                     </div>
                     <div>
                       <p className="text-xs text-muted-foreground">Property</p>
-                      <p className="text-sm">{properties.find(p => p.id === viewingInvoice.propertyId)?.name || 'N/A'}</p>
+                      <p className="text-sm">{properties.find(p => p.propertyId === viewingInvoice.propertyId)?.name || 'N/A'}</p>
                     </div>
                     {viewingInvoice.bookingId && (
                       <div>
@@ -2088,7 +2088,7 @@ ${inv.notes ? `<p style="margin-top:20px;font-size:12px;color:#666"><strong>Note
                     >
                       <option value="">Select property…</option>
                       {properties.map((p) => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
+                        <option key={p.id} value={p.propertyId}>{p.name}</option>
                       ))}
                     </select>
                   </div>

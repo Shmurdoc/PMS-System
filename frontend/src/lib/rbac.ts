@@ -21,6 +21,7 @@ export interface RolePermission {
   exportReports: boolean;
   viewUsers: boolean;
   manageUsers: boolean;
+  viewAllProperties: boolean;
   viewSchedules: boolean;
   viewRfid: boolean;
   viewMessaging: boolean;
@@ -73,6 +74,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermission> = {
     viewInventory: true,
     manageInventory: true,
     viewPayroll: true,
+    viewAllProperties: true,
   },
   manager: {
     viewDashboard: true,
@@ -108,6 +110,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermission> = {
     viewInventory: true,
     manageInventory: true,
     viewPayroll: true,
+    viewAllProperties: false,
   },
   front_desk: {
     viewDashboard: true,
@@ -143,6 +146,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermission> = {
     viewInventory: false,
     manageInventory: false,
     viewPayroll: false,
+    viewAllProperties: false,
   },
   housekeeping: {
     viewDashboard: false,
@@ -178,6 +182,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermission> = {
     viewInventory: true,
     manageInventory: false,
     viewPayroll: false,
+    viewAllProperties: false,
   },
   maintenance: {
     viewDashboard: false,
@@ -213,6 +218,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermission> = {
     viewInventory: true,
     manageInventory: false,
     viewPayroll: false,
+    viewAllProperties: false,
   },
   auditor: {
     viewDashboard: true,
@@ -247,7 +253,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermission> = {
     useAICommands: false,
     viewInventory: true,
     manageInventory: false,
-    viewPayroll: true,
+    viewPayroll: false,
+    viewAllProperties: false,
   },
   guest: {
     viewDashboard: false,
@@ -283,6 +290,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermission> = {
     viewInventory: false,
     manageInventory: false,
     viewPayroll: false,
+    viewAllProperties: false,
   },
 };
 
@@ -299,6 +307,7 @@ export function canAccessRoute(routeId: string): boolean {
     guests: ['viewGuests'],
     rooms: ['viewRooms'],
     finances: ['viewFinances'],
+    payroll: ['viewPayroll'],
     reports: ['viewReports'],
     staff: ['viewRfid'],
     'staff-schedule': ['viewSchedules'],
@@ -319,8 +328,7 @@ export function canAccessRoute(routeId: string): boolean {
   };
   
   const requiredPermissions = routePermissions[routeId];
-  // Unmapped routes default to read-only: any role with a foothold can open them.
-  if (!requiredPermissions) return true;
+  if (!requiredPermissions) return false;
   
   return requiredPermissions.some(permission => hasPermission(permission));
 }

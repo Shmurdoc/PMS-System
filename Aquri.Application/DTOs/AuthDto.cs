@@ -10,6 +10,7 @@ namespace Aquri.Application.DTOs
         public string Email { get; init; } = string.Empty;
         public string Name { get; init; } = string.Empty;
         public string Role { get; init; } = string.Empty;
+        public int? PropertyId { get; init; }
         public string? Department { get; init; }
         public string? Phone { get; init; }
         public DateTime Created { get; init; }
@@ -20,6 +21,7 @@ namespace Aquri.Application.DTOs
             Email = user.Email,
             Name = user.Name,
             Role = user.Role,
+            PropertyId = user.PropertyId,
             Department = user.Department,
             Phone = user.Phone,
             Created = user.Created

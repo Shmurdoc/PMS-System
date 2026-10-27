@@ -37,6 +37,7 @@ const amenitiesList = [
 export default function Rooms() {
   const { rooms, properties, bookings, addRoom, updateRoom, deleteRoom } = useAppStore();
   const role = useAppStore((s) => s.user?.role);
+  const me = useAppStore((s) => s.user);
   const isAdmin = role === 'admin';
   const canManage = role === 'admin' || role === 'manager';
   const [searchQuery, setSearchQuery] = useState('');
@@ -157,7 +158,7 @@ export default function Rooms() {
 
   const resetForm = () => {
     setFormData({
-      propertyId: '1',
+      propertyId: me?.propertyId ?? properties[0]?.propertyId ?? '1',
       number: '',
       type: 'Standard Suite',
       floor: 1,
@@ -306,7 +307,7 @@ export default function Rooms() {
           >
             <option value="all">All Properties</option>
             {properties.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+              <option key={p.id} value={p.propertyId}>{p.name}</option>
             ))}
           </select>
         </div>
@@ -391,7 +392,7 @@ export default function Rooms() {
               {filteredRooms.map((room) => (
                 <tr key={room.id} className="border-b border-border/20 hover:bg-primary/5 transition-colors">
                   <td className="py-3 px-4 font-medium">{room.number}</td>
-                  <td className="py-3 px-4 text-sm">{properties.find(p => p.id === room.propertyId)?.name || '-'}</td>
+                  <td className="py-3 px-4 text-sm">{properties.find(p => p.propertyId === room.propertyId)?.name || '-'}</td>
                   <td className="py-3 px-4 text-sm">{room.type}</td>
                   <td className="py-3 px-4 text-sm">{room.floor}</td>
                   <td className="py-3 px-4 font-medium">R{room.price.toLocaleString()}</td>
@@ -467,7 +468,7 @@ export default function Rooms() {
                       className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
                     >
                       {properties.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
+              <option key={p.id} value={p.propertyId}>{p.name}</option>
                       ))}
                     </select>
                   </div>
@@ -629,7 +630,7 @@ export default function Rooms() {
                 <div className="flex items-center justify-between">
                   <div>
                     <h4 className="text-2xl font-bold">{selectedRoom.type}</h4>
-                    <p className="text-muted-foreground">{properties.find(p => p.id === selectedRoom.propertyId)?.name}</p>
+                    <p className="text-muted-foreground">{properties.find(p => p.propertyId === selectedRoom.propertyId)?.name}</p>
                   </div>
                   <span className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium ${statusColors[selectedRoom.status].bg} ${statusColors[selectedRoom.status].text}`}>
                     {selectedRoom.status}

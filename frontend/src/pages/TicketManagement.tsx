@@ -115,7 +115,7 @@ const role = useAppStore((s) => s.user?.role);
     return filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [tickets, searchQuery, statusFilter, priorityFilter, categoryFilter]);
 
-  const getPropertyName = (propertyId: string) => properties.find(p => p.id === propertyId)?.name || 'Unknown';
+  const getPropertyName = (propertyId: string) => properties.find(p => p.propertyId === propertyId)?.name || 'Unknown';
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,7 +208,7 @@ const role = useAppStore((s) => s.user?.role);
       type: 'issue',
       category: 'front_desk',
       priority: 'medium',
-      propertyId: '1',
+      propertyId: me?.propertyId ?? properties[0]?.propertyId ?? '1',
       roomId: '',
       guestId: '',
       assigneeId: '',
@@ -228,7 +228,7 @@ const role = useAppStore((s) => s.user?.role);
           <p className="text-muted-foreground">Track and manage issues, tasks, and requests across all departments</p>
         </div>
         <button 
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => { resetForm(); setShowCreateModal(true); }}
           className="flex items-center gap-2 px-4 py-2.5 bg-primary text-primary-foreground rounded-xl text-sm font-medium hover:bg-primary/90 hover:shadow-lg transition-colors"
         >
           <Plus className="w-4 h-4" />
@@ -579,7 +579,7 @@ const role = useAppStore((s) => s.user?.role);
                       className="w-full px-4 py-2.5 bg-muted border border-border/30 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
                     >
                       {properties.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
+                        <option key={p.id} value={p.propertyId}>{p.name}</option>
                       ))}
                     </select>
                   </div>

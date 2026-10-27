@@ -65,13 +65,13 @@ namespace Aquri.Tests.Common
         }
 
         [Fact]
-        public async Task Scoped_User_Sending_No_Property_Is_Forbidden()
+        public async Task Scoped_User_Without_A_Request_Property_Passes()
         {
             var behavior = BehaviorFor<NullableScopedRequest>(new FakeUser(1));
 
-            var act = () => behavior.Handle(new NullableScopedRequest(null), Pass, CancellationToken.None);
+            var result = await behavior.Handle(new NullableScopedRequest(null), Pass, CancellationToken.None);
 
-            await act.Should().ThrowAsync<ForbiddenException>();
+            result.Should().Be("passed");
         }
 
         [Fact]

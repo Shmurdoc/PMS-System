@@ -10,6 +10,10 @@ namespace Aquri.Domain.Entities
         public static readonly string[] ValidVipLevels = { "standard", "gold", "platinum", "diamond" };
 
         public int Id { get; private set; }
+
+        /// <summary>Property this guest belongs to. Guest profiles carry passport and contact details, so they stay inside one tenant.</summary>
+        public int PropertyId { get; private set; }
+
         public string Name { get; private set; } = string.Empty;
         public string Email { get; private set; } = string.Empty;
         public string Phone { get; private set; } = string.Empty;
@@ -57,6 +61,16 @@ namespace Aquri.Domain.Entities
             Nationality = nationality?.Trim() ?? string.Empty;
             Segment = "New";
             Created = DateTime.UtcNow;
+            LastModified = DateTime.UtcNow;
+        }
+
+        /// <summary>Puts the guest under a property. Called once when the guest is created.</summary>
+        public void AssignProperty(int propertyId)
+        {
+            if (propertyId <= 0)
+                throw new ArgumentException("Property id must be positive.", nameof(propertyId));
+
+            PropertyId = propertyId;
             LastModified = DateTime.UtcNow;
         }
 

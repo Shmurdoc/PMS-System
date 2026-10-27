@@ -133,8 +133,11 @@ test.describe('employee profiles — admin happy path', () => {
 
     await field(modal, /^Name/).fill(EMP_NAME);
     await field(modal, /^Email/).fill(EMP_EMAIL);
-    await field(modal, /^Role/).fill('E2E Tester');
+    // The role input is free text, but the API only accepts known roles.
+    await field(modal, /^Role/).fill('housekeeping');
     await field(modal, /^Department/).fill('QA');
+    // Staff accounts always carry a property, so pick one in the form.
+    await field(modal, /^Property/).selectOption({ index: 1 });
     await modal.getByRole('button', { name: 'Add Employee', exact: true }).click();
 
     const list = await waitForApiList(request, `/users?search=${EMP_EMAIL}`, 'admin', (rows) =>

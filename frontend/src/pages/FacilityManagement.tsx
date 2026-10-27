@@ -418,7 +418,7 @@ const role = useAppStore((s) => s.user?.role);
       status: ticket.status,
       category: 'Other',
       assignedTo: ticket.assignedTo || '',
-      propertyId: ticket.propertyId || '1',
+      propertyId: ticket.propertyId || me?.propertyId || '1',
       roomId: ticket.roomId || '',
       estimatedCost: ticket.estimatedCost?.toString() || '',
       actualCost: ticket.actualCost?.toString() || '',
@@ -644,7 +644,7 @@ const role = useAppStore((s) => s.user?.role);
           >
             <option value="">Select property...</option>
             {properties.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+              <option key={p.id} value={p.propertyId}>{p.name}</option>
             ))}
           </select>
         </div>
@@ -754,7 +754,7 @@ const role = useAppStore((s) => s.user?.role);
                 Export
               </button>
               <button
-                onClick={() => { setTicketForm({ ...emptyTicketForm }); setShowCreateTicket(true); }}
+                onClick={() => { setTicketForm({ ...emptyTicketForm, propertyId: me?.propertyId ?? properties[0]?.propertyId ?? '1' }); setShowCreateTicket(true); }}
                 className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 hover:shadow-lg transition-colors"
               >
                 <Plus className="w-4 h-4" />

@@ -55,7 +55,8 @@ function adminToken(): string {
 
 /** DELETE with an explicit admin token — used to clean up rows a lower-privileged role cannot. */
 async function deleteAsAdmin(request: APIRequestContext, path: string): Promise<number> {
-  const res = await request.delete(`http://localhost:5080/api/v1${path}`, {
+  const base = process.env['AQURI_API_URL'] ?? 'http://localhost:5080';
+  const res = await request.delete(`${base}/api/v1${path}`, {
     headers: { Authorization: `Bearer ${adminToken()}` },
   });
   return res.status();
@@ -147,6 +148,8 @@ test.describe('finances — admin happy paths', () => {
     await field(modal, /^Rate \(%\)/).fill(TAX_RATE_PCT);
     await modal.getByRole('button', { name: 'Save', exact: true }).click();
     await expect(page.getByText('Tax config added')).toBeVisible();
+    // The toast covers the card actions, so let it clear before clicking them.
+    await expect(page.getByText('Tax config added')).toBeHidden({ timeout: 10_000 });
 
     const list = await waitForApiList(request, '/taxconfigs', 'admin', (rows) =>
       rows.some((r) => r.name === TAX_NAME),

@@ -217,7 +217,7 @@ const role = useAppStore((s) => s.user?.role);
     }
     const newTag: RfidTag = {
       id: `rfid-${Date.now()}`,
-      propertyId: properties[0]?.id ?? '1',
+      propertyId: me?.propertyId ?? properties[0]?.propertyId ?? '1',
       kind: createAssignType === 'guest' ? 'guest' : 'staff',
       tagNumber,
       userId: createAssignType === 'staff' ? createAssignTo : undefined,
