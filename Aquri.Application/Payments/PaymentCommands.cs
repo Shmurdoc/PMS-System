@@ -1,5 +1,6 @@
 using Aquri.Application.Common;
 using Aquri.Application.Common.Interfaces;
+using Aquri.Domain.Entities;
 using Aquri.Domain.Enums;
 using Aquri.Domain.Exceptions;
 using MediatR;
@@ -7,7 +8,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Payments
 {
-    /// <summary>Completes a pending/processing payment (e.g. gateway confirmed).</summary>
+    /// <summary>
+    /// Completes a pending/processing payment (e.g. gateway confirmed). When the
+    /// payment is attached to an invoice, the invoice settles in the same
+    /// SaveChanges, so the money row and the invoice can never disagree.
+    /// </summary>
     public record CompletePaymentCommand(int Id, string? TransactionId) : IRequest<Result<PaymentDto>>;
 
     public class CompletePaymentHandler : IRequestHandler<CompletePaymentCommand, Result<PaymentDto>>
@@ -24,20 +29,42 @@ namespace Aquri.Application.Payments
             if (payment is null)
                 return Result<PaymentDto>.NotFoundResult();
 
+            // A retried completion (double click, network retry) already did the
+            // work. Answer with the current row instead of recording it twice.
+            if (payment.Status == PaymentStatus.Completed)
+                return Result<PaymentDto>.SuccessResult(PaymentDto.FromEntity(payment));
+
+            var invoice = await LoadInvoiceAsync(payment, cancellationToken);
+            if (invoice is null && payment.InvoiceId.HasValue)
+                return Result<PaymentDto>.Failure("The invoice attached to this payment no longer exists.");
+
             try
             {
                 payment.Complete(request.TransactionId);
+                invoice?.RecordPayment(payment.Amount, payment.Method);
                 await _context.SaveChangesAsync(cancellationToken);
                 return Result<PaymentDto>.SuccessResult(PaymentDto.FromEntity(payment));
             }
             catch (DomainException ex)
             {
-                return Result<PaymentDto>.Failure(ex.Message);
+                return Result<PaymentDto>.ConflictResult(ex.Message);
             }
+        }
+
+        private async Task<Invoice?> LoadInvoiceAsync(Payment payment, CancellationToken cancellationToken)
+        {
+            if (!payment.InvoiceId.HasValue)
+                return null;
+
+            return await _context.Invoices
+                .FirstOrDefaultAsync(i => i.Id == payment.InvoiceId.Value, cancellationToken);
         }
     }
 
-    /// <summary>Refunds a completed payment — one-way, no re-completion.</summary>
+    /// <summary>
+    /// Refunds a completed payment. The invoice is reversed in the same
+    /// SaveChanges, so a refund cannot leave an invoice looking settled.
+    /// </summary>
     public record RefundPaymentCommand(int Id) : IRequest<Result<PaymentDto>>;
 
     public class RefundPaymentHandler : IRequestHandler<RefundPaymentCommand, Result<PaymentDto>>
@@ -54,15 +81,24 @@ namespace Aquri.Application.Payments
             if (payment is null)
                 return Result<PaymentDto>.NotFoundResult();
 
+            // Same reasoning as completion: a repeated refund is not a second one.
+            if (payment.Status == PaymentStatus.Refunded)
+                return Result<PaymentDto>.SuccessResult(PaymentDto.FromEntity(payment));
+
+            var invoice = payment.InvoiceId.HasValue
+                ? await _context.Invoices.FirstOrDefaultAsync(i => i.Id == payment.InvoiceId.Value, cancellationToken)
+                : null;
+
             try
             {
                 payment.Refund();
+                invoice?.ReversePayment(payment.Amount);
                 await _context.SaveChangesAsync(cancellationToken);
                 return Result<PaymentDto>.SuccessResult(PaymentDto.FromEntity(payment));
             }
             catch (DomainException ex)
             {
-                return Result<PaymentDto>.Failure(ex.Message);
+                return Result<PaymentDto>.ConflictResult(ex.Message);
             }
         }
     }

@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Aquri.Application.Invoices;
 using Aquri.Application.Payments;
 using Aquri.Domain.Entities;
+using Aquri.Domain.Enums;
 using Aquri.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
@@ -14,16 +15,24 @@ namespace Aquri.Tests.Payments
     public class PaymentHandlerTestBase : IDisposable
     {
         protected readonly AquriDbContext Context;
+        private readonly string _databaseName;
         protected int GuestId;
 
         public PaymentHandlerTestBase()
         {
+            _databaseName = Guid.NewGuid().ToString();
+            Context = NewContext();
+            Seed().GetAwaiter().GetResult();
+        }
+
+        /// <summary>A second context over the same store, used to check what was actually committed.</summary>
+        protected AquriDbContext NewContext()
+        {
             var options = new DbContextOptionsBuilder<AquriDbContext>()
-                .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+                .UseInMemoryDatabase(databaseName: _databaseName)
                 .Options;
 
-            Context = new AquriDbContext(options);
-            Seed().GetAwaiter().GetResult();
+            return new AquriDbContext(options);
         }
 
         private async Task Seed()
@@ -34,11 +43,23 @@ namespace Aquri.Tests.Payments
             GuestId = guest.Id;
         }
 
-        protected async Task<int> SeedPayment(decimal amount = 500m, string method = "card")
+        protected async Task<int> SeedPayment(decimal amount = 500m, string method = "card", int? invoiceId = null)
         {
             var created = await new CreatePaymentHandler(Context, new NumberGenerator(Context)).Handle(
-                new CreatePaymentCommand(1, GuestId, null, null, amount, method, "front@nexus.com"),
+                new CreatePaymentCommand(1, GuestId, invoiceId, null, amount, method, "front@nexus.com"),
                 CancellationToken.None);
+            return created.Data!.Id;
+        }
+
+        /// <summary>An invoice whose total is exactly <paramref name="total"/> (no tax).</summary>
+        protected async Task<int> SeedInvoice(decimal total = 200m)
+        {
+            var created = await new CreateInvoiceHandler(Context, new NumberGenerator(Context)).Handle(
+                new CreateInvoiceCommand(1, GuestId, null, "booking", DateTime.UtcNow.AddDays(7), 0, "",
+                    new List<InvoiceItemInput> { new("Room night", 1, total, 0m, "room") },
+                    "front@nexus.com"),
+                CancellationToken.None);
+
             return created.Data!.Id;
         }
 
@@ -144,6 +165,73 @@ namespace Aquri.Tests.Payments
         }
 
         [Fact]
+        public async Task Settle_The_Invoice_It_Belongs_To()
+        {
+            var invoiceId = await SeedInvoice(200m);
+            var id = await SeedPayment(200m, invoiceId: invoiceId);
+
+            var result = await new CompletePaymentHandler(Context)
+                .Handle(new CompletePaymentCommand(id, "TXN-1"), CancellationToken.None);
+
+            result.Success.Should().BeTrue();
+            var invoice = await Context.Invoices.AsNoTracking().FirstAsync(i => i.Id == invoiceId);
+            invoice.PaidAmount.Should().Be(200m);
+            invoice.Status.Should().Be(InvoiceStatus.Paid);
+            invoice.PaidDate.Should().NotBeNull();
+        }
+
+        [Fact]
+        public async Task Settle_Partially_When_The_Payment_Is_Short()
+        {
+            var invoiceId = await SeedInvoice(200m);
+            var id = await SeedPayment(50m, invoiceId: invoiceId);
+
+            await new CompletePaymentHandler(Context)
+                .Handle(new CompletePaymentCommand(id, "TXN-1"), CancellationToken.None);
+
+            var invoice = await Context.Invoices.AsNoTracking().FirstAsync(i => i.Id == invoiceId);
+            invoice.Status.Should().Be(InvoiceStatus.Partial);
+            invoice.PaidAmount.Should().Be(50m);
+        }
+
+        [Fact]
+        public async Task Refuse_An_Overpaying_Payment_And_Commit_Nothing()
+        {
+            var invoiceId = await SeedInvoice(200m);
+            var id = await SeedPayment(500m, invoiceId: invoiceId);
+
+            var result = await new CompletePaymentHandler(Context)
+                .Handle(new CompletePaymentCommand(id, "TXN-1"), CancellationToken.None);
+
+            result.Success.Should().BeFalse();
+            result.Conflict.Should().BeTrue();
+
+            // A fresh context reads what was committed, not the tracked entities
+            // the failed handler left behind.
+            using var fresh = NewContext();
+            var payment = await fresh.Payments.AsNoTracking().FirstAsync(p => p.Id == id);
+            var invoice = await fresh.Invoices.AsNoTracking().FirstAsync(i => i.Id == invoiceId);
+            payment.Status.Should().Be(PaymentStatus.Pending);
+            invoice.PaidAmount.Should().Be(0m);
+            invoice.Status.Should().Be(InvoiceStatus.Draft);
+        }
+
+        [Fact]
+        public async Task Complete_Twice_Does_Not_Record_The_Money_Twice()
+        {
+            var invoiceId = await SeedInvoice(200m);
+            var id = await SeedPayment(200m, invoiceId: invoiceId);
+            var handler = new CompletePaymentHandler(Context);
+
+            await handler.Handle(new CompletePaymentCommand(id, "TXN-1"), CancellationToken.None);
+            var second = await handler.Handle(new CompletePaymentCommand(id, "TXN-1"), CancellationToken.None);
+
+            second.Success.Should().BeTrue();
+            var invoice = await Context.Invoices.AsNoTracking().FirstAsync(i => i.Id == invoiceId);
+            invoice.PaidAmount.Should().Be(200m);
+        }
+
+        [Fact]
         public async Task Return_NotFound_For_Unknown_Payment()
         {
             var handler = new CompletePaymentHandler(Context);
@@ -168,6 +256,62 @@ namespace Aquri.Tests.Payments
 
             result.Success.Should().BeTrue();
             result.Data!.Status.Should().Be("refunded");
+        }
+
+        [Fact]
+        public async Task Reverse_The_Invoice_It_Settled()
+        {
+            var invoiceId = await SeedInvoice(200m);
+            var id = await SeedPayment(200m, invoiceId: invoiceId);
+            await new CompletePaymentHandler(Context)
+                .Handle(new CompletePaymentCommand(id, "TXN-1"), CancellationToken.None);
+
+            var result = await new RefundPaymentHandler(Context)
+                .Handle(new RefundPaymentCommand(id), CancellationToken.None);
+
+            result.Success.Should().BeTrue();
+            var invoice = await Context.Invoices.AsNoTracking().FirstAsync(i => i.Id == invoiceId);
+            invoice.Status.Should().Be(InvoiceStatus.Refunded);
+            invoice.PaidAmount.Should().Be(0m);
+            invoice.PaidDate.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task Drop_The_Invoice_To_Partial_When_One_Of_Two_Payments_Is_Refunded()
+        {
+            var invoiceId = await SeedInvoice(200m);
+            var first = await SeedPayment(100m, invoiceId: invoiceId);
+            var second = await SeedPayment(100m, invoiceId: invoiceId);
+            await new CompletePaymentHandler(Context)
+                .Handle(new CompletePaymentCommand(first, "TXN-1"), CancellationToken.None);
+            await new CompletePaymentHandler(Context)
+                .Handle(new CompletePaymentCommand(second, "TXN-2"), CancellationToken.None);
+
+            await new RefundPaymentHandler(Context)
+                .Handle(new RefundPaymentCommand(second), CancellationToken.None);
+
+            var invoice = await Context.Invoices.AsNoTracking().FirstAsync(i => i.Id == invoiceId);
+            invoice.Status.Should().Be(InvoiceStatus.Partial);
+            invoice.PaidAmount.Should().Be(100m);
+            invoice.PaidDate.Should().BeNull();
+        }
+
+        [Fact]
+        public async Task Refund_Twice_Does_Not_Reverse_The_Money_Twice()
+        {
+            var invoiceId = await SeedInvoice(200m);
+            var id = await SeedPayment(100m, invoiceId: invoiceId);
+            await new CompletePaymentHandler(Context)
+                .Handle(new CompletePaymentCommand(id, "TXN-1"), CancellationToken.None);
+            var handler = new RefundPaymentHandler(Context);
+
+            await handler.Handle(new RefundPaymentCommand(id), CancellationToken.None);
+            var second = await handler.Handle(new RefundPaymentCommand(id), CancellationToken.None);
+
+            second.Success.Should().BeTrue();
+            var invoice = await Context.Invoices.AsNoTracking().FirstAsync(i => i.Id == invoiceId);
+            invoice.PaidAmount.Should().Be(0m);
+            invoice.Status.Should().Be(InvoiceStatus.Refunded);
         }
 
         [Fact]
