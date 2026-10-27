@@ -38,14 +38,4 @@ namespace Aquri.Application.Invoices
             RuleFor(x => x.Category).NotEmpty().WithMessage("Category cannot be null or empty.");
         }
     }
-
-    /// <summary>Shape checks for recording a payment against an invoice.</summary>
-    public class RecordInvoicePaymentCommandValidator : AbstractValidator<RecordInvoicePaymentCommand>
-    {
-        public RecordInvoicePaymentCommandValidator()
-        {
-            RuleFor(x => x.Amount).GreaterThan(0).WithMessage("Amount must be positive.");
-            RuleFor(x => x.PaymentMethod).NotEmpty().WithMessage("PaymentMethod cannot be null or empty.");
-        }
-    }
 }

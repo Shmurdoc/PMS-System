@@ -860,16 +860,9 @@ export function addInvoiceItem(
   });
 }
 
-/** Records a payment against an invoice; flips to paid when fully settled. */
-export function recordInvoicePayment(
-  id: number,
-  amount: number,
-  paymentMethod: string,
-): Promise<ApiInvoice> {
-  return unwrap<ApiInvoice>(`/invoices/${id}/payments`, {
-    method: 'POST',
-    body: { id, amount, paymentMethod },
-  });
+/** One invoice with its line items. */
+export function fetchInvoice(id: number): Promise<ApiInvoice> {
+  return unwrap<ApiInvoice>(`/invoices/${id}`);
 }
 
 export function deleteInvoice(id: number): Promise<void> {

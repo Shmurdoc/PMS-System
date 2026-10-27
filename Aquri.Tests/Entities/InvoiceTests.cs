@@ -88,6 +88,59 @@ namespace Aquri.Tests.Entities
         }
 
         [Fact]
+        public void ReversePayment_Partial_KeepsPartialAndClearsThePaidDate()
+        {
+            var invoice = NewInvoice();
+            invoice.AddItem(RoomLine(1000m, 2)); // total 2300
+            invoice.RecordPayment(2300m, "card");
+
+            invoice.ReversePayment(300m);
+
+            invoice.Status.Should().Be(InvoiceStatus.Partial);
+            invoice.PaidAmount.Should().Be(2000m);
+            invoice.PaidDate.Should().BeNull();
+        }
+
+        [Fact]
+        public void ReversePayment_Full_MarksRefunded()
+        {
+            var invoice = NewInvoice();
+            invoice.AddItem(RoomLine(1000m, 2));
+            invoice.RecordPayment(2300m, "card");
+
+            invoice.ReversePayment(2300m);
+
+            invoice.Status.Should().Be(InvoiceStatus.Refunded);
+            invoice.PaidAmount.Should().Be(0m);
+            invoice.PaidDate.Should().BeNull();
+        }
+
+        [Fact]
+        public void ReversePayment_MoreThanWasPaid_Throws()
+        {
+            var invoice = NewInvoice();
+            invoice.AddItem(RoomLine(1000m, 2));
+            invoice.RecordPayment(500m, "card");
+
+            var act = () => invoice.ReversePayment(600m);
+
+            act.Should().Throw<DomainException>().WithMessage("*Cannot reverse*");
+            invoice.PaidAmount.Should().Be(500m);
+        }
+
+        [Fact]
+        public void ReversePayment_NonPositive_Throws()
+        {
+            var invoice = NewInvoice();
+            invoice.AddItem(RoomLine(1000m, 2));
+            invoice.RecordPayment(500m, "card");
+
+            var act = () => invoice.ReversePayment(0m);
+
+            act.Should().Throw<ArgumentException>();
+        }
+
+        [Fact]
         public void ChangeStatus_IllegalTransition_Throws()
         {
             var invoice = NewInvoice();

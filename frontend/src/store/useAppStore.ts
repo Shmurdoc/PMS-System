@@ -51,10 +51,10 @@ import {
   deleteTicket as apiDeleteTicket,
   deleteUser as apiDeleteUser,
   deleteWorkflow as apiDeleteWorkflow,
+  fetchInvoice,
   issueRfidTag,
   markMessageRead as apiMarkMessageRead,
   recordBookingDeposit,
-  recordInvoicePayment,
   refundPayment,
   rejectExpense,
   revokeRfidTag as apiRevokeRfidTag,
@@ -200,6 +200,24 @@ function syncToApi(label: string, task: () => Promise<unknown>, onOk?: (data: un
 // Store shift times are clock strings ('07:00'); the API takes full timestamps on a date.
 function isoAt(date: string, time: string): string {
   return time.includes('T') ? time : `${date}T${time}`;
+}
+
+// Payment transitions settle the invoice on the server in the same save. Rather
+// than patching the ledger here too, pull the invoice back and take the server
+// value. A failed refresh is not worth a toast: the next hydrate reads it again.
+function refreshInvoice(invoiceId: string | number | null | undefined, get: () => AppState): void {
+  const numeric = invoiceId != null ? toNumericId(String(invoiceId)) : null;
+  if (numeric === null) return;
+
+  syncToApi(
+    `fetchInvoice(${numeric})`,
+    () => fetchInvoice(numeric),
+    (data) => {
+      const dto = data as ApiInvoice;
+      get().reconcileInvoice(String(dto.id), mapInvoice(dto));
+    },
+    () => undefined,
+  );
 }
 
 // ============================================
@@ -2064,18 +2082,12 @@ export const useAppStore = create<AppState>()(
         });
       },
       updateInvoice: (id, updates) => {
-        const prev = get().invoices.find((i) => i.id === id);
+        // There is no invoice PUT yet, so status changes stay local. Settlement
+        // is not written here: payments own it, and the store refreshes the
+        // invoice from the API after each transition.
         set((state) => ({
           invoices: state.invoices.map((i) => i.id === id ? { ...i, ...updates } : i)
         }));
-        const numericId = toNumericId(id);
-        if (numericId === null) return;
-        // No generic PUT — only payment recording has an endpoint.
-        const delta = (updates.paidAmount ?? 0) - (prev?.paidAmount ?? 0);
-        if (updates.paidAmount !== undefined && delta > 0) {
-          const method = updates.paymentMethod ?? prev?.paymentMethod ?? 'card';
-          syncToApi(`recordInvoicePayment(${id})`, () => recordInvoicePayment(numericId, delta, method));
-        }
       },
       deleteInvoice: (id) => {
         set((state) => ({
@@ -2117,11 +2129,16 @@ export const useAppStore = create<AppState>()(
           // The API creates payments as pending — if the row was logged as
           // already settled, run the complete transition right after.
           if (payment.status === 'completed') {
-            syncToApi(`completePayment(${dto.id})`, () => completePayment(dto.id, payment.transactionId ?? null));
+            syncToApi(
+              `completePayment(${dto.id})`,
+              () => completePayment(dto.id, payment.transactionId ?? null),
+              () => refreshInvoice(dto.invoiceId, get),
+            );
           }
         });
       },
       updatePayment: (id, updates) => {
+        const invoiceId = get().payments.find((p) => p.id === id)?.invoiceId ?? null;
         set((state) => ({
           payments: state.payments.map((p) => p.id === id ? { ...p, ...updates } : p)
         }));
@@ -2130,10 +2147,18 @@ export const useAppStore = create<AppState>()(
         // Complete and refund have endpoints; everything else stays local.
         if (updates.status === 'completed') {
           const transactionId = updates.transactionId ?? null;
-          syncToApi(`completePayment(${id})`, () => completePayment(numericId, transactionId));
+          syncToApi(
+            `completePayment(${id})`,
+            () => completePayment(numericId, transactionId),
+            () => refreshInvoice(invoiceId, get),
+          );
         }
         if (updates.status === 'refunded') {
-          syncToApi(`refundPayment(${id})`, () => refundPayment(numericId));
+          syncToApi(
+            `refundPayment(${id})`,
+            () => refundPayment(numericId),
+            () => refreshInvoice(invoiceId, get),
+          );
         }
       },
       deletePayment: (id) => {

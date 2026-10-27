@@ -34,27 +34,33 @@ namespace Aquri.API.Controllers
         [ProducesResponseType(typeof(PaymentDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
         public async Task<ActionResult<PaymentDto>> Complete(int id, [FromBody] string? transactionId)
         {
             var result = await _mediator.Send(new CompletePaymentCommand(id, transactionId));
             if (result.NotFound)
                 return NotFound();
+            if (result.Conflict)
+                return Conflict(result.Error);
             if (!result.Success)
                 return BadRequest(result.Error);
             return Ok(result.Data);
         }
 
-        /// <summary>Refunds a completed payment — one-way transition.</summary>
+        /// <summary>Refunds a completed payment. The attached invoice is reversed with it.</summary>
         [HttpPost("{id:int}/refund")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(typeof(PaymentDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
         public async Task<ActionResult<PaymentDto>> Refund(int id)
         {
             var result = await _mediator.Send(new RefundPaymentCommand(id));
             if (result.NotFound)
                 return NotFound();
+            if (result.Conflict)
+                return Conflict(result.Error);
             if (!result.Success)
                 return BadRequest(result.Error);
             return Ok(result.Data);

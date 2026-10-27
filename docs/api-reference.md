@@ -71,7 +71,6 @@ Sparse updates: `PUT` bodies treat absent/null fields as "keep current value". D
 | `GET /api/v1/Invoices/{id}` | authenticated | Get an invoice with line items |
 | `POST /api/v1/Invoices` | admin, manager, front_desk | Create with line items; totals computed server-side |
 | `POST /api/v1/Invoices/{id}/items` | admin, manager, front_desk | Add a line item; totals recompute |
-| `POST /api/v1/Invoices/{id}/payments` | admin, manager, front_desk | Record a payment; flips to paid when settled |
 | `DELETE /api/v1/Invoices/{id}` | admin, manager | Delete; payments detached, not destroyed |
 
 ## Payments — payment processing. List is property-scoped (non-nullable `propertyId`).
@@ -80,8 +79,8 @@ Sparse updates: `PUT` bodies treat absent/null fields as "keep current value". D
 |---|---|---|
 | `GET /api/v1/Payments?propertyId=&status=` | authenticated | List payments for a property |
 | `POST /api/v1/Payments` | admin, manager, front_desk | Create a pending payment |
-| `POST /api/v1/Payments/{id}/complete` | admin, manager, front_desk | Complete (optional `transactionId` body) |
-| `POST /api/v1/Payments/{id}/refund` | admin, manager | Refund — one-way transition |
+| `POST /api/v1/Payments/{id}/complete` | admin, manager, front_desk | Complete (optional `transactionId` body); settles the attached invoice in the same save |
+| `POST /api/v1/Payments/{id}/refund` | admin, manager | Refund; reverses the attached invoice in the same save |
 
 ## Tickets — maintenance/support tickets. List is property-scoped (non-nullable `propertyId`).
 

@@ -5,10 +5,10 @@ Scope: backend, API, frontend, and the new payroll module. Every claim below was
 
 ## Bottom line
 
-The system is not ready to move real money yet. Payroll is built properly now, and the property scoping work holds. Three defects still sit on the money path, and two of them can make the books disagree with the bank. They are listed under P0 with the exact code to change.
+The system is not ready to move real money yet. Payroll is built properly, the property scoping work holds, and the invoice ledger now has one writer. Two money-path defects remain, plus payment creation still accepts duplicates. They are listed under P0 with the exact code to change.
 
-What is safe today: running payroll end to end, viewing the numbers, and the two-person approval rule.
-What is not safe today: trusting that an invoice marked paid reflects the payments table, trusting that a failed save did not happen, and trusting that two simultaneous bookings cannot double-book a room.
+What is safe today: running payroll end to end, the two-person approval rule, and settlement that cannot drift between an invoice and its payments.
+What is not safe today: trusting that a failed save did not happen, trusting that two simultaneous bookings cannot double-book a room, and trusting that a double-clicked payment creates one row.
 
 ## Payroll: what was built
 
@@ -73,25 +73,51 @@ Checks against the running API:
 - Creating a second run for the same period returned 409.
 - Front desk `GET /payroll/payslips` returned only their own slips.
 
-Tests: 17 payroll invariant tests in `Aquri.Tests/Entities/PayrollTests.cs`. Full suite is 543 passing.
+Tests: 17 payroll invariant tests in `Aquri.Tests/Entities/PayrollTests.cs`. Full suite is 551 passing.
 
 ### Operational requirement
 
 Approval needs an admin who did not create the run. A property with a single admin account cannot approve payroll that admin created. Either keep managers as the drafters, or give the property two admins. This is a deliberate control, not a bug.
 
-## P0 findings, still open
+## P0 findings
 
-### 1. Two writers for the invoice ledger
+One fixed, three open.
 
-Evidence:
-- `CreatePaymentCommand` attaches a payment to an invoice but never updates the invoice.
-- `CompletePaymentHandler` (`Aquri.Application/Payments/PaymentCommands.cs:29`) marks the payment complete and stops there.
-- `RefundPaymentHandler` (`PaymentCommands.cs:59`) marks the payment refunded and never reverses the invoice.
-- The UI computes the invoice ledger itself in `FinancialManagement.tsx:493-524` and writes `paidAmount`, `status`, and `paidDate` locally, then creates a separate payment row.
+### 1. Two writers for the invoice ledger (fixed)
 
-Result: invoice paid amounts can drift from the payments table. A refund leaves the invoice looking settled. Reports built on invoices and reports built on payments will disagree.
+What was wrong:
+- `CompletePaymentHandler` marked the payment complete and stopped there, so the invoice never learned about the money.
+- `RefundPaymentHandler` marked the payment refunded and never reversed the invoice.
+- `POST /invoices/{id}/payments` wrote `paidAmount`, `status`, and `paidDate` with no payment row behind it.
+- The UI then computed the ledger itself in `FinancialManagement.tsx` and posted twice, one call per table. Two calls, no transaction.
 
-Fix: make the payments table the only writer. On completion, load the invoice and call `invoice.RecordPayment(amount, method)`; on refund, add `Invoice.ReversePayment(amount)` and call it. Delete the client-side mutation of `paidAmount`. Add an idempotency guard so a replayed completion cannot double count. This needs tests before release.
+Result: invoice settlement could drift from the payments table, and a refund left the invoice looking settled.
+
+What changed:
+- `Invoice.ReversePayment(amount)` mirrors `RecordPayment`. It refuses to reverse more than was recorded, moves the invoice to `partial` while money is still held, and to `refunded` when nothing is. The paid date clears.
+- `CompletePaymentHandler` loads the attached invoice and calls `RecordPayment` before the single `SaveChanges`, so the payment row and the invoice commit together or not at all.
+- `RefundPaymentHandler` calls `ReversePayment` in the same way.
+- Both handlers answer a replay with the current row instead of writing twice.
+- `POST /invoices/{id}/payments` and its command are gone. The handler tests for it were replaced with settlement tests.
+- The store no longer writes `paidAmount`. It refreshes the invoice from `GET /invoices/{id}` after each transition, so the screen shows what the server committed.
+
+Evidence, against the running API:
+- Paying the exact total (R275.00) moved the invoice to `paid` with a paid date.
+- Completing the same payment again returned 200 and left `paid` at R275.00.
+- Refunding it moved the invoice to `refunded`, `paidAmount` R0.00, paid date cleared.
+- Refunding again returned 200 with no second reversal.
+- Completing an overpay returned 409 with "Payment of 9999,00 would overpay the invoice. Outstanding amount is 13,75." The payment stayed `pending` and the invoice stayed `draft` at R0.00.
+- Half the total produced `partial` at R137.50 of R275.00.
+- `POST /invoices/{id}/payments` now returns 404.
+
+Evidence, in the browser:
+- R412.50 invoice, paid through the Record Payment modal. The row went from R0.00, balance R412.50, `draft` to R412.50, `Settled`, `paid` without a reload, and stayed that way after a reload.
+- Refunding the payment from the Payments tab returned the invoice to `refunded`, R0.00 paid, also after a reload.
+- No console errors and no failed API calls in either flow.
+
+Tests: 4 domain tests for `ReversePayment`, 4 handler tests for completion (including an atomicity check that reads the store from a fresh context after a failed overpay), and 3 for refunds. Full suite is 551 passing.
+
+Operational note: because the reversal is strict, a refund is refused when the invoice does not show the money. That is deliberate. Rows written before this change may have payments that the invoice never recorded, and those need reconciling before they can be refunded, rather than being silently clamped.
 
 ### 2. Optimistic writes never roll back
 
@@ -116,7 +142,7 @@ Fix: accept a client request id, store it, and add a unique index. Return the ex
 ## P1 findings
 
 1. Audit trail is client-written. Pages call `addAuditLog` locally; most API commands write no `AuditLog` row. Any API client bypasses the trail entirely. Payroll records the actors on the run itself, which covers sign-off, but there is no audit row for create, rebuild, or cancel.
-2. Store actions with no server counterpart: `deletePayment` is local only, and `updatePayment` only syncs completion and refund. No UI path calls them today, so this is latent, but it is a trap.
+2. Invoice status changes have no endpoint. Sending, cancelling, and the paid flag written by older code paths only change the store, so a sent invoice is back to draft after a reload. `deletePayment` is local only for the same reason: no DELETE route exists. The ledger itself is now server-owned, but the lifecycle around it is not.
 3. The property switcher only drives the dashboard. Most pages resolve their property from `me.propertyId` or the first property, so an admin switching scope sees the dashboard change and the rest of the app stay put.
 4. No pagination on any list endpoint. A real property with years of bookings will load everything into memory.
 5. Currency is hard-coded to ZAR in payroll and payments. No FX, no multi-currency reporting. Tax is one jurisdiction.
@@ -140,12 +166,12 @@ Fix: accept a client request id, store it, and add a unique index. Return the ex
 
 ## What I would do next, in order
 
-1. Unify the invoice and payment ledger (P0-1) with tests.
-2. Roll back optimistic writes on failure (P0-2).
-3. Add the booking exclusion constraint plus a serializable retry (P0-3).
-4. Add payment idempotency (P0-4).
-5. Server-side audit rows for money and payroll actions (P1-1).
+1. Roll back optimistic writes on failure (P0-2).
+2. Add the booking exclusion constraint plus a serializable retry (P0-3).
+3. Add payment idempotency (P0-4).
+4. Server-side audit rows for money and payroll actions (P1-1).
+5. An invoice status endpoint, so sending and cancelling survive a reload (P1-2).
 6. Pagination and the property switcher on every page (P1-3, P1-4).
 7. Payroll phase two: leave, loans, reversals, bank file, payslip document.
 
-Until items 1 to 3 are done, do not let this system near a live cash drawer, however good the payroll screens look.
+Until items 1 and 2 are done, do not let this system near a live cash drawer, however good the payroll screens look.

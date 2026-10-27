@@ -68,22 +68,6 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Records a payment against an invoice; flips to paid when fully settled.</summary>
-        [HttpPost("{id:int}/payments")]
-        [Authorize(Roles = "admin,manager,front_desk")]
-        [ProducesResponseType(typeof(InvoiceDto), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
-        public async Task<ActionResult<InvoiceDto>> RecordPayment(int id, [FromBody] RecordInvoicePaymentCommand command)
-        {
-            var result = await _mediator.Send(command with { Id = id });
-            if (result.NotFound)
-                return NotFound();
-            if (!result.Success)
-                return BadRequest(result.Error);
-            return Ok(result.Data);
-        }
-
         /// <summary>Deletes an invoice (admin,manager only); its payments are detached, not destroyed.</summary>
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "admin,manager")]
