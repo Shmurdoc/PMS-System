@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search, Plus, Edit, Mail, Phone, Calendar,
@@ -101,17 +101,13 @@ export default function EmployeeProfiles() {
   };
 
   // ── Validation ──────────────────────────────────────
-  // The property list arrives with the hydrate wave. If the modal opened
-  // before that, fill in the default instead of leaving the field empty.
-  useEffect(() => {
-    if (!showAddModal && !showEditModal) return;
-    if (formData.role.trim().toLowerCase() !== 'admin' && !formData.propertyId && properties.length > 0) {
-      setFormData((f) => ({ ...f, propertyId: properties[0].propertyId }));
-      // A submit before the list arrived flagged this field. It is filled
-      // now, so clear the error.
-      setFormErrors((e) => (e.propertyId ? { ...e, propertyId: '' } : e));
-    }
-  }, [showAddModal, showEditModal, formData.role, formData.propertyId, properties]);
+  // The property list arrives with the hydrate wave, so a modal can open while
+  // properties is still empty. Fall back to the first property at render and
+  // at submit instead of writing state from an effect.
+  const needsProperty = formData.role.trim().toLowerCase() !== 'admin';
+  const effectivePropertyId = needsProperty
+    ? formData.propertyId || properties[0]?.propertyId || ''
+    : '';
 
   const validateForm = (): boolean => {
     const errors: Record<string, string> = {};
@@ -120,7 +116,7 @@ export default function EmployeeProfiles() {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) errors.email = 'Invalid email format';
     if (!formData.role.trim()) errors.role = 'Role is required';
     if (!formData.department.trim()) errors.department = 'Department is required';
-    if (formData.role.trim().toLowerCase() !== 'admin' && !formData.propertyId) errors.propertyId = 'Property is required for staff accounts';
+    if (needsProperty && !effectivePropertyId) errors.propertyId = 'Property is required for staff accounts';
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   };
@@ -139,7 +135,7 @@ export default function EmployeeProfiles() {
       avatar: '',
       hireDate: new Date().toISOString().split('T')[0],
       status: formData.status,
-      propertyId: formData.role.trim().toLowerCase() === 'admin' ? null : formData.propertyId || null,
+      propertyId: formData.role.trim().toLowerCase() === 'admin' ? null : effectivePropertyId || null,
     };
     addUser(newUser);
     addAuditLog({
@@ -186,7 +182,7 @@ export default function EmployeeProfiles() {
       department: formData.department.trim(),
       phone: formData.phone.trim(),
       status: formData.status,
-      propertyId: formData.role.trim().toLowerCase() === 'admin' ? null : formData.propertyId || null,
+      propertyId: formData.role.trim().toLowerCase() === 'admin' ? null : effectivePropertyId || null,
     });
     addAuditLog({
       id: newId('LOG'),
@@ -744,7 +740,7 @@ export default function EmployeeProfiles() {
                 <div>
                   <label className="block text-sm font-medium mb-1">Property {formData.role.trim().toLowerCase() !== 'admin' && <span className="text-danger">*</span>}</label>
                   <select
-                    value={formData.propertyId}
+                    value={effectivePropertyId}
                     onChange={e => setFormData({ ...formData, propertyId: e.target.value })}
                     disabled={formData.role.trim().toLowerCase() === 'admin'}
                     className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 disabled:opacity-60"
@@ -752,7 +748,7 @@ export default function EmployeeProfiles() {
                     <option value="">{formData.role.trim().toLowerCase() === 'admin' ? 'All properties (admin)' : 'Select property'}</option>
                     {properties.map(p => <option key={p.id} value={p.propertyId}>{p.name}</option>)}
                   </select>
-                  {formErrors.propertyId && <p className="text-xs text-danger mt-1">{formErrors.propertyId}</p>}
+                  {formErrors.propertyId && !effectivePropertyId && <p className="text-xs text-danger mt-1">{formErrors.propertyId}</p>}
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-border/30">
@@ -876,7 +872,7 @@ export default function EmployeeProfiles() {
                 <div>
                   <label className="block text-sm font-medium mb-1">Property {formData.role.trim().toLowerCase() !== 'admin' && <span className="text-danger">*</span>}</label>
                   <select
-                    value={formData.propertyId}
+                    value={effectivePropertyId}
                     onChange={e => setFormData({ ...formData, propertyId: e.target.value })}
                     disabled={formData.role.trim().toLowerCase() === 'admin'}
                     className="w-full px-3 py-2 bg-muted border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 disabled:opacity-60"
@@ -884,7 +880,7 @@ export default function EmployeeProfiles() {
                     <option value="">{formData.role.trim().toLowerCase() === 'admin' ? 'All properties (admin)' : 'Select property'}</option>
                     {properties.map(p => <option key={p.id} value={p.propertyId}>{p.name}</option>)}
                   </select>
-                  {formErrors.propertyId && <p className="text-xs text-danger mt-1">{formErrors.propertyId}</p>}
+                  {formErrors.propertyId && !effectivePropertyId && <p className="text-xs text-danger mt-1">{formErrors.propertyId}</p>}
                 </div>
 
                 <div className="flex justify-end gap-3 pt-4 border-t border-border/30">

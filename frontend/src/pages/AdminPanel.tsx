@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Settings, Users, Shield, Bell, Palette, Database, Globe,
@@ -129,17 +129,13 @@ const me = useAppStore((s) => s.user);
   }, [users, searchQuery]);
 
   // ── user CRUD handlers ─────────────────────────────────────────────────
-  // The property list arrives with the hydrate wave. If the modal opened
-  // before that, fill in the default instead of leaving the field empty.
-  useEffect(() => {
-    if (!showUserModal || editUserId) return;
-    if (userForm.role !== 'admin' && !userForm.propertyId && properties.length > 0) {
-      setUserForm((f) => ({ ...f, propertyId: properties[0].propertyId }));
-      // A submit before the list arrived flagged this field. It is filled
-      // now, so clear the error.
-      setUserErrors((e) => (e.propertyId ? { ...e, propertyId: '' } : e));
-    }
-  }, [showUserModal, editUserId, userForm.role, userForm.propertyId, properties]);
+  // The property list arrives with the hydrate wave, so the modal can open
+  // while properties is still empty. Fall back to the first property at
+  // render and at submit instead of writing state from an effect.
+  const needsProperty = userForm.role !== 'admin';
+  const effectivePropertyId = needsProperty
+    ? userForm.propertyId || properties[0]?.propertyId || ''
+    : '';
 
   const openNewUser = () => {
     setUserForm({ ...emptyUserForm, propertyId: properties[0]?.propertyId ?? '' });
@@ -170,7 +166,7 @@ const me = useAppStore((s) => s.user);
     // Check duplicate email
     const dup = users.find(u => u.email.toLowerCase() === userForm.email.toLowerCase() && u.id !== editUserId);
     if (dup) errors.email = 'Email already in use';
-    if (userForm.role !== 'admin' && !userForm.propertyId) errors.propertyId = 'Property is required for staff accounts';
+    if (needsProperty && !effectivePropertyId) errors.propertyId = 'Property is required for staff accounts';
     setUserErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
@@ -182,7 +178,7 @@ const me = useAppStore((s) => s.user);
         role: userForm.role,
         department: userForm.department,
         phone: userForm.phone || undefined,
-        propertyId: userForm.role === 'admin' ? null : userForm.propertyId || null,
+        propertyId: userForm.role === 'admin' ? null : effectivePropertyId || null,
       });
       addAuditLog({
         id: 'AL' + Date.now(), action: 'update_user', userId: me?.id ?? '', userName: me?.name ?? 'You', userRole: me?.role ?? '',
@@ -201,7 +197,7 @@ const me = useAppStore((s) => s.user);
         avatar: '',
         hireDate: new Date().toISOString().split('T')[0],
         status: 'active',
-        propertyId: userForm.role === 'admin' ? null : userForm.propertyId || null,
+        propertyId: userForm.role === 'admin' ? null : effectivePropertyId || null,
       });
       addAuditLog({
         id: 'AL' + Date.now(), action: 'create_user', userId: me?.id ?? '', userName: me?.name ?? 'You', userRole: me?.role ?? '',
@@ -751,13 +747,13 @@ const me = useAppStore((s) => s.user);
                 </div>
                 <div>
                   <label className="text-sm font-medium mb-2 block">Property {userForm.role !== 'admin' && <span className="text-danger">*</span>}</label>
-                  <select value={userForm.propertyId} onChange={(e) => setUserForm(f => ({ ...f, propertyId: e.target.value }))}
+                  <select value={effectivePropertyId} onChange={(e) => setUserForm(f => ({ ...f, propertyId: e.target.value }))}
                     disabled={userForm.role === 'admin'}
                     className={`w-full px-4 py-2.5 bg-muted border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors disabled:opacity-60 ${userErrors.propertyId ? 'border-danger/50' : 'border-border/30'}`}>
                     <option value="">{userForm.role === 'admin' ? 'All properties (admin)' : 'Select property'}</option>
                     {properties.map(p => <option key={p.id} value={p.propertyId}>{p.name}</option>)}
                   </select>
-                  {userErrors.propertyId && <p className="text-xs text-danger mt-1">{userErrors.propertyId}</p>}
+                  {userErrors.propertyId && !effectivePropertyId && <p className="text-xs text-danger mt-1">{userErrors.propertyId}</p>}
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => { setShowUserModal(false); setEditUserId(null); }} className="flex-1 py-2.5 bg-muted rounded-lg hover:bg-muted/80 transition-colors">Cancel</button>
