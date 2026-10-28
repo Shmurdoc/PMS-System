@@ -36,9 +36,9 @@ namespace Aquri.Application.Users
         }
     }
 
-    public record GetUsersQuery(string? Search) : IRequest<List<UserDto>>;
+    public record GetUsersQuery(string? Search, int Page = 1, int PageSize = 50) : IRequest<PagedResult<UserDto>>;
 
-    public class GetUsersHandler : IRequestHandler<GetUsersQuery, List<UserDto>>
+    public class GetUsersHandler : IRequestHandler<GetUsersQuery, PagedResult<UserDto>>
     {
         private readonly IApplicationDbContext _context;
         private readonly ICurrentUser _currentUser;
@@ -49,8 +49,11 @@ namespace Aquri.Application.Users
             _currentUser = currentUser;
         }
 
-        public async Task<List<UserDto>> Handle(GetUsersQuery request, CancellationToken cancellationToken)
+        public async Task<PagedResult<UserDto>> Handle(GetUsersQuery request, CancellationToken cancellationToken)
         {
+            var page = Math.Clamp(request.Page, 1, int.MaxValue);
+            var pageSize = Math.Clamp(request.PageSize, 1, 200);
+
             var query = _context.Users.AsNoTracking().AsQueryable();
 
             // Defense in depth: the EF global query filter already confines a
@@ -70,8 +73,20 @@ namespace Aquri.Application.Users
                     u.Role.ToLower().Contains(term));
             }
 
-            var users = await query.OrderBy(u => u.Name).ToListAsync(cancellationToken);
-            return users.Select(UserDto.FromEntity).ToList();
+            var totalCount = await query.CountAsync(cancellationToken);
+            var users = await query
+                .OrderBy(u => u.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return new PagedResult<UserDto>
+            {
+                Data = users.Select(UserDto.FromEntity).ToList(),
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
     }
 }

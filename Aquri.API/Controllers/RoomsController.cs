@@ -2,6 +2,7 @@
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Aquri.Application.Common;
 using Aquri.Application.Rooms.Commands;
 using Aquri.Application.Rooms.Queries;
 using Aquri.Application.DTOs;
@@ -64,12 +65,12 @@ namespace Aquri.API.Controllers
 
         [HttpGet("property/{propertyId}")]
         [Authorize(Roles = "admin,manager,front_desk,housekeeping,maintenance,auditor")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PagedResult<RoomDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status403Forbidden)]
-        public async Task<ActionResult<IEnumerable<RoomDto>>> GetByPropertyId(int propertyId)
+        public async Task<ActionResult<PagedResult<RoomDto>>> GetByPropertyId(int propertyId, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
-            var rooms = await _mediator.Send(new GetRoomsByPropertyQuery(propertyId));
+            var rooms = await _mediator.Send(new GetRoomsByPropertyQuery(propertyId) { Page = page, PageSize = pageSize });
             return Ok(rooms);
         }
 

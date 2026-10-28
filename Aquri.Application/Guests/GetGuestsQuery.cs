@@ -37,9 +37,9 @@ namespace Aquri.Application.Guests
         }
     }
 
-    public record GetGuestsQuery(string? Search) : IRequest<List<GuestDto>>;
+    public record GetGuestsQuery(string? Search, int Page = 1, int PageSize = 50) : IRequest<PagedResult<GuestDto>>;
 
-    public class GetGuestsHandler : IRequestHandler<GetGuestsQuery, List<GuestDto>>
+    public class GetGuestsHandler : IRequestHandler<GetGuestsQuery, PagedResult<GuestDto>>
     {
         private readonly IApplicationDbContext _context;
         private readonly ICurrentUser _currentUser;
@@ -50,8 +50,11 @@ namespace Aquri.Application.Guests
             _currentUser = currentUser;
         }
 
-        public async Task<List<GuestDto>> Handle(GetGuestsQuery request, CancellationToken cancellationToken)
+        public async Task<PagedResult<GuestDto>> Handle(GetGuestsQuery request, CancellationToken cancellationToken)
         {
+            var page = Math.Clamp(request.Page, 1, int.MaxValue);
+            var pageSize = Math.Clamp(request.PageSize, 1, 200);
+
             var query = _context.Guests.AsNoTracking().AsQueryable();
 
             // Defense in depth: a scoped caller may only read their own property's
@@ -67,8 +70,20 @@ namespace Aquri.Application.Guests
                     g.Email.ToLower().Contains(term));
             }
 
-            var guests = await query.OrderBy(g => g.Name).ToListAsync(cancellationToken);
-            return guests.Select(GuestDto.FromEntity).ToList();
+            var totalCount = await query.CountAsync(cancellationToken);
+            var guests = await query
+                .OrderBy(g => g.Name)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return new PagedResult<GuestDto>
+            {
+                Data = guests.Select(GuestDto.FromEntity).ToList(),
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
     }
 }

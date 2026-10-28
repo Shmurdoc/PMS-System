@@ -189,8 +189,8 @@ namespace Aquri.Tests.Invoices
             var draft = await handler.Handle(new GetInvoicesQuery(1, "draft"), CancellationToken.None);
             var paid = await handler.Handle(new GetInvoicesQuery(1, "paid"), CancellationToken.None);
 
-            draft.Should().HaveCount(1);
-            paid.Should().BeEmpty();
+            draft.Data.Should().HaveCount(1);
+            paid.Data.Should().BeEmpty();
         }
     }
 

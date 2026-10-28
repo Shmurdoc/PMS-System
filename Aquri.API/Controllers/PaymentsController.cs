@@ -1,3 +1,4 @@
+using Aquri.Application.Common;
 using Aquri.Application.Payments;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -67,10 +68,10 @@ namespace Aquri.API.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(List<PaymentDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<List<PaymentDto>>> List([FromQuery] int propertyId, [FromQuery] string? status)
+        [ProducesResponseType(typeof(PagedResult<PaymentDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<PagedResult<PaymentDto>>> List([FromQuery] int propertyId, [FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
-            var payments = await _mediator.Send(new GetPaymentsQuery(propertyId, status));
+            var payments = await _mediator.Send(new GetPaymentsQuery(propertyId, status, page, pageSize));
             return Ok(payments);
         }
     }

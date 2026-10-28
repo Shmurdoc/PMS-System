@@ -340,8 +340,8 @@ namespace Aquri.Tests.Payments
             var pending = await handler.Handle(new GetPaymentsQuery(1, "pending"), CancellationToken.None);
             var other = await handler.Handle(new GetPaymentsQuery(1, "refunded"), CancellationToken.None);
 
-            pending.Should().HaveCount(1);
-            other.Should().BeEmpty();
+            pending.Data.Should().HaveCount(1);
+            other.Data.Should().BeEmpty();
         }
     }
 

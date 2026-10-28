@@ -406,8 +406,8 @@ namespace Aquri.Tests.Rooms
 
             var result = await handler.Handle(query, CancellationToken.None);
 
-            result.Should().HaveCount(2);
-            result.Should().OnlyContain(r => r.PropertyId == 1);
+            result.Data.Should().HaveCount(2);
+            result.Data.Should().OnlyContain(r => r.PropertyId == 1);
         }
     }
 
