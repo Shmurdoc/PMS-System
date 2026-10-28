@@ -11,8 +11,13 @@ namespace Aquri.Application.Invoices
     public class DetachPaymentHandler : IRequestHandler<DetachPaymentCommand, Result>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public DetachPaymentHandler(IApplicationDbContext context) => _context = context;
+        public DetachPaymentHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result> Handle(DetachPaymentCommand request, CancellationToken cancellationToken)
         {
@@ -25,6 +30,7 @@ namespace Aquri.Application.Invoices
                 return Result.ConflictResult("That payment is not attached to the specified invoice.");
 
             payment.DetachFromInvoice();
+            AuditTrail.Write(_context, _currentUser, "detach_payment", "payment", payment.Id.ToString(), payment.ProcessedBy);
             await _context.SaveChangesAsync(cancellationToken);
             return Result.Ok();
         }

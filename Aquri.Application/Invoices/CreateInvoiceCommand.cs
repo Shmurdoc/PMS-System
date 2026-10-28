@@ -28,11 +28,13 @@ namespace Aquri.Application.Invoices
     {
         private readonly IApplicationDbContext _context;
         private readonly INumberGenerator _numbers;
+        private readonly ICurrentUser _currentUser;
 
-        public CreateInvoiceHandler(IApplicationDbContext context, INumberGenerator numbers)
+        public CreateInvoiceHandler(IApplicationDbContext context, INumberGenerator numbers, ICurrentUser currentUser)
         {
             _context = context;
             _numbers = numbers;
+            _currentUser = currentUser;
         }
 
         public async Task<Result<InvoiceDto>> Handle(CreateInvoiceCommand request, CancellationToken cancellationToken)
@@ -88,6 +90,9 @@ namespace Aquri.Application.Invoices
                 }
 
                 _context.Invoices.Add(invoice);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                AuditTrail.Write(_context, _currentUser, "create_invoice", "invoice", invoice.Id.ToString(), invoice.InvoiceNumber);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return Result<InvoiceDto>.SuccessResult(InvoiceDto.FromEntity(invoice));

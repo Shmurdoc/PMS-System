@@ -56,7 +56,7 @@ namespace Aquri.Tests.Payments
         /// <summary>An invoice whose total is exactly <paramref name="total"/> (no tax).</summary>
         protected async Task<int> SeedInvoice(decimal total = 200m)
         {
-            var created = await new CreateInvoiceHandler(Context, new NumberGenerator(Context)).Handle(
+            var created = await new CreateInvoiceHandler(Context, new NumberGenerator(Context), CurrentUser).Handle(
                 new CreateInvoiceCommand(1, GuestId, null, "booking", DateTime.UtcNow.AddDays(7), 0, "",
                     new List<InvoiceItemInput> { new("Room night", 1, total, 0m, "room") },
                     "front@nexus.com"),
@@ -135,7 +135,7 @@ namespace Aquri.Tests.Payments
         [Fact]
         public async Task Fail_For_Invoice_Belonging_To_Different_Property()
         {
-            var created = await new CreateInvoiceHandler(Context, new NumberGenerator(Context)).Handle(
+            var created = await new CreateInvoiceHandler(Context, new NumberGenerator(Context), CurrentUser).Handle(
                 new CreateInvoiceCommand(1, GuestId, null, "booking",
                     DateTime.UtcNow.AddDays(7), 0, "",
                     new List<InvoiceItemInput> { new("Room night", 1, 100m, 0.15m, "room") },

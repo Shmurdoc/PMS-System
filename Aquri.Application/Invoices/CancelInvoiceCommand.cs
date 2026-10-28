@@ -13,8 +13,13 @@ namespace Aquri.Application.Invoices
     public class CancelInvoiceHandler : IRequestHandler<CancelInvoiceCommand, Result<InvoiceDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public CancelInvoiceHandler(IApplicationDbContext context) => _context = context;
+        public CancelInvoiceHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result<InvoiceDto>> Handle(CancelInvoiceCommand request, CancellationToken cancellationToken)
         {
@@ -37,6 +42,7 @@ namespace Aquri.Application.Invoices
                 payment.DetachFromInvoice();
 
             invoice.ChangeStatus(InvoiceStatus.Cancelled);
+            AuditTrail.Write(_context, _currentUser, "cancel_invoice", "invoice", invoice.Id.ToString(), invoice.InvoiceNumber);
             await _context.SaveChangesAsync(cancellationToken);
 
             return Result<InvoiceDto>.SuccessResult(InvoiceDto.FromEntity(invoice));

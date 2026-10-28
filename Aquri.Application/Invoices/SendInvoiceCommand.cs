@@ -13,8 +13,13 @@ namespace Aquri.Application.Invoices
     public class SendInvoiceHandler : IRequestHandler<SendInvoiceCommand, Result<InvoiceDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public SendInvoiceHandler(IApplicationDbContext context) => _context = context;
+        public SendInvoiceHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result<InvoiceDto>> Handle(SendInvoiceCommand request, CancellationToken cancellationToken)
         {
@@ -29,6 +34,7 @@ namespace Aquri.Application.Invoices
                     $"Cannot send an invoice in status '{invoice.Status.ToWire()}'.");
 
             invoice.ChangeStatus(InvoiceStatus.Sent);
+            AuditTrail.Write(_context, _currentUser, "send_invoice", "invoice", invoice.Id.ToString(), invoice.InvoiceNumber);
             await _context.SaveChangesAsync(cancellationToken);
 
             return Result<InvoiceDto>.SuccessResult(InvoiceDto.FromEntity(invoice));
