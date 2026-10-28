@@ -44,6 +44,62 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
+        /// <summary>Sends a draft or pending invoice.</summary>
+        [HttpPost("{id:int}/send")]
+        [Authorize(Roles = "admin,manager,front_desk")]
+        [ProducesResponseType(typeof(InvoiceDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+        public async Task<ActionResult<InvoiceDto>> Send(int id, [FromBody] string? sentBy)
+        {
+            var result = await _mediator.Send(new SendInvoiceCommand(id, sentBy));
+            if (result.NotFound)
+                return NotFound();
+            if (result.Conflict)
+                return Conflict(result.Error);
+            if (!result.Success)
+                return BadRequest(result.Error);
+            return Ok(result.Data);
+        }
+
+        /// <summary>Cancels an invoice and detaches its linked payments.</summary>
+        [HttpPost("{id:int}/cancel")]
+        [Authorize(Roles = "admin,manager")]
+        [ProducesResponseType(typeof(InvoiceDto), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+        public async Task<ActionResult<InvoiceDto>> Cancel(int id, [FromBody] string? cancelledBy)
+        {
+            var result = await _mediator.Send(new CancelInvoiceCommand(id, cancelledBy));
+            if (result.NotFound)
+                return NotFound();
+            if (result.Conflict)
+                return Conflict(result.Error);
+            if (!result.Success)
+                return BadRequest(result.Error);
+            return Ok(result.Data);
+        }
+
+        /// <summary>Detaches a payment from an invoice (kept for audit).</summary>
+        [HttpDelete("{id:int}/payments/{paymentId:int}")]
+        [Authorize(Roles = "admin,manager")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> DetachPayment(int id, int paymentId)
+        {
+            var result = await _mediator.Send(new DetachPaymentCommand(id, paymentId));
+            if (result.NotFound)
+                return NotFound();
+            if (result.Conflict)
+                return Conflict(result.Error);
+            if (!result.Success)
+                return BadRequest(result.Error);
+            return NoContent();
+        }
+
         [HttpGet]
         [ProducesResponseType(typeof(List<InvoiceDto>), StatusCodes.Status200OK)]
         public async Task<ActionResult<List<InvoiceDto>>> List([FromQuery] int propertyId, [FromQuery] string? status)
