@@ -77,6 +77,11 @@ namespace Aquri.Domain.Entities
             InvoiceId = invoiceId;
         }
 
+        public void DetachFromInvoice()
+        {
+            InvoiceId = null;
+        }
+
         public void AttachToBooking(int bookingId)
         {
             if (bookingId <= 0)
