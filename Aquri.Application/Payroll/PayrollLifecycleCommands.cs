@@ -39,6 +39,7 @@ namespace Aquri.Application.Payroll
                 return Result<PayrollRunDto>.ConflictResult(ex.Message);
             }
 
+            AuditTrail.Write(_context, _currentUser, "approve_payroll_run", "payroll_run", run.Id.ToString(), run.Id.ToString());
             await _context.SaveChangesAsync(cancellationToken);
             return Result<PayrollRunDto>.SuccessResult(PayrollRunDto.FromEntity(run, includePayslips: true));
         }
@@ -76,6 +77,7 @@ namespace Aquri.Application.Payroll
                 return Result<PayrollRunDto>.ConflictResult(ex.Message);
             }
 
+            AuditTrail.Write(_context, _currentUser, "pay_payroll_run", "payroll_run", run.Id.ToString(), run.Id.ToString());
             await _context.SaveChangesAsync(cancellationToken);
             return Result<PayrollRunDto>.SuccessResult(PayrollRunDto.FromEntity(run, includePayslips: true));
         }
@@ -87,8 +89,13 @@ namespace Aquri.Application.Payroll
     public class CancelPayrollRunHandler : IRequestHandler<CancelPayrollRunCommand, Result<PayrollRunDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public CancelPayrollRunHandler(IApplicationDbContext context) => _context = context;
+        public CancelPayrollRunHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result<PayrollRunDto>> Handle(CancelPayrollRunCommand request, CancellationToken cancellationToken)
         {
@@ -112,6 +119,7 @@ namespace Aquri.Application.Payroll
                 return Result<PayrollRunDto>.Failure(ex.Message);
             }
 
+            AuditTrail.Write(_context, _currentUser, "cancel_payroll_run", "payroll_run", run.Id.ToString(), run.Id.ToString());
             await _context.SaveChangesAsync(cancellationToken);
             return Result<PayrollRunDto>.SuccessResult(PayrollRunDto.FromEntity(run, includePayslips: true));
         }

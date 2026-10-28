@@ -130,6 +130,10 @@ namespace Aquri.Application.Payroll
 
                 await _context.SaveChangesAsync(cancellationToken);
 
+                AuditTrail.Write(_context, _currentUser, "create_payroll_run", "payroll_run", run.Id.ToString(),
+                    $"Period {run.PeriodStart:yyyy-MM-dd} to {run.PeriodEnd:yyyy-MM-dd}");
+                await _context.SaveChangesAsync(cancellationToken);
+
                 return Result<PayrollRunDto>.SuccessResult(PayrollRunDto.FromEntity(run, includePayslips: true));
             }
             catch (DomainException ex)
