@@ -30,11 +30,11 @@ namespace Aquri.Domain.Entities
         public AuditLog() { }
 
         public AuditLog(
-            int propertyId, string action, string entityType, string entityId, string entityName,
+            int? propertyId, string action, string entityType, string entityId, string entityName,
             int userId, string userName, string userRole, string details)
         {
-            if (propertyId <= 0)
-                throw new ArgumentException("PropertyId must be positive.", nameof(propertyId));
+            if (propertyId.HasValue && propertyId.Value <= 0)
+                throw new ArgumentException("PropertyId must be positive when supplied.", nameof(propertyId));
             if (string.IsNullOrWhiteSpace(action))
                 throw new ArgumentException("Action cannot be empty.", nameof(action));
             if (!ValidEntityTypes.Contains(entityType))
@@ -46,7 +46,7 @@ namespace Aquri.Domain.Entities
             if (string.IsNullOrWhiteSpace(userName))
                 throw new ArgumentException("UserName cannot be empty.", nameof(userName));
 
-            PropertyId = propertyId;
+            PropertyId = propertyId ?? 0;
             Action = action.Trim();
             EntityType = entityType;
             EntityId = entityId.Trim();
