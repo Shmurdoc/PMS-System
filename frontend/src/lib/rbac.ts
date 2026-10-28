@@ -94,7 +94,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermission> = {
     viewReports: true,
     exportReports: true,
     viewUsers: true,
-    manageUsers: false,
+    manageUsers: true,
     viewSchedules: true,
     viewRfid: true,
     viewMessaging: true,

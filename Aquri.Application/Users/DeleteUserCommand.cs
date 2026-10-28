@@ -12,8 +12,13 @@ namespace Aquri.Application.Users
     public class DeleteUserHandler : IRequestHandler<DeleteUserCommand, Result>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public DeleteUserHandler(IApplicationDbContext context) => _context = context;
+        public DeleteUserHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result> Handle(DeleteUserCommand request, CancellationToken cancellationToken)
         {
@@ -30,6 +35,11 @@ namespace Aquri.Application.Users
                 !await _context.Users.AnyAsync(
                     u => u.Role == AppRoles.Admin && u.Id != request.Id, cancellationToken))
                 return Result.ConflictResult("The last admin account cannot be deleted.");
+
+            // A manager can only remove staff at their own property. An admin
+            // is unrestricted.
+            if (_currentUser.UserRole != AppRoles.Admin && user.PropertyId != _currentUser.PropertyId)
+                return Result.ConflictResult("You can only remove staff at your own property.");
 
             var hasDependents =
                 await _context.Shifts.AnyAsync(s => s.UserId == request.Id, cancellationToken) ||
