@@ -9,7 +9,7 @@ namespace Aquri.Domain.Entities
             { "booking", "guest", "room", "invoice", "payment", "ticket", "user", "property", "expense", "inventory", "workflow" };
 
         public int Id { get; private set; }
-        public int PropertyId { get; private set; }
+        public int? PropertyId { get; private set; }
         public string Action { get; private set; } = string.Empty;
 
         /// <summary>booking | guest | room | invoice | payment | ticket | user | property | expense | inventory | workflow.</summary>
@@ -46,7 +46,7 @@ namespace Aquri.Domain.Entities
             if (string.IsNullOrWhiteSpace(userName))
                 throw new ArgumentException("UserName cannot be empty.", nameof(userName));
 
-            PropertyId = propertyId ?? 0;
+            PropertyId = propertyId;
             Action = action.Trim();
             EntityType = entityType;
             EntityId = entityId.Trim();

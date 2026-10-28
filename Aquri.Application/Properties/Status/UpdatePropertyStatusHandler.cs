@@ -11,11 +11,13 @@ namespace Aquri.Application.Properties.Status
     {
         private readonly IApplicationDbContext _context;
         private readonly IMapper _mapper;
+        private readonly ICurrentUser _currentUser;
 
-        public UpdatePropertyStatusHandler(IApplicationDbContext context, IMapper mapper)
+        public UpdatePropertyStatusHandler(IApplicationDbContext context, IMapper mapper, ICurrentUser currentUser)
         {
             _context = context;
             _mapper = mapper;
+            _currentUser = currentUser;
         }
 
         public async Task<Result<PropertyDto>> Handle(UpdatePropertyStatusCommand request, CancellationToken cancellationToken)
@@ -29,6 +31,7 @@ namespace Aquri.Application.Properties.Status
             }
 
             property.UpdateStatus(request.Status);
+            AuditTrail.Write(_context, _currentUser, "update_property_status", "property", property.Id.ToString(), property.Name);
             await _context.SaveChangesAsync(cancellationToken);
 
             return Result<PropertyDto>.SuccessResult(_mapper.Map<PropertyDto>(property));

@@ -7,7 +7,7 @@ namespace Aquri.Application.AuditLogs
     public class AuditLogDto
     {
         public int Id { get; init; }
-        public int PropertyId { get; init; }
+        public int? PropertyId { get; init; }
         public string Action { get; init; } = string.Empty;
         public string EntityType { get; init; } = string.Empty;
         public string EntityId { get; init; } = string.Empty;

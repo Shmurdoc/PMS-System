@@ -83,10 +83,12 @@ namespace Aquri.Application.Properties.Queries
     public class DeletePropertyHandler : IRequestHandler<DeletePropertyCommand, Result<bool>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public DeletePropertyHandler(IApplicationDbContext context)
+        public DeletePropertyHandler(IApplicationDbContext context, ICurrentUser currentUser)
         {
             _context = context;
+            _currentUser = currentUser;
         }
 
         public async Task<Result<bool>> Handle(DeletePropertyCommand request, CancellationToken cancellationToken)
@@ -100,6 +102,7 @@ namespace Aquri.Application.Properties.Queries
             }
 
             _context.Properties.Remove(property);
+            AuditTrail.Write(_context, _currentUser, "delete_property", "property", property.Id.ToString(), property.Name);
             await _context.SaveChangesAsync(cancellationToken);
 
             return Result<bool>.SuccessResult(true);

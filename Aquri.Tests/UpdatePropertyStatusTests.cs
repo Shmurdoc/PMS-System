@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using Aquri.Application.Common.Interfaces;
 using Aquri.Application.DTOs;
 using Aquri.Application.MappingProfiles;
 using Aquri.Application.Properties.Status;
@@ -18,6 +19,7 @@ namespace Aquri.Tests
     {
         private readonly AquriDbContext _context;
         private readonly IMapper _mapper;
+        private readonly ICurrentUser CurrentUser = new FakeCurrentUser();
         private readonly UpdatePropertyStatusHandler _handler;
 
         public UpdatePropertyStatusCommandHandler_Should()
@@ -31,7 +33,7 @@ namespace Aquri.Tests
             var config = new MapperConfiguration(cfg => cfg.AddProfile<MappingProfile>());
             _mapper = config.CreateMapper();
 
-            _handler = new UpdatePropertyStatusHandler(_context, _mapper);
+            _handler = new UpdatePropertyStatusHandler(_context, _mapper, CurrentUser);
         }
 
         public void Dispose() => _context.Dispose();
@@ -79,5 +81,14 @@ namespace Aquri.Tests
             result.NotFound.Should().BeTrue();
             result.Data.Should().BeNull();
         }
+    }
+
+    sealed class FakeCurrentUser : ICurrentUser
+    {
+        public bool IsAuthenticated => true;
+        public int? PropertyId => 1;
+        public int UserId => 1;
+        public string UserName => "test-user";
+        public string UserRole => "admin";
     }
 }
