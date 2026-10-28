@@ -146,5 +146,12 @@ namespace Aquri.Domain.Entities
                 throw new ArgumentException("Idempotency key cannot exceed 200 characters.", nameof(key));
             IdempotencyKey = key;
         }
+
+        public void SetCurrency(string currency)
+        {
+            if (string.IsNullOrWhiteSpace(currency) || currency.Length > 3)
+                throw new ArgumentException("Currency must be a 3-character ISO 4217 code.", nameof(currency));
+            Currency = currency.Trim().ToUpperInvariant();
+        }
     }
 }

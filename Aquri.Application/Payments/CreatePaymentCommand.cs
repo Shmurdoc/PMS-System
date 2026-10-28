@@ -77,12 +77,19 @@ namespace Aquri.Application.Payments
                     return Result<PaymentDto>.Failure("Booking does not belong to the specified property.");
             }
 
+            var property = await _context.Properties
+                .FirstOrDefaultAsync(p => p.PropertyId == request.PropertyId, cancellationToken);
+            if (property is null)
+                return Result<PaymentDto>.Failure("Property not found.");
+
             var paymentNumber = await _numbers.NextPaymentNumberAsync(cancellationToken);
 
             try
             {
                 var payment = new Payment(paymentNumber, request.GuestId, request.PropertyId,
                     request.Amount, request.Method, request.ProcessedBy);
+
+                payment.SetCurrency(property.Currency);
 
                 if (!string.IsNullOrWhiteSpace(request.Reference))
                     payment.SetReference(request.Reference.Trim());
