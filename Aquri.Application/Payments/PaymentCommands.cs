@@ -18,8 +18,13 @@ namespace Aquri.Application.Payments
     public class CompletePaymentHandler : IRequestHandler<CompletePaymentCommand, Result<PaymentDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public CompletePaymentHandler(IApplicationDbContext context) => _context = context;
+        public CompletePaymentHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result<PaymentDto>> Handle(CompletePaymentCommand request, CancellationToken cancellationToken)
         {
@@ -42,6 +47,7 @@ namespace Aquri.Application.Payments
             {
                 payment.Complete(request.TransactionId);
                 invoice?.RecordPayment(payment.Amount, payment.Method);
+                AuditTrail.Write(_context, _currentUser, "complete_payment", "payment", payment.Id.ToString(), payment.ProcessedBy);
                 await _context.SaveChangesAsync(cancellationToken);
                 return Result<PaymentDto>.SuccessResult(PaymentDto.FromEntity(payment));
             }
@@ -70,8 +76,13 @@ namespace Aquri.Application.Payments
     public class RefundPaymentHandler : IRequestHandler<RefundPaymentCommand, Result<PaymentDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public RefundPaymentHandler(IApplicationDbContext context) => _context = context;
+        public RefundPaymentHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result<PaymentDto>> Handle(RefundPaymentCommand request, CancellationToken cancellationToken)
         {
@@ -93,6 +104,7 @@ namespace Aquri.Application.Payments
             {
                 payment.Refund();
                 invoice?.ReversePayment(payment.Amount);
+                AuditTrail.Write(_context, _currentUser, "refund_payment", "payment", payment.Id.ToString(), payment.ProcessedBy);
                 await _context.SaveChangesAsync(cancellationToken);
                 return Result<PaymentDto>.SuccessResult(PaymentDto.FromEntity(payment));
             }

@@ -24,11 +24,13 @@ namespace Aquri.Application.Payments
     {
         private readonly IApplicationDbContext _context;
         private readonly INumberGenerator _numbers;
+        private readonly ICurrentUser _currentUser;
 
-        public CreatePaymentHandler(IApplicationDbContext context, INumberGenerator numbers)
+        public CreatePaymentHandler(IApplicationDbContext context, INumberGenerator numbers, ICurrentUser currentUser)
         {
             _context = context;
             _numbers = numbers;
+            _currentUser = currentUser;
         }
 
         public async Task<Result<PaymentDto>> Handle(CreatePaymentCommand request, CancellationToken cancellationToken)
@@ -94,6 +96,9 @@ namespace Aquri.Application.Payments
                     payment.AttachToBooking(request.BookingId.Value);
 
                 _context.Payments.Add(payment);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                AuditTrail.Write(_context, _currentUser, "create_payment", "payment", payment.Id.ToString(), payment.ProcessedBy);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return Result<PaymentDto>.SuccessResult(PaymentDto.FromEntity(payment));
