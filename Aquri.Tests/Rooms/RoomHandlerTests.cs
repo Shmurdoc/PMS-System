@@ -369,7 +369,7 @@ namespace Aquri.Tests.Rooms
             Context.Rooms.Add(room);
             await Context.SaveChangesAsync();
 
-            var handler = new GetRoomHandler(Context, Mapper);
+            var handler = new GetRoomHandler(Context, Mapper, CurrentUser);
             var query = new GetRoomQuery(room.Id);
 
             var result = await handler.Handle(query, CancellationToken.None);
@@ -382,7 +382,7 @@ namespace Aquri.Tests.Rooms
         [Fact]
         public async Task Return_Null_When_Not_Found()
         {
-            var handler = new GetRoomHandler(Context, Mapper);
+            var handler = new GetRoomHandler(Context, Mapper, CurrentUser);
             var query = new GetRoomQuery(999);
 
             var result = await handler.Handle(query, CancellationToken.None);
@@ -401,7 +401,7 @@ namespace Aquri.Tests.Rooms
             Context.Rooms.Add(new Room("903", 2, "single"));
             await Context.SaveChangesAsync();
 
-            var handler = new GetRoomsByPropertyHandler(Context, Mapper);
+            var handler = new GetRoomsByPropertyHandler(Context, Mapper, CurrentUser);
             var query = new GetRoomsByPropertyQuery(1);
 
             var result = await handler.Handle(query, CancellationToken.None);

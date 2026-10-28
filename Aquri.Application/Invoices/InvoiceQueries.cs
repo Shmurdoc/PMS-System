@@ -1,5 +1,6 @@
 using Aquri.Application.Common;
 using Aquri.Application.Common.Interfaces;
+using Aquri.Domain.Entities;
 using Aquri.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -33,8 +34,13 @@ namespace Aquri.Application.Invoices
     public class GetInvoicesHandler : IRequestHandler<GetInvoicesQuery, List<InvoiceDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public GetInvoicesHandler(IApplicationDbContext context) => _context = context;
+        public GetInvoicesHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<List<InvoiceDto>> Handle(GetInvoicesQuery request, CancellationToken cancellationToken)
         {
@@ -42,6 +48,11 @@ namespace Aquri.Application.Invoices
                 .AsNoTracking()
                 .Include(i => i.Items)
                 .Where(i => i.PropertyId == request.PropertyId);
+
+            // Defense in depth: a scoped caller may only read their own property's
+            // invoices, even if they supply a different PropertyId in the request.
+            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
+                query = query.Where(i => i.PropertyId == scope);
 
             if (!string.IsNullOrWhiteSpace(request.Status))
             {

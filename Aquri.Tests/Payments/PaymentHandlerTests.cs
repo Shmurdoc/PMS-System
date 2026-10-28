@@ -335,7 +335,7 @@ namespace Aquri.Tests.Payments
         {
             await SeedPayment();
 
-            var handler = new GetPaymentsHandler(Context);
+            var handler = new GetPaymentsHandler(Context, CurrentUser);
 
             var pending = await handler.Handle(new GetPaymentsQuery(1, "pending"), CancellationToken.None);
             var other = await handler.Handle(new GetPaymentsQuery(1, "refunded"), CancellationToken.None);

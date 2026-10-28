@@ -3,6 +3,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Aquri.Application.Common.Interfaces;
 using Aquri.Application.DTOs;
+using Aquri.Domain.Entities;
 using AutoMapper;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -25,17 +26,26 @@ namespace Aquri.Application.Rooms.Queries
     {
         private readonly IApplicationDbContext _context;
         private readonly IMapper _mapper;
+        private readonly ICurrentUser _currentUser;
 
-        public GetRoomHandler(IApplicationDbContext context, IMapper mapper)
+        public GetRoomHandler(IApplicationDbContext context, IMapper mapper, ICurrentUser currentUser)
         {
             _context = context;
             _mapper = mapper;
+            _currentUser = currentUser;
         }
 
         public async Task<RoomDto?> Handle(GetRoomQuery request, CancellationToken cancellationToken)
         {
-            var room = await _context.Rooms
-                .FindAsync(request.Id, cancellationToken);
+            var query = _context.Rooms.AsNoTracking();
+
+            // Defense in depth: a scoped caller may only read their own property's
+            // rooms, so probing another property's room Id returns null (404).
+            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
+                query = query.Where(r => r.PropertyId == scope);
+
+            var room = await query
+                .FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken);
 
             return room == null ? null : _mapper.Map<RoomDto>(room);
         }
@@ -57,18 +67,25 @@ namespace Aquri.Application.Rooms.Queries
     {
         private readonly IApplicationDbContext _context;
         private readonly IMapper _mapper;
+        private readonly ICurrentUser _currentUser;
 
-        public GetRoomsByPropertyHandler(IApplicationDbContext context, IMapper mapper)
+        public GetRoomsByPropertyHandler(IApplicationDbContext context, IMapper mapper, ICurrentUser currentUser)
         {
             _context = context;
             _mapper = mapper;
+            _currentUser = currentUser;
         }
 
         public async Task<List<RoomDto>> Handle(GetRoomsByPropertyQuery request, CancellationToken cancellationToken)
         {
-            var rooms = await _context.Rooms
-                .Where(r => r.PropertyId == request.PropertyId)
-                .ToListAsync(cancellationToken);
+            var query = _context.Rooms.AsNoTracking().Where(r => r.PropertyId == request.PropertyId);
+
+            // Defense in depth: a scoped caller may only read their own property's
+            // rooms, even if they supply a different PropertyId in the request.
+            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
+                query = query.Where(r => r.PropertyId == scope);
+
+            var rooms = await query.ToListAsync(cancellationToken);
 
             return _mapper.Map<List<RoomDto>>(rooms);
         }

@@ -2,6 +2,7 @@ using System;
 using System.Threading;
 using System.Threading.Tasks;
 using Aquri.Application.Bookings;
+using Aquri.Application.Common.Interfaces;
 using Aquri.Domain.Entities;
 using Aquri.Domain.Enums;
 using Aquri.Infrastructure.Persistence;
@@ -14,6 +15,7 @@ namespace Aquri.Tests.Bookings
     public class BookingHandlerTestBase : IDisposable
     {
         protected readonly AquriDbContext Context;
+        protected readonly ICurrentUser CurrentUser = new FakeCurrentUser();
         protected int RoomId;
         protected int GuestId;
 
@@ -162,7 +164,7 @@ namespace Aquri.Tests.Bookings
                     DateTime.UtcNow.Date.AddDays(1), DateTime.UtcNow.Date.AddDays(3), 2, 199.99m, "direct"),
                 CancellationToken.None);
 
-            var handler = new GetBookingsHandler(Context);
+            var handler = new GetBookingsHandler(Context, CurrentUser);
 
             var all = await handler.Handle(new GetBookingsQuery(1, null), CancellationToken.None);
             var none = await handler.Handle(new GetBookingsQuery(2, null), CancellationToken.None);
@@ -170,5 +172,14 @@ namespace Aquri.Tests.Bookings
             all.Should().HaveCount(1);
             none.Should().BeEmpty();
         }
+    }
+
+    sealed class FakeCurrentUser : ICurrentUser
+    {
+        public bool IsAuthenticated => true;
+        public int? PropertyId => 1;
+        public int UserId => 1;
+        public string UserName => "test-user";
+        public string UserRole => "admin";
     }
 }

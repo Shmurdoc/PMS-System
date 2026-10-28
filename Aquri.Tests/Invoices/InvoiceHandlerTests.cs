@@ -184,7 +184,7 @@ namespace Aquri.Tests.Invoices
         {
             await SeedInvoice();
 
-            var handler = new GetInvoicesHandler(Context);
+            var handler = new GetInvoicesHandler(Context, CurrentUser);
 
             var draft = await handler.Handle(new GetInvoicesQuery(1, "draft"), CancellationToken.None);
             var paid = await handler.Handle(new GetInvoicesQuery(1, "paid"), CancellationToken.None);

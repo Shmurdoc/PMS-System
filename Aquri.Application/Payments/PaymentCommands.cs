@@ -120,14 +120,24 @@ namespace Aquri.Application.Payments
     public class GetPaymentsHandler : IRequestHandler<GetPaymentsQuery, List<PaymentDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public GetPaymentsHandler(IApplicationDbContext context) => _context = context;
+        public GetPaymentsHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<List<PaymentDto>> Handle(GetPaymentsQuery request, CancellationToken cancellationToken)
         {
             var query = _context.Payments
                 .AsNoTracking()
                 .Where(p => p.PropertyId == request.PropertyId);
+
+            // Defense in depth: a scoped caller may only read their own property's
+            // payments, even if they supply a different PropertyId in the request.
+            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
+                query = query.Where(p => p.PropertyId == scope);
 
             if (!string.IsNullOrWhiteSpace(request.Status))
             {
