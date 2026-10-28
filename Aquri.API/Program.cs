@@ -121,6 +121,21 @@ builder.Services.AddRateLimiter(options =>
             AutoReplenishment = true
         });
     });
+    options.AddPolicy("payments", httpContext =>
+    {
+        var partitionKey = httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown";
+        var paymentRateLimitEnabled = builder.Configuration.GetValue("RateLimiting:PaymentsEnabled", true);
+        if (!paymentRateLimitEnabled)
+            return RateLimitPartition.GetNoLimiter(partitionKey);
+
+        return RateLimitPartition.GetFixedWindowLimiter(partitionKey, _ => new FixedWindowRateLimiterOptions
+        {
+            PermitLimit = 30,
+            Window = TimeSpan.FromMinutes(1),
+            QueueLimit = 0,
+            AutoReplenishment = true
+        });
+    });
 });
 
 // Health checks: database + self
