@@ -1760,10 +1760,13 @@ export const useAppStore = create<AppState>()(
           ratePerNight: booking.ratePerNight ?? booking.amount,
           source: booking.source,
         };
+        const rollback = () => set((state) => ({
+          bookings: state.bookings.filter((b) => b.id !== booking.id),
+        }));
         syncToApi(`createBooking(${booking.id})`, () => createBooking(input), (data) => {
           const dto = data as ApiBooking;
           get().reconcileBooking(booking.id, String(dto.id));
-        });
+        }, undefined, rollback);
       },
       updateBooking: (id, updates) => {
         const prevDeposit = get().bookings.find((b) => b.id === id)?.depositPaid;
@@ -1777,7 +1780,10 @@ export const useAppStore = create<AppState>()(
           syncToApi(`changeBookingStatus(${id})`, () => changeBookingStatus(numericId, updates.status!));
         }
         if (updates.depositPaid !== undefined && updates.depositPaid !== prevDeposit) {
-          syncToApi(`recordBookingDeposit(${id})`, () => recordBookingDeposit(numericId, updates.depositPaid!));
+          const rollback = () => set((state) => ({
+            bookings: state.bookings.map((b) => b.id === id ? { ...b, depositPaid: prevDeposit } : b)
+          }));
+          syncToApi(`recordBookingDeposit(${id})`, () => recordBookingDeposit(numericId, updates.depositPaid!), undefined, rollback);
         }
       },
       deleteBooking: (id) => {
@@ -2123,6 +2129,9 @@ export const useAppStore = create<AppState>()(
           processedBy: payment.processedBy,
           reference: payment.reference ?? null,
         };
+        const rollback = () => set((state) => ({
+          payments: state.payments.filter((p) => p.id !== payment.id),
+        }));
         syncToApi(`createPayment(${payment.id})`, () => createPayment(input), (data) => {
           const dto = data as ApiPayment;
           get().reconcilePayment(payment.id, String(dto.id), dto.paymentNumber);
@@ -2133,11 +2142,18 @@ export const useAppStore = create<AppState>()(
               `completePayment(${dto.id})`,
               () => completePayment(dto.id, payment.transactionId ?? null),
               () => refreshInvoice(dto.invoiceId, get),
+              // Nested complete failed: revert the reconciled payment to pending.
+              () => set((state) => ({
+                payments: state.payments.map((p) =>
+                  p.id === dto.id ? { ...p, status: 'pending' as const } : p
+                ),
+              })),
             );
           }
-        });
+        }, undefined, rollback);
       },
       updatePayment: (id, updates) => {
+        const prevPayment = get().payments.find((p) => p.id === id);
         const invoiceId = get().payments.find((p) => p.id === id)?.invoiceId ?? null;
         set((state) => ({
           payments: state.payments.map((p) => p.id === id ? { ...p, ...updates } : p)
@@ -2145,12 +2161,16 @@ export const useAppStore = create<AppState>()(
         const numericId = toNumericId(id);
         if (numericId === null) return;
         // Complete and refund have endpoints; everything else stays local.
+        const rollback = () => prevPayment && set((state) => ({
+          payments: state.payments.map((p) => p.id === id ? { ...prevPayment } : p)
+        }));
         if (updates.status === 'completed') {
           const transactionId = updates.transactionId ?? null;
           syncToApi(
             `completePayment(${id})`,
             () => completePayment(numericId, transactionId),
             () => refreshInvoice(invoiceId, get),
+            rollback,
           );
         }
         if (updates.status === 'refunded') {
@@ -2158,6 +2178,7 @@ export const useAppStore = create<AppState>()(
             `refundPayment(${id})`,
             () => refundPayment(numericId),
             () => refreshInvoice(invoiceId, get),
+            rollback,
           );
         }
       },
