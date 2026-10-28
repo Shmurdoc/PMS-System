@@ -49,7 +49,7 @@ namespace Aquri.Application.Bookings
                     b.CheckOut > request.CheckIn);
 
             if (overlapping)
-                return Result<BookingDto>.Failure("Room is not available for the selected dates.");
+                return Result<BookingDto>.ConflictResult("Room is not available for the selected dates.");
 
             try
             {
@@ -62,6 +62,12 @@ namespace Aquri.Application.Bookings
 
                 return Result<BookingDto>.SuccessResult(BookingDto.FromEntity(booking));
             }
+            catch (DbUpdateException ex) when (IsExclusionViolation(ex))
+            {
+                // PostgreSQL exclusion constraint (CK_Bookings_NoOverlap) fired:
+                // a concurrent request booked the same overlapping dates first.
+                return Result<BookingDto>.ConflictResult("Room is not available for the selected dates — another booking overlaps those dates.");
+            }
             catch (DomainException ex)
             {
                 return Result<BookingDto>.Failure(ex.Message);
@@ -70,6 +76,16 @@ namespace Aquri.Application.Bookings
             {
                 return Result<BookingDto>.Failure(ex.Message);
             }
+        }
+
+        private static bool IsExclusionViolation(DbUpdateException ex)
+        {
+            // PostgreSQL exclusion constraint (CK_Bookings_NoOverlap) fired.
+            // Detect by message text so the Application layer stays free of the
+            // Npgsql dependency. Other DbUpdateExceptions (connection, etc.)
+            // don't match and bubble up as 500, which is correct.
+            var message = (ex.InnerException?.Message ?? ex.Message) ?? string.Empty;
+            return message.Contains("violates exclusion constraint", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

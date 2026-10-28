@@ -21,9 +21,14 @@ namespace Aquri.API.Controllers
         [Authorize(Roles = "admin,manager,front_desk")]
         [ProducesResponseType(typeof(BookingDto), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
         public async Task<ActionResult<BookingDto>> Create([FromBody] CreateBookingCommand command)
         {
             var result = await _mediator.Send(command);
+            if (result.NotFound)
+                return NotFound();
+            if (result.Conflict)
+                return Conflict(result.Error);
             if (!result.Success)
                 return BadRequest(result.Error);
 
