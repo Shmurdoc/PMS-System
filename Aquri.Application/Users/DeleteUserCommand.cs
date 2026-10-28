@@ -50,6 +50,7 @@ namespace Aquri.Application.Users
                     "User has shifts, attendance records, or messages and cannot be deleted.");
 
             _context.Users.Remove(user);
+            AuditTrail.Write(_context, _currentUser, "delete_user", "user", user.Id.ToString(), user.Name);
             await _context.SaveChangesAsync(cancellationToken);
             return Result.Ok();
         }

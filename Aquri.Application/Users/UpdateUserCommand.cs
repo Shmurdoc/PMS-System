@@ -87,6 +87,7 @@ namespace Aquri.Application.Users
                     user.ChangeRole(request.Role);
 
                 user.UpdateProfile(request.Name, request.Department, request.Phone);
+                AuditTrail.Write(_context, _currentUser, "update_user", "user", user.Id.ToString(), user.Name);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return Result<UserDto>.SuccessResult(UserDto.FromEntity(user));

@@ -80,6 +80,9 @@ namespace Aquri.Application.Users
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync(cancellationToken);
 
+                AuditTrail.Write(_context, _currentUser, "create_user", "user", user.Id.ToString(), user.Name);
+                await _context.SaveChangesAsync(cancellationToken);
+
                 return Result<UserDto>.SuccessResult(UserDto.FromEntity(user));
             }
             catch (ArgumentException ex)
