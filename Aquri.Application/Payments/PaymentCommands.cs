@@ -115,9 +115,9 @@ namespace Aquri.Application.Payments
         }
     }
 
-    public record GetPaymentsQuery(int PropertyId, string? Status) : IRequest<List<PaymentDto>>;
+    public record GetPaymentsQuery(int PropertyId, string? Status, int Page = 1, int PageSize = 50) : IRequest<PagedRows<PaymentDto>>;
 
-    public class GetPaymentsHandler : IRequestHandler<GetPaymentsQuery, List<PaymentDto>>
+    public class GetPaymentsHandler : IRequestHandler<GetPaymentsQuery, PagedRows<PaymentDto>>
     {
         private readonly IApplicationDbContext _context;
         private readonly ICurrentUser _currentUser;
@@ -128,8 +128,11 @@ namespace Aquri.Application.Payments
             _currentUser = currentUser;
         }
 
-        public async Task<List<PaymentDto>> Handle(GetPaymentsQuery request, CancellationToken cancellationToken)
+        public async Task<PagedRows<PaymentDto>> Handle(GetPaymentsQuery request, CancellationToken cancellationToken)
         {
+            var page = Math.Clamp(request.Page, 1, int.MaxValue);
+            var pageSize = Math.Clamp(request.PageSize, 1, 200);
+
             var query = _context.Payments
                 .AsNoTracking()
                 .Where(p => p.PropertyId == request.PropertyId);
@@ -142,13 +145,25 @@ namespace Aquri.Application.Payments
             if (!string.IsNullOrWhiteSpace(request.Status))
             {
                 if (!PaymentStatusExtensions.TryParseWire(request.Status, out var statusFilter))
-                    return new List<PaymentDto>();
+                    return new PagedRows<PaymentDto>();
 
                 query = query.Where(p => p.Status == statusFilter);
             }
 
-            var payments = await query.OrderByDescending(p => p.Created).ToListAsync(cancellationToken);
-            return payments.Select(PaymentDto.FromEntity).ToList();
+            var totalCount = await query.CountAsync(cancellationToken);
+            var payments = await query
+                .OrderByDescending(p => p.Created)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return new PagedRows<PaymentDto>
+            {
+                Data = payments.Select(PaymentDto.FromEntity).ToList(),
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
     }
 }

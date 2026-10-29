@@ -108,8 +108,8 @@ namespace Aquri.Tests.Guests
 
             var result = await handler.Handle(new GetGuestsQuery("jane"), CancellationToken.None);
 
-            result.Should().HaveCount(1);
-            result[0].Name.Should().Be("Jane Doe");
+            result.Data.Should().HaveCount(1);
+            result.Data[0].Name.Should().Be("Jane Doe");
         }
     }
 }

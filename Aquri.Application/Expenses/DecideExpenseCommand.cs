@@ -12,8 +12,13 @@ namespace Aquri.Application.Expenses
     public class ApproveExpenseHandler : IRequestHandler<ApproveExpenseCommand, Result<ExpenseDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public ApproveExpenseHandler(IApplicationDbContext context) => _context = context;
+        public ApproveExpenseHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result<ExpenseDto>> Handle(ApproveExpenseCommand request, CancellationToken cancellationToken)
         {
@@ -26,6 +31,7 @@ namespace Aquri.Application.Expenses
             try
             {
                 expense.Approve(request.ApprovedBy);
+                AuditTrail.Write(_context, _currentUser, "approve_expense", "expense", expense.Id.ToString(), expense.Description);
                 await _context.SaveChangesAsync(cancellationToken);
                 return Result<ExpenseDto>.SuccessResult(ExpenseDto.FromEntity(expense));
             }
@@ -46,8 +52,13 @@ namespace Aquri.Application.Expenses
     public class RejectExpenseHandler : IRequestHandler<RejectExpenseCommand, Result<ExpenseDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public RejectExpenseHandler(IApplicationDbContext context) => _context = context;
+        public RejectExpenseHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result<ExpenseDto>> Handle(RejectExpenseCommand request, CancellationToken cancellationToken)
         {
@@ -60,6 +71,7 @@ namespace Aquri.Application.Expenses
             try
             {
                 expense.Reject(request.RejectedBy);
+                AuditTrail.Write(_context, _currentUser, "reject_expense", "expense", expense.Id.ToString(), expense.Description);
                 await _context.SaveChangesAsync(cancellationToken);
                 return Result<ExpenseDto>.SuccessResult(ExpenseDto.FromEntity(expense));
             }

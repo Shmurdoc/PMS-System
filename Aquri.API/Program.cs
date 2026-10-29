@@ -321,11 +321,22 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-// Lightweight liveness endpoint (no dependencies — always 200 if process is up)
+// Lightweight liveness endpoint (no dependencies, always 200 if process is up)
 app.MapGet("/health", () => Results.Ok(new { status = "Healthy", timestamp = DateTime.UtcNow }));
 
 // Full readiness endpoint (includes database check)
 app.MapHealthChecks("/health/ready");
+
+// Apply schema migrations before any request is served. Strict on purpose:
+// if the database is unreachable or a migration fails, the API refuses to
+// start rather than serving against a stale schema. The InMemory provider
+// used by tests has no migrations, so it is skipped there.
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<AquriDbContext>();
+    if (db.Database.ProviderName != "Microsoft.EntityFrameworkCore.InMemory")
+        db.Database.Migrate();
+}
 
 // Idempotent seeding: creates demo users on first run (skips when they exist).
 // Wrapped so the API still starts when the database is unreachable (e.g. tests).

@@ -24,10 +24,13 @@ namespace Aquri.API.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<List<UserDto>>> List([FromQuery] string? search)
+        public async Task<ActionResult<List<UserDto>>> List([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
-            var users = await _mediator.Send(new GetUsersQuery(search));
-            return Ok(users);
+            var rows = await _mediator.Send(new GetUsersQuery(search, page, pageSize));
+            Response.Headers["X-Total-Count"] = rows.TotalCount.ToString();
+            Response.Headers["X-Page"] = rows.Page.ToString();
+            Response.Headers["X-Page-Size"] = rows.PageSize.ToString();
+            return Ok(rows.Data);
         }
 
         [HttpGet("{id:int}")]

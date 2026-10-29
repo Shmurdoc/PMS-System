@@ -21,8 +21,13 @@ namespace Aquri.Application.Expenses
     public class CreateExpenseHandler : IRequestHandler<CreateExpenseCommand, Result<ExpenseDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public CreateExpenseHandler(IApplicationDbContext context) => _context = context;
+        public CreateExpenseHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result<ExpenseDto>> Handle(CreateExpenseCommand request, CancellationToken cancellationToken)
         {
@@ -37,6 +42,9 @@ namespace Aquri.Application.Expenses
                     expense.SetPaymentMethod(request.PaymentMethod);
 
                 _context.Expenses.Add(expense);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                AuditTrail.Write(_context, _currentUser, "create_expense", "expense", expense.Id.ToString(), expense.Description);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return Result<ExpenseDto>.SuccessResult(ExpenseDto.FromEntity(expense));

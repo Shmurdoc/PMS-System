@@ -4,21 +4,21 @@ using Aquri.Application.Common.Interfaces;
 using Aquri.Application.DTOs;
 using Aquri.Application.Properties.Commands;
 using Aquri.Infrastructure.Persistence;
+using Aquri.Tests.Api;
 using MediatR;
-using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
 
 namespace Aquri.Tests
 {
-    /// <summary>Boots the real API host and verifies the DbContext (the unit of work), the application abstraction over it, and MediatR handlers are all registered and resolvable from DI.</summary>
+    /// <summary>Boots the API host and verifies the DbContext (the unit of work), the application abstraction over it, and MediatR handlers are all registered and resolvable from DI. Uses the same InMemory host as the API suite so the tests never touch a real database.</summary>
     public class DependencyInjectionTests
     {
         [Fact]
         public void ServiceProvider_Resolves_DbContext_And_App_Abstraction()
         {
-            using var factory = new WebApplicationFactory<Program>();
+            using var factory = new AquriApiFactory();
 
             using var scope = factory.Services.CreateScope();
             var dbContext = scope.ServiceProvider.GetService<AquriDbContext>();
@@ -33,7 +33,7 @@ namespace Aquri.Tests
         [Fact]
         public void App_Abstraction_Is_Same_DbContext_Within_One_Scope()
         {
-            using var factory = new WebApplicationFactory<Program>();
+            using var factory = new AquriApiFactory();
 
             using var scope = factory.Services.CreateScope();
             var appContext = scope.ServiceProvider.GetRequiredService<IApplicationDbContext>();
@@ -48,7 +48,7 @@ namespace Aquri.Tests
         [Fact]
         public void MediatR_Resolves_CreatePropertyWithRoomsHandler_From_Di()
         {
-            using var factory = new WebApplicationFactory<Program>();
+            using var factory = new AquriApiFactory();
 
             using var scope = factory.Services.CreateScope();
             var handler = scope.ServiceProvider
@@ -60,7 +60,7 @@ namespace Aquri.Tests
         [Fact]
         public async Task Api_Returns_Success_For_Health_Endpoint()
         {
-            using var factory = new WebApplicationFactory<Program>();
+            using var factory = new AquriApiFactory();
             var client = factory.CreateClient();
 
             var response = await client.GetAsync("/health");

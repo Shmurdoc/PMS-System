@@ -50,10 +50,13 @@ namespace Aquri.API.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(List<BookingDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<List<BookingDto>>> List([FromQuery] int propertyId, [FromQuery] string? status)
+        public async Task<ActionResult<List<BookingDto>>> List([FromQuery] int propertyId, [FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
-            var bookings = await _mediator.Send(new GetBookingsQuery(propertyId, status));
-            return Ok(bookings);
+            var rows = await _mediator.Send(new GetBookingsQuery(propertyId, status, page, pageSize));
+            Response.Headers["X-Total-Count"] = rows.TotalCount.ToString();
+            Response.Headers["X-Page"] = rows.Page.ToString();
+            Response.Headers["X-Page-Size"] = rows.PageSize.ToString();
+            return Ok(rows.Data);
         }
 
         [HttpPatch("{id:int}/status")]

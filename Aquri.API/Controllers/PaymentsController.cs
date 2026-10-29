@@ -72,10 +72,13 @@ namespace Aquri.API.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(List<PaymentDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<List<PaymentDto>>> List([FromQuery] int propertyId, [FromQuery] string? status)
+        public async Task<ActionResult<List<PaymentDto>>> List([FromQuery] int propertyId, [FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
-            var payments = await _mediator.Send(new GetPaymentsQuery(propertyId, status));
-            return Ok(payments);
+            var rows = await _mediator.Send(new GetPaymentsQuery(propertyId, status, page, pageSize));
+            Response.Headers["X-Total-Count"] = rows.TotalCount.ToString();
+            Response.Headers["X-Page"] = rows.Page.ToString();
+            Response.Headers["X-Page-Size"] = rows.PageSize.ToString();
+            return Ok(rows.Data);
         }
     }
 }

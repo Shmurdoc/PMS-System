@@ -15,7 +15,25 @@ jobs:
     # EF InMemory, so nothing ever dials Postgres or signs a real token.
     env:
       ConnectionStrings__DefaultConnection: "Host=unused;Database=unused;Username=unused;Password=unused"
+      # Postgres-backed integration tests (booking exclusion constraint,
+      # payment idempotency index) connect here. The service container below
+      # matches these credentials; when absent the tests self-skip.
+      ConnectionStrings__PostgresTests: "Host=localhost;Port=5432;Database=Aquri;Username=aquri_user;Password=test-only-local"
       Jwt__Key: "ci-dummy-signing-key-0123456789abcdef"
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: Aquri
+          POSTGRES_USER: aquri_user
+          POSTGRES_PASSWORD: test-only-local
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aquri_user -d Aquri"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-dotnet@v4
