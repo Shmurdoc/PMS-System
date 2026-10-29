@@ -12,7 +12,12 @@ namespace Aquri.Application.Users
         public const int MinPasswordLength = 8;
     }
 
-    /// <summary>Creates a staff account (admin only). Non-admin accounts must point at a property; admins can stay unscoped. The plaintext password is hashed before storage.</summary>
+    /// <summary>
+    /// Creates a staff account (admin only, or a manager for their own
+    /// property). Non-admin accounts must be assigned to at least one property;
+    /// admins stay unscoped. Pass several PropertyIds for an employee who covers
+    /// multiple hotels. PropertyId remains as a shortcut for a single property.
+    /// </summary>
     public record CreateUserCommand(
         string Email,
         string Name,
@@ -20,7 +25,8 @@ namespace Aquri.Application.Users
         string Role,
         string? Department,
         string? Phone,
-        int? PropertyId = null) : IRequest<Result<UserDto>>;
+        int? PropertyId = null,
+        IReadOnlyList<int>? PropertyIds = null) : IRequest<Result<UserDto>>;
 
     public class CreateUserHandler : IRequestHandler<CreateUserCommand, Result<UserDto>>
     {
@@ -43,15 +49,21 @@ namespace Aquri.Application.Users
                 return Result<UserDto>.Failure($"Password must be at least {UserRules.MinPasswordLength} characters.");
             if (string.IsNullOrWhiteSpace(request.Role) || !AppRoles.IsValid(request.Role))
                 return Result<UserDto>.Failure($"Role must be one of: {string.Join(", ", AppRoles.All)}.");
-            if (request.Role != AppRoles.Admin && !request.PropertyId.HasValue)
+
+            // PropertyId is the single-property shortcut; PropertyIds is the
+            // full set. Merge them so both spellings work.
+            var requestedProperties = (request.PropertyIds ?? Array.Empty<int>())
+                .Concat(request.PropertyId.HasValue ? new[] { request.PropertyId.Value } : Array.Empty<int>())
+                .Distinct()
+                .ToList();
+
+            if (request.Role != AppRoles.Admin && requestedProperties.Count == 0)
                 return Result<UserDto>.Failure("PropertyId is required unless the account is an admin.");
 
-            // A manager can only create staff at their own property. The
-            // pipeline behavior also rejects a mismatched PropertyId, but we
-            // check here too so the rule survives even if the behavior is
-            // ever bypassed.
+            // A manager can create staff only for properties they themselves
+            // work in. Admins can assign any property.
             var callerRole = _currentUser.UserRole;
-            if (callerRole != AppRoles.Admin && request.PropertyId != _currentUser.PropertyId)
+            if (callerRole != AppRoles.Admin && requestedProperties.Any(p => !_currentUser.PropertyIds.Contains(p)))
                 return Result<UserDto>.Failure("You can only create staff at your own property.");
 
             // Unique login identity — proactive check so the invariant holds on
@@ -75,7 +87,7 @@ namespace Aquri.Application.Users
                 if (!string.IsNullOrWhiteSpace(request.Department) || !string.IsNullOrWhiteSpace(request.Phone))
                     user.UpdateProfile(request.Name, request.Department, request.Phone);
 
-                user.AssignProperty(request.PropertyId);
+                user.ReplacePropertyAssignments(requestedProperties);
 
                 _context.Users.Add(user);
                 await _context.SaveChangesAsync(cancellationToken);

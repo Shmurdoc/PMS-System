@@ -49,6 +49,8 @@ export interface ApiUser {
   department?: string | null;
   phone?: string | null;
   propertyId?: number | null;
+  /** Every property this account may work in; empty for admins. */
+  propertyIds?: number[] | null;
   created: string;
   lastModified?: string | null;
 }
@@ -605,6 +607,7 @@ export function mapUser(dto: ApiUser): User {
     department: dto.department ?? '',
     phone: dto.phone ?? '',
     propertyId: dto.propertyId != null ? String(dto.propertyId) : null,
+    propertyIds: (dto.propertyIds ?? []).map(String),
     hireDate: dateOnly(dto.created),
     status: 'active',
   };

@@ -9,7 +9,7 @@ namespace Aquri.Infrastructure.Persistence
     {
         public AquriDbContext CreateDbContext(string[] args)
         {
-            var optionsBuilder = new DbContextOptionsBuilder<AquriDbContext>();
+            var optionsBuilder = new DbContextOptionsBuilder<AquriDbContext>().ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCacheKeyFactory, Aquri.Infrastructure.Persistence.PropertyScopeModelCacheKeyFactory>();
             optionsBuilder.UseNpgsql(ResolveConnectionString());
 
             return new AquriDbContext(optionsBuilder.Options);

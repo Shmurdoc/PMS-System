@@ -24,6 +24,7 @@ public sealed class PostgresTestDatabase : IDisposable
     public bool Available { get; }
 
     public AquriDbContext NewContext() => new(new DbContextOptionsBuilder<AquriDbContext>()
+        .ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCacheKeyFactory, Aquri.Infrastructure.Persistence.PropertyScopeModelCacheKeyFactory>()
         .UseNpgsql(ConnectionString)
         .Options);
 

@@ -65,6 +65,26 @@ namespace Aquri.Infrastructure.Persistence
                 logger.LogInformation("Assigned {Count} demo staff to property 1.", unscopedDemoStaff.Count);
             }
 
+            // Older databases (and AssignProperty callers) can leave an account
+            // with a primary property but no assignment row. The scope set is
+            // what authorization uses, so backfill a row for every scoped
+            // account that is missing one.
+            var withAssignments = await db.UserPropertyAssignments
+                .Select(a => a.UserId)
+                .Distinct()
+                .ToListAsync();
+            var missingAssignments = await db.Users
+                .Where(u => u.PropertyId != null && !withAssignments.Contains(u.Id))
+                .ToListAsync();
+            if (missingAssignments.Count > 0)
+            {
+                foreach (var user in missingAssignments)
+                    db.UserPropertyAssignments.Add(new UserPropertyAssignment(user.Id, user.PropertyId!.Value));
+
+                await db.SaveChangesAsync();
+                logger.LogInformation("Backfilled property assignments for {Count} accounts.", missingAssignments.Count);
+            }
+
             // Pay packages for the two scoped demo accounts, so payroll can be run
             // on a fresh database without setup. An existing package is left alone.
             if (!await db.EmployeeCompensations.AnyAsync())

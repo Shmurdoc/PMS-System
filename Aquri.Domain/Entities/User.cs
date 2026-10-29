@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Aquri.Domain.Entities
 {
@@ -47,6 +49,15 @@ namespace Aquri.Domain.Entities
         /// not a foreign key to the Properties table.
         /// </summary>
         public int? PropertyId { get; private set; }
+
+        private readonly List<UserPropertyAssignment> _propertyAssignments = new();
+
+        /// <summary>
+        /// Every property this account may work in. Admins keep this empty and
+        /// see everything; non-admins must have at least one entry, and the
+        /// authorization scope for a signed-in user is this set.
+        /// </summary>
+        public ICollection<UserPropertyAssignment> PropertyAssignments => _propertyAssignments;
 
         public DateTime Created { get; private set; }
 
@@ -120,6 +131,44 @@ namespace Aquri.Domain.Entities
                 throw new ArgumentException("Non-admin accounts must be assigned to a property.", nameof(propertyId));
 
             PropertyId = propertyId;
+            LastModified = DateTime.UtcNow;
+        }
+
+        /// <summary>
+        /// Replaces the set of properties this account may work in. The first id
+        /// becomes the primary property (used for display and payroll defaults).
+        /// Passing an empty set is only valid for an admin.
+        /// </summary>
+        /// <exception cref="ArgumentException">Thrown for a non-positive id, or when a non-admin is left with no property.</exception>
+        public void ReplacePropertyAssignments(IEnumerable<int> propertyIds)
+        {
+            if (propertyIds is null)
+                throw new ArgumentNullException(nameof(propertyIds));
+
+            var ids = propertyIds.Distinct().ToList();
+            if (ids.Any(id => id <= 0))
+                throw new ArgumentException("Every property id must be positive.", nameof(propertyIds));
+            if (ids.Count == 0 && Role != AppRoles.Admin)
+                throw new ArgumentException("Non-admin accounts must be assigned to at least one property.", nameof(propertyIds));
+
+            _propertyAssignments.Clear();
+            foreach (var id in ids)
+                _propertyAssignments.Add(new UserPropertyAssignment(Id, id));
+
+            PropertyId = ids.Count > 0 ? ids[0] : null;
+            LastModified = DateTime.UtcNow;
+        }
+
+        /// <summary>Adds one property to the account's scope (no-op if already present).</summary>
+        public void AddPropertyAssignment(int propertyId)
+        {
+            if (propertyId <= 0)
+                throw new ArgumentException("Property id must be positive.", nameof(propertyId));
+            if (_propertyAssignments.Any(a => a.PropertyId == propertyId))
+                return;
+
+            _propertyAssignments.Add(new UserPropertyAssignment(Id, propertyId));
+            PropertyId ??= propertyId;
             LastModified = DateTime.UtcNow;
         }
 

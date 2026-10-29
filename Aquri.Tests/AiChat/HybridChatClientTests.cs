@@ -106,6 +106,7 @@ namespace Aquri.Tests.AiChat
 
             var context = new AquriDbContext(
                 new DbContextOptionsBuilder<AquriDbContext>()
+                    .ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCacheKeyFactory, Aquri.Infrastructure.Persistence.PropertyScopeModelCacheKeyFactory>()
                     .UseInMemoryDatabase(Guid.NewGuid().ToString())
                     .Options);
 

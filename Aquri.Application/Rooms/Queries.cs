@@ -42,8 +42,8 @@ namespace Aquri.Application.Rooms.Queries
 
             // Defense in depth: a scoped caller may only read their own property's
             // rooms, so probing another property's room Id returns null (404).
-            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
-                query = query.Where(r => r.PropertyId == scope);
+            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyIds.Count > 0)
+                query = query.Where(r => _currentUser.PropertyIds.Contains(r.PropertyId));
 
             var room = await query
                 .FirstOrDefaultAsync(r => r.Id == request.Id, cancellationToken);
@@ -88,8 +88,8 @@ namespace Aquri.Application.Rooms.Queries
 
             // Defense in depth: a scoped caller may only read their own property's
             // rooms, even if they supply a different PropertyId in the request.
-            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
-                query = query.Where(r => r.PropertyId == scope);
+            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyIds.Count > 0)
+                query = query.Where(r => _currentUser.PropertyIds.Contains(r.PropertyId));
 
             var totalCount = await query.CountAsync(cancellationToken);
             var rooms = await query

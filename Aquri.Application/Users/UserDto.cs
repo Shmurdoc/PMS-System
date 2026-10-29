@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Aquri.Domain.Entities;
 
 namespace Aquri.Application.Users
@@ -13,8 +15,11 @@ namespace Aquri.Application.Users
         public string? Department { get; init; }
         public string? Phone { get; init; }
 
-        /// <summary>Property scope of the account; null = unrestricted.</summary>
+        /// <summary>Primary property of the account; null = unrestricted admin.</summary>
         public int? PropertyId { get; init; }
+
+        /// <summary>Every property the account may work in. Empty for admins.</summary>
+        public List<int> PropertyIds { get; init; } = new();
 
         public DateTime Created { get; init; }
         public DateTime LastModified { get; init; }
@@ -28,6 +33,7 @@ namespace Aquri.Application.Users
             Department = user.Department,
             Phone = user.Phone,
             PropertyId = user.PropertyId,
+            PropertyIds = user.PropertyAssignments.Select(a => a.PropertyId).OrderBy(id => id).ToList(),
             Created = user.Created,
             LastModified = user.LastModified
         };

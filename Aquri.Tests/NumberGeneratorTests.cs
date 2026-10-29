@@ -23,6 +23,7 @@ namespace Aquri.Tests
 
         private AquriDbContext CreateContext() =>
             new(new DbContextOptionsBuilder<AquriDbContext>()
+                .ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCacheKeyFactory, Aquri.Infrastructure.Persistence.PropertyScopeModelCacheKeyFactory>()
                 .UseInMemoryDatabase(_databaseName)
                 .Options);
 

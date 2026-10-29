@@ -11,6 +11,7 @@ namespace Aquri.Application.Common.Interfaces
         DbSet<Room> Rooms { get; }
         DbSet<MaintenanceRequest> MaintenanceRequests { get; }
         DbSet<User> Users { get; }
+        DbSet<UserPropertyAssignment> UserPropertyAssignments { get; }
         DbSet<Guest> Guests { get; }
         DbSet<Booking> Bookings { get; }
         DbSet<Invoice> Invoices { get; }

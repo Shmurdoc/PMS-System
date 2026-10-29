@@ -242,6 +242,8 @@ export interface User {
   hireDate: string;
   status: 'active' | 'inactive' | 'on_leave';
   propertyId?: string | null;
+  /** Every property this account may work in; empty for admins. */
+  propertyIds?: string[];
   address?: string;
   emergencyContact?: string;
   emergencyPhone?: string;
@@ -946,6 +948,9 @@ export const useAppStore = create<AppState>()(
           department: user.department || undefined,
           phone: user.phone || undefined,
           propertyId: user.propertyId ? toNumericId(user.propertyId) : null,
+          propertyIds: (user.propertyIds ?? [])
+            .map(toNumericId)
+            .filter((id): id is number => id !== null),
         };
         syncToApi(`createUser(${user.id})`, () => createUser(input), (data) => {
           const dto = data as ApiUser;
@@ -969,6 +974,11 @@ export const useAppStore = create<AppState>()(
           propertyId: updates.propertyId === undefined
             ? undefined
             : (updates.propertyId ? toNumericId(updates.propertyId) : null),
+          propertyIds: updates.propertyIds === undefined
+            ? undefined
+            : updates.propertyIds
+                .map(toNumericId)
+                .filter((id): id is number => id !== null),
         };
         syncToApi(`updateUser(${id})`, () => apiUpdateUser(numericId, input));
       },

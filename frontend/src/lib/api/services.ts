@@ -377,7 +377,10 @@ export interface CreateUserInput {
   role: string;
   department?: string;
   phone?: string;
+  /** Single-property shortcut. */
   propertyId?: number | null;
+  /** Full set: an employee may cover several hotels. */
+  propertyIds?: number[];
 }
 
 /** Sparse — Name always sent (handler requires it); null keeps current server-side. */
@@ -388,6 +391,7 @@ export interface UpdateUserInput {
   role?: string;
   password?: string | null;
   propertyId?: number | null;
+  propertyIds?: number[];
 }
 
 export function createUser(input: CreateUserInput): Promise<ApiUser> {
@@ -401,6 +405,9 @@ export function createUser(input: CreateUserInput): Promise<ApiUser> {
       department: input.department ?? null,
       phone: input.phone ?? null,
       propertyId: input.propertyId ?? null,
+      ...(input.propertyIds && input.propertyIds.length > 0
+        ? { propertyIds: input.propertyIds }
+        : {}),
     },
   });
 }
@@ -417,6 +424,7 @@ export function updateUser(id: number, input: UpdateUserInput): Promise<ApiUser>
       role: input.role ?? null,
       password: input.password ?? null,
       propertyId: input.propertyId ?? null,
+      ...(input.propertyIds ? { propertyIds: input.propertyIds } : {}),
     },
   });
 }

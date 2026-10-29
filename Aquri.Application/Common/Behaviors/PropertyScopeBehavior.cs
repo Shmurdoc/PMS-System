@@ -32,14 +32,20 @@ namespace Aquri.Application.Common.Behaviors
             RequestHandlerDelegate<TResponse> next,
             CancellationToken cancellationToken)
         {
-            var scope = _currentUser.PropertyId;
-            if (scope is null || ScopedProperty is null)
+            // Admins (and anonymous callers) are unrestricted: no property scope.
+            var scope = _currentUser.PropertyIds;
+            if (scope.Count == 0 || ScopedProperty is null)
                 return next();
 
             var raw = ScopedProperty.GetValue(request);
             var requestProperty = raw is int value ? value : (int?)null;
-            if (requestProperty.HasValue && requestProperty != scope)
-                throw new ForbiddenException($"This account is scoped to property {scope}.");
+            if (requestProperty.HasValue && !scope.Contains(requestProperty.Value))
+            {
+                var allowed = scope.Count == 1
+                    ? $"property {scope.First()}"
+                    : $"properties {string.Join(", ", scope)}";
+                throw new ForbiddenException($"This account is scoped to {allowed}.");
+            }
 
             return next();
         }

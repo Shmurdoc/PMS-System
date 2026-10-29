@@ -25,8 +25,8 @@ namespace Aquri.Application.Users
             // scoped account to its own property, but we filter here too so a
             // scoped caller cannot probe for another property's staff by ID.
             var query = _context.Users.AsNoTracking().AsQueryable();
-            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
-                query = query.Where(u => u.PropertyId == scope);
+            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyIds.Count > 0)
+                query = query.Where(u => u.PropertyId != null && _currentUser.PropertyIds.Contains(u.PropertyId.Value));
 
             var user = await query.FirstOrDefaultAsync(u => u.Id == request.Id, cancellationToken);
 
@@ -61,8 +61,8 @@ namespace Aquri.Application.Users
             // roster never leaks across properties if the filter is bypassed.
             // Admins see everyone; managers and front desk see only their own
             // property's colleagues (needed for staff messaging).
-            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
-                query = query.Where(u => u.PropertyId == scope);
+            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyIds.Count > 0)
+                query = query.Where(u => u.PropertyId != null && _currentUser.PropertyIds.Contains(u.PropertyId.Value));
 
             if (!string.IsNullOrWhiteSpace(request.Search))
             {

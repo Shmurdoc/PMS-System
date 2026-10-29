@@ -42,10 +42,13 @@ interface UserFormData {
   role: string;
   department: string;
   phone: string;
+  /** Primary property; the first of propertyIds. */
   propertyId: string;
+  /** Every property the account works in. */
+  propertyIds: string[];
 }
 
-const emptyUserForm: UserFormData = { name: '', email: '', role: 'front_desk', department: 'Front Desk', phone: '', propertyId: '' };
+const emptyUserForm: UserFormData = { name: '', email: '', role: 'front_desk', department: 'Front Desk', phone: '', propertyId: '', propertyIds: [] };
 
 // ─── main component ───────────────────────────────────────────────────────────
 export default function AdminPanel() {
@@ -143,27 +146,53 @@ const me = useAppStore((s) => s.user);
   // while properties is still empty. Fall back to the first property at
   // render and at submit instead of writing state from an effect.
   const needsProperty = userForm.role !== 'admin';
-  const effectivePropertyId = needsProperty
-    ? userForm.propertyId || (isManager ? myPropertyId : properties[0]?.propertyId) || ''
-    : '';
+  // The checkbox list is the source of truth; a manager is pinned to their own
+  // property, an admin may tick any number of hotels for one employee.
+  const effectivePropertyIds = needsProperty
+    ? (userForm.propertyIds.length > 0
+        ? userForm.propertyIds
+        : isManager && myPropertyId
+          ? [myPropertyId]
+          : [])
+    : [];
+  const effectivePropertyId = effectivePropertyIds[0] ?? '';
+
+  const toggleProperty = (tenantId: string) => {
+    setUserForm(f => ({
+      ...f,
+      propertyIds: f.propertyIds.includes(tenantId)
+        ? f.propertyIds.filter(id => id !== tenantId)
+        : [...f.propertyIds, tenantId],
+    }));
+  };
 
   const openNewUser = () => {
     // A manager creating staff must pin them to the manager's own property.
-    // An admin is unrestricted and picks from the full list.
-    setUserForm({ ...emptyUserForm, propertyId: isManager ? myPropertyId : properties[0]?.propertyId ?? '' });
+    // An admin starts empty and ticks the hotels the employee covers.
+    setUserForm({
+      ...emptyUserForm,
+      propertyId: isManager ? myPropertyId : '',
+      propertyIds: isManager && myPropertyId ? [myPropertyId] : [],
+    });
     setUserErrors({});
     setEditUserId(null);
     setShowUserModal(true);
   };
 
   const openEditUser = (user: User) => {
+    const ids = user.propertyIds && user.propertyIds.length > 0
+      ? user.propertyIds
+      : user.propertyId
+        ? [user.propertyId]
+        : [];
     setUserForm({
       name: user.name,
       email: user.email,
       role: user.role,
       department: user.department,
       phone: user.phone ?? '',
-      propertyId: user.propertyId ?? '',
+      propertyId: ids[0] ?? '',
+      propertyIds: ids,
     });
     setUserErrors({});
     setEditUserId(user.id);
@@ -178,7 +207,7 @@ const me = useAppStore((s) => s.user);
     // Check duplicate email
     const dup = users.find(u => u.email.toLowerCase() === userForm.email.toLowerCase() && u.id !== editUserId);
     if (dup) errors.email = 'Email already in use';
-    if (needsProperty && !effectivePropertyId) errors.propertyId = 'Property is required for staff accounts';
+    if (needsProperty && effectivePropertyIds.length === 0) errors.propertyId = 'Select at least one property for staff accounts';
     setUserErrors(errors);
     if (Object.keys(errors).length > 0) return;
 
@@ -191,6 +220,7 @@ const me = useAppStore((s) => s.user);
         department: userForm.department,
         phone: userForm.phone || undefined,
         propertyId: userForm.role === 'admin' ? null : effectivePropertyId || null,
+        propertyIds: userForm.role === 'admin' ? [] : effectivePropertyIds,
       });
       addAuditLog({
         id: 'AL' + Date.now(), action: 'update_user', userId: me?.id ?? '', userName: me?.name ?? 'You', userRole: me?.role ?? '',
@@ -210,6 +240,7 @@ const me = useAppStore((s) => s.user);
         hireDate: new Date().toISOString().split('T')[0],
         status: 'active',
         propertyId: userForm.role === 'admin' ? null : effectivePropertyId || null,
+        propertyIds: userForm.role === 'admin' ? [] : effectivePropertyIds,
       });
       addAuditLog({
         id: 'AL' + Date.now(), action: 'create_user', userId: me?.id ?? '', userName: me?.name ?? 'You', userRole: me?.role ?? '',
@@ -758,17 +789,43 @@ const me = useAppStore((s) => s.user);
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium mb-2 block">Property {userForm.role !== 'admin' && <span className="text-danger">*</span>}</label>
-                  <select value={effectivePropertyId} onChange={(e) => setUserForm(f => ({ ...f, propertyId: e.target.value }))}
-                    disabled={userForm.role === 'admin' || isManager}
-                    className={`w-full px-4 py-2.5 bg-muted border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors disabled:opacity-60 ${userErrors.propertyId ? 'border-danger/50' : 'border-border/30'}`}>
-                    <option value="">{userForm.role === 'admin' ? 'All properties (admin)' : isManager ? `My property (${myPropertyId})` : 'Select property'}</option>
-                    {!isManager && properties.map(p => <option key={p.id} value={p.propertyId}>{p.name}</option>)}
-                    {isManager && myPropertyId && properties.find(p => p.propertyId === myPropertyId) && (
-                      <option key={myPropertyId} value={myPropertyId}>{properties.find(p => p.propertyId === myPropertyId)!.name}</option>
-                    )}
-                  </select>
-                  {userErrors.propertyId && !effectivePropertyId && <p className="text-xs text-danger mt-1">{userErrors.propertyId}</p>}
+                  <label className="text-sm font-medium mb-2 block">
+                    Properties {userForm.role !== 'admin' && <span className="text-danger">*</span>}
+                  </label>
+                  {userForm.role === 'admin' ? (
+                    <p className="text-xs text-muted-foreground px-1 py-2">
+                      Admins see every property.
+                    </p>
+                  ) : isManager ? (
+                    <p className="text-xs px-1 py-2">
+                      {properties.find(p => p.propertyId === myPropertyId)?.name ?? `Property ${myPropertyId}`}
+                    </p>
+                  ) : (
+                    <div className={`max-h-40 overflow-y-auto rounded-lg border p-2 space-y-1 ${userErrors.propertyId ? 'border-danger/50' : 'border-border/30'}`}>
+                      {properties.length === 0 && (
+                        <p className="text-xs text-muted-foreground">No properties loaded yet.</p>
+                      )}
+                      {properties.map(p => (
+                        <label key={p.id} className="flex items-center gap-2 text-sm px-1 py-1 rounded hover:bg-muted/60 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={userForm.propertyIds.includes(p.propertyId)}
+                            onChange={() => toggleProperty(p.propertyId)}
+                            className="accent-primary"
+                          />
+                          <span>{p.name}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                  {userForm.role !== 'admin' && !isManager && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Tick every hotel this employee covers. They will see only these.
+                    </p>
+                  )}
+                  {userErrors.propertyId && effectivePropertyIds.length === 0 && (
+                    <p className="text-xs text-danger mt-1">{userErrors.propertyId}</p>
+                  )}
                 </div>
                 <div className="flex gap-3 pt-2">
                   <button onClick={() => { setShowUserModal(false); setEditUserId(null); }} className="flex-1 py-2.5 bg-muted rounded-lg hover:bg-muted/80 transition-colors">Cancel</button>

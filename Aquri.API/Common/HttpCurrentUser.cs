@@ -1,3 +1,6 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Security.Claims;
 using Aquri.Application.Common;
 using Aquri.Application.Common.Interfaces;
@@ -25,6 +28,19 @@ namespace Aquri.API.Common
                     : null;
             }
         }
+
+        /// <summary>
+        /// All property_id claims on the token. A single-property employee has
+        /// one; an employee covering several hotels carries one claim per
+        /// property; an unrestricted admin carries none.
+        /// </summary>
+        public IReadOnlyCollection<int> PropertyIds =>
+            Principal?.FindAll(AuthClaims.PropertyId)
+                .Select(c => int.TryParse(c.Value, out var id) ? id : 0)
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList()
+            ?? (IReadOnlyCollection<int>)Array.Empty<int>();
 
         public int UserId
         {

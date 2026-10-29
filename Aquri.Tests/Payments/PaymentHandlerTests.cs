@@ -32,6 +32,7 @@ namespace Aquri.Tests.Payments
         protected AquriDbContext NewContext()
         {
             var options = new DbContextOptionsBuilder<AquriDbContext>()
+                .ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCacheKeyFactory, Aquri.Infrastructure.Persistence.PropertyScopeModelCacheKeyFactory>()
                 .UseInMemoryDatabase(databaseName: _databaseName)
                 .Options;
 

@@ -1883,6 +1883,33 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.ToTable("Users");
                 });
 
+            modelBuilder.Entity("Aquri.Domain.Entities.UserPropertyAssignment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("Created")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PropertyId");
+
+                    b.HasIndex("UserId", "PropertyId")
+                        .IsUnique();
+
+                    b.ToTable("UserPropertyAssignments");
+                });
+
             modelBuilder.Entity("Aquri.Domain.Entities.Workflow", b =>
                 {
                     b.Property<int>("Id")
@@ -2258,6 +2285,22 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Aquri.Domain.Entities.UserPropertyAssignment", b =>
+                {
+                    b.HasOne("Aquri.Domain.Entities.Property", null)
+                        .WithMany()
+                        .HasForeignKey("PropertyId")
+                        .HasPrincipalKey("PropertyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Aquri.Domain.Entities.User", null)
+                        .WithMany("PropertyAssignments")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Aquri.Domain.Entities.Workflow", b =>
                 {
                     b.HasOne("Aquri.Domain.Entities.Property", null)
@@ -2280,6 +2323,11 @@ namespace Aquri.Infrastructure.Persistence.Migrations
             modelBuilder.Entity("Aquri.Domain.Entities.Ticket", b =>
                 {
                     b.Navigation("Comments");
+                });
+
+            modelBuilder.Entity("Aquri.Domain.Entities.User", b =>
+                {
+                    b.Navigation("PropertyAssignments");
                 });
 #pragma warning restore 612, 618
         }

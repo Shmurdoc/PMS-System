@@ -737,6 +737,15 @@ function App() {
   const canViewAllProperties = user
     ? (ROLE_PERMISSIONS[user.role as UserRole]?.viewAllProperties ?? false)
     : false;
+  // Every hotel this employee covers. Falls back to the primary property for
+  // responses from before multi-property assignment existed.
+  const myPropertyIds = user?.propertyIds?.length
+    ? user.propertyIds
+    : user?.propertyId
+      ? [user.propertyId]
+      : [];
+  const myProperties = properties.filter((p) => myPropertyIds.includes(p.propertyId));
+  const canSwitchProperties = canViewAllProperties || myPropertyIds.length > 1;
   const assignedProperty = user?.propertyId
     ? properties.find((p) => p.propertyId === user.propertyId)
     : undefined;
@@ -754,10 +763,16 @@ function App() {
     localStorage.setItem('nexus_theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
+  const myPropertyKey = myPropertyIds.join(',');
   useEffect(() => {
+    // Admins keep the "all properties" overview. An employee covering several
+    // hotels starts on the combined view; a single-property employee is pinned
+    // to that property.
     if (canViewAllProperties) return;
-    if (user?.propertyId) setSelectedPropertyId(user.propertyId);
-  }, [canViewAllProperties, user?.propertyId]);
+    const ids = myPropertyKey ? myPropertyKey.split(',') : [];
+    if (ids.length === 1) setSelectedPropertyId(ids[0]);
+    else if (ids.length > 1) setSelectedPropertyId('all');
+  }, [canViewAllProperties, myPropertyKey]);
 
   // Login handler — API-first; demo credentials fall back to offline mode.
   const handleLogin = async (email: string, password: string): Promise<void> => {
@@ -1321,7 +1336,7 @@ function App() {
 
             <div className="flex items-center gap-2">
               {/* Property Selector */}
-              {canViewAllProperties ? (
+              {canSwitchProperties ? (
                 <div className="relative">
                   <select
                     value={selectedPropertyId}
@@ -1329,8 +1344,10 @@ function App() {
                     aria-label="Select property"
                     className="appearance-none pl-2.5 pr-7 py-1.5 bg-muted border border-border rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring/50 cursor-pointer"
                   >
-                    <option value="all">{properties.length} Properties</option>
-                    {properties.map(p => (
+                    <option value="all">
+                      {canViewAllProperties ? `${properties.length} Properties` : `All my properties (${myPropertyIds.length})`}
+                    </option>
+                    {(canViewAllProperties ? properties : myProperties).map(p => (
                       <option key={p.id} value={p.propertyId}>{p.name}</option>
                     ))}
                   </select>
