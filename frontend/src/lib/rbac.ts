@@ -305,7 +305,6 @@ export function getRoleLabel(role: UserRole): string {
     housekeeping: 'Housekeeping',
     maintenance: 'Maintenance',
     auditor: 'Auditor',
-    guest: 'Guest',
   };
   return labels[role];
 }

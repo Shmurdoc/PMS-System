@@ -180,17 +180,24 @@ function normalizeAppRole(role: string): string {
 // Local-first sync: state is already updated; fire-and-forget the API call (demo sessions with no token skip it).
 // onOk, when given, receives the response — creates use it to swap the local id for the server's.
 // onErr, when given, handles the failure itself (custom message); without it the store shows a generic toast.
-function syncToApi(label: string, task: () => Promise<unknown>, onOk?: (data: unknown) => void, onErr?: (error: unknown) => void): void {
+function syncToApi(
+  label: string,
+  task: () => Promise<unknown>,
+  onOk?: (data: unknown) => void,
+  onErr?: (error: unknown) => void,
+  onRollback?: () => void
+): void {
   if (!getAuthToken()) return;
   void task()
     .then((data) => onOk?.(data))
     .catch((error) => {
       console.warn(`[api] ${label} failed:`, error);
+      onRollback?.(); // revert the optimistic change before surfacing the error
       if (onErr) {
         onErr(error);
       } else {
         toast.error('Sync failed', {
-          description: `${label} didn't reach the server. The change stays on screen until it does.`,
+          description: `${label} didn't reach the server. The change has been reverted.`,
           duration: 5000,
         });
       }
@@ -2145,7 +2152,7 @@ export const useAppStore = create<AppState>()(
               // Nested complete failed: revert the reconciled payment to pending.
               () => set((state) => ({
                 payments: state.payments.map((p) =>
-                  p.id === dto.id ? { ...p, status: 'pending' as const } : p
+                  p.id === String(dto.id) ? { ...p, status: 'pending' as const } : p
                 ),
               })),
             );
