@@ -246,7 +246,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("character varying(2000)");
 
-                    b.Property<int>("PropertyId")
+                    b.Property<int?>("PropertyId")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("Timestamp")
@@ -1069,6 +1069,10 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.Property<int>("GuestId")
                         .HasColumnType("integer");
 
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<int?>("InvoiceId")
                         .HasColumnType("integer");
 
@@ -1117,7 +1121,9 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                     b.HasIndex("PaymentNumber")
                         .IsUnique();
 
-                    b.HasIndex("PropertyId");
+                    b.HasIndex("PropertyId", "IdempotencyKey")
+                        .IsUnique()
+                        .HasFilter("\"IdempotencyKey\" IS NOT NULL");
 
                     b.ToTable("Payments");
                 });
@@ -1310,6 +1316,13 @@ namespace Aquri.Infrastructure.Persistence.Migrations
 
                     b.Property<DateTime>("Created")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Currency")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(3)
+                        .HasColumnType("character varying(3)")
+                        .HasDefaultValue("ZAR");
 
                     b.Property<string>("Description")
                         .HasMaxLength(2000)
@@ -1963,8 +1976,7 @@ namespace Aquri.Infrastructure.Persistence.Migrations
                         .WithMany()
                         .HasForeignKey("PropertyId")
                         .HasPrincipalKey("PropertyId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("Aquri.Domain.Entities.Booking", b =>

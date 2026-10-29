@@ -97,6 +97,7 @@ namespace Aquri.Infrastructure.Persistence
                 entity.Property(e => e.Rating).HasColumnType("double precision");
                 entity.Property(e => e.Phone).HasMaxLength(50);
                 entity.Property(e => e.Email).HasMaxLength(200);
+                entity.Property(e => e.Currency).IsRequired().HasMaxLength(3).HasDefaultValue("ZAR");
                 // PropertyId is the tenant key every other table references;
                 // the surrogate Id is only for internal joins and routes.
                 entity.HasAlternateKey(e => e.PropertyId);
@@ -235,12 +236,16 @@ namespace Aquri.Infrastructure.Persistence
                 entity.Property(e => e.Status).IsRequired().HasMaxLength(50)
                     .HasConversion(v => v.ToWire(), v => PaymentStatusExtensions.FromWire(v));
                 entity.Property(e => e.Reference).HasMaxLength(200);
+                entity.Property(e => e.IdempotencyKey).HasMaxLength(200);
                 entity.Property(e => e.TransactionId).HasMaxLength(200);
                 entity.Property(e => e.ProcessedBy).IsRequired().HasMaxLength(200);
                 entity.HasIndex(e => e.PaymentNumber).IsUnique();
                 entity.HasIndex(e => e.GuestId);
                 entity.HasIndex(e => e.InvoiceId);
                 entity.HasIndex(e => e.BookingId);
+                entity.HasIndex(e => new { e.PropertyId, e.IdempotencyKey })
+                    .IsUnique()
+                    .HasFilter("\"IdempotencyKey\" IS NOT NULL");
                 entity.HasOne<Invoice>().WithMany().HasForeignKey(e => e.InvoiceId).OnDelete(DeleteBehavior.SetNull);
                 entity.HasOne<Booking>().WithMany().HasForeignKey(e => e.BookingId).OnDelete(DeleteBehavior.SetNull);
                 entity.HasOne(e => e.Guest).WithMany().HasForeignKey(e => e.GuestId).OnDelete(DeleteBehavior.Restrict);
