@@ -11,9 +11,9 @@
 ## File Structure
 
 - Create: `Aquri.Infrastructure/Persistence/Migrations/20261028000000_P0MoneyPath.cs`
-- Modify: `Aquri.Application/Payments/CreatePaymentCommand.cs` — add IdempotencyKey param + check-before-insert
-- Modify: `Aquri.Infrastructure/Persistence/AquriDbContext.cs` — (optional) no EF change needed; raw SQL migration handles constraint
-- Modify: `frontend/src/store/useAppStore.ts` — syncToApi onRollback param + money rollback closures
+- Modify: `Aquri.Application/Payments/CreatePaymentCommand.cs` - add IdempotencyKey param + check-before-insert
+- Modify: `Aquri.Infrastructure/Persistence/AquriDbContext.cs` - (optional) no EF change needed; raw SQL migration handles constraint
+- Modify: `frontend/src/store/useAppStore.ts` - syncToApi onRollback param + money rollback closures
 
 ## Self-Review Checklist (run before starting Task 1)
 
@@ -23,7 +23,7 @@
 
 ---
 
-### Task 1: Migration — Add IdempotencyKey column + unique index on Payments
+### Task 1: Migration - Add IdempotencyKey column + unique index on Payments
 
 **Files:**
 - Create: `Aquri.Infrastructure/Persistence/Migrations/20261028000000_P0MoneyPath.cs`
@@ -88,11 +88,11 @@ git commit -m "feat: add idempotency key column and unique index to payments"
 
 ---
 
-### Task 2: CreatePaymentHandler — idempotency check before insert
+### Task 2: CreatePaymentHandler - idempotency check before insert
 
 **Files:**
-- Modify: `Aquri.Application/Payments/CreatePaymentCommand.cs` — add `IdempotencyKey` param and check-before-insert logic
-- Test: `Aquri.Tests/Api/PaymentsApiTests.cs` — add idempotency tests
+- Modify: `Aquri.Application/Payments/CreatePaymentCommand.cs` - add `IdempotencyKey` param and check-before-insert logic
+- Test: `Aquri.Tests/Api/PaymentsApiTests.cs` - add idempotency tests
 
 - [ ] **Step 1: Write failing test for idempotent replay**
 
@@ -109,7 +109,7 @@ public async Task CreatePayment_IdempotencyKey_ReturnsSamePayment_OnReplay()
     var id1 = doc1.RootElement.GetProperty("data").GetProperty("id").GetInt32();
     var number1 = doc1.RootElement.GetProperty("data").GetProperty("paymentNumber").GetString()!;
 
-    // Same key, same property — should return the same payment, no second row
+    // Same key, same property - should return the same payment, no second row
     var create2 = await client.PostAsync("/api/v1/payments", JsonBody(NewPayment(idempotencyKey: key)));
     create2.StatusCode.Should().Be(HttpStatusCode.Created);
     using var doc2 = JsonDocument.Parse(await create2.Content.ReadAsStringAsync());
@@ -127,7 +127,7 @@ public async Task CreatePayment_IdempotencyKey_ReturnsSamePayment_OnReplay()
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `dotnet test Aquri.Tests/Aquri.Tests.csproj --no-restore --filter "FullyQualifiedName~CreatePayment_IdempotencyKey"`
-Expected: FAIL — `CreatePaymentCommand` does not accept `idempotencyKey` (400 or model binding failure).
+Expected: FAIL - `CreatePaymentCommand` does not accept `idempotencyKey` (400 or model binding failure).
 
 - [ ] **Step 3: Add IdempotencyKey to CreatePaymentCommand record**
 
@@ -164,7 +164,7 @@ Current handler start (lines 31-58):
 ```csharp
 public async Task<Result<Result<PaymentDto>>> Handle(CreatePaymentCommand request, CancellationToken cancellationToken)
 {
-    // The invoice/booking FKs are client-supplied IDs — verify they exist
+    // The invoice/booking FKs are client-supplied IDs - verify they exist
     // and belong to the same property before stamping them onto the
     // payment, otherwise dangling or cross-property references persist.
     var guest = await _context.Guests.FindAsync(request.GuestId);
@@ -192,7 +192,7 @@ public async Task<Result<PaymentDto>> Handle(CreatePaymentCommand request, Cance
             return Result<PaymentDto>.SuccessResult(PaymentDto.FromEntity(existing));
     }
 
-    // The invoice/booking FKs are client-supplied IDs — verify they exist
+    // The invoice/booking FKs are client-supplied IDs - verify they exist
     // and belong to the same property before stamping them onto the
     // payment, otherwise dangling or cross-property references persist.
     var guest = await _context.Guests.FindAsync(request.GuestId);
@@ -289,10 +289,10 @@ git commit -m "feat: idempotency key check-before-insert on payment creation"
 
 ---
 
-### Task 3: Migration — PostgreSQL exclusion constraint on Bookings
+### Task 3: Migration - PostgreSQL exclusion constraint on Bookings
 
 **Files:**
-- Modify: `Aquri.Infrastructure/Persistence/Migrations/20261028000000_P0MoneyPath.cs` — add exclusion constraint to Up/Down
+- Modify: `Aquri.Infrastructure/Persistence/Migrations/20261028000000_P0MoneyPath.cs` - add exclusion constraint to Up/Down
 
 - [ ] **Step 1: Write the exclusion constraint in Up()**
 
@@ -336,11 +336,11 @@ git commit -m "feat: booking exclusion constraint prevents overlapping reservati
 
 ---
 
-### Task 4: CreateBookingHandler — handle exclusion constraint violation
+### Task 4: CreateBookingHandler - handle exclusion constraint violation
 
 **Files:**
-- Modify: `Aquri.Application/Bookings/CreateBookingCommand.cs` — catch DbUpdateException for exclusion violation (23514)
-- Test: `Aquri.Tests/Api/BookingsApiTests.cs` — add concurrent overlap test
+- Modify: `Aquri.Application/Bookings/CreateBookingCommand.cs` - catch DbUpdateException for exclusion violation (23514)
+- Test: `Aquri.Tests/Api/BookingsApiTests.cs` - add concurrent overlap test
 
 - [ ] **Step 1: Write failing test for concurrent overlap**
 
@@ -373,7 +373,7 @@ public async Task CreateBooking_ConcurrentOverlap_Returns409_ForSecondRequest()
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `dotnet test Aquri.Tests/Aquri.Tests.csproj --no-restore --filter "FullyQualifiedName~CreateBooking_ConcurrentOverlap"`
-Expected: FAIL — second booking returns 201 (no exclusion constraint enforced yet, or handler doesn't translate it).
+Expected: FAIL - second booking returns 201 (no exclusion constraint enforced yet, or handler doesn't translate it).
 
 - [ ] **Step 3: Add exclusion-violation handling in CreateBookingHandler**
 
@@ -386,7 +386,7 @@ public async Task<Result<BookingDto>> Handle(CreateBookingCommand request, Cance
         return Result<BookingDto>.Failure("Room not found.");
 
     // The booking's PropertyId is client-supplied, so verify the room
-    // actually belongs to that property — otherwise a caller could stamp
+    // actually belongs to that property - otherwise a caller could stamp
     // a booking onto a different property than its room.
     if (room.PropertyId != request.PropertyId)
         return Result<BookingDto>.Failure("Room does not belong to the specified property.");
@@ -443,7 +443,7 @@ Replace the `try` block with:
     }
     catch (DbUpdateException ex) when (IsExclusionViolation(ex))
     {
-        return Result<BookingDto>.ConflictResult("Room is not available for the selected dates — another booking overlaps those dates.");
+        return Result<BookingDto>.ConflictResult("Room is not available for the selected dates - another booking overlaps those dates.");
     }
     catch (DomainException ex)
     {
@@ -481,10 +481,10 @@ git commit -m "feat: booking overlap returns 409 via exclusion constraint"
 
 ---
 
-### Task 5: Frontend syncToApi — add onRollback parameter
+### Task 5: Frontend syncToApi - add onRollback parameter
 
 **Files:**
-- Modify: `frontend/src/store/useAppStore.ts` — add `onRollback` param to `syncToApi` and invoke on error
+- Modify: `frontend/src/store/useAppStore.ts` - add `onRollback` param to `syncToApi` and invoke on error
 
 - [ ] **Step 1: Update syncToApi signature**
 
@@ -549,10 +549,10 @@ git commit -m "feat: syncToApi accepts onRollback for failed money writes"
 
 ---
 
-### Task 6: Frontend — rollback money optimistic writes
+### Task 6: Frontend - rollback money optimistic writes
 
 **Files:**
-- Modify: `frontend/src/store/useAppStore.ts` — pass `onRollback` closures in `createPayment`, `completePayment`, `refundPayment`, `createBooking`, `recordBookingDeposit`
+- Modify: `frontend/src/store/useAppStore.ts` - pass `onRollback` closures in `createPayment`, `completePayment`, `refundPayment`, `createBooking`, `recordBookingDeposit`
 
 - [ ] **Step 1: Add rollback to createPayment**
 
@@ -591,7 +591,7 @@ Replace with rollback closure:
 
 These modify invoice `PaidAmount`/`Status` optimistically. Find the `completePayment` and `refundPayment` store actions and wrap their `syncToApi` with rollback that restores the invoice's prior `PaidAmount`/`Status`.
 
-(Show exact code in the same pattern — capture `prevInvoice` before mutation, restore in `rollback`.)
+(Show exact code in the same pattern - capture `prevInvoice` before mutation, restore in `rollback`.)
 
 - [ ] **Step 3: Add rollback to createBooking**
 
@@ -623,7 +623,7 @@ git commit -m "feat: rollback optimistic money writes on API failure"
 **Type consistency:**
 - `IdempotencyKey: string?` in command → column `varchar(200) nullable` → entity `IdempotencyKey { get; private set; }` → `SetIdempotencyKey(string?)` method. Consistent.
 - `IsExclusionViolation` uses `PostgresException.SqlState == "23514"`. Consistent with Npgsql.
-- Frontend `syncToApi` gains 5th param `onRollback?: () => void`. All existing call sites pass 4 args (undefined 5th) — compatible.
+- Frontend `syncToApi` gains 5th param `onRollback?: () => void`. All existing call sites pass 4 args (undefined 5th) - compatible.
 
 **Next:** Plan B (P1 Invoice lifecycle + audit trail + explicit property filters) or proceed to execution.
 
