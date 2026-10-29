@@ -39,6 +39,9 @@ namespace Aquri.Tests.Payments
 
         private async Task Seed()
         {
+            // A property row is needed: CreatePaymentHandler and
+            // CreateInvoiceHandler now inherit the property's currency.
+            Context.Properties.Add(new Property("Test HQ", 1));
             var guest = new Guest("Jane Doe", "jane@mail.com", "0820000000", "9001015800089", "SA");
             Context.Guests.Add(guest);
             await Context.SaveChangesAsync();
