@@ -40,9 +40,9 @@ namespace Aquri.Application.Bookings
         }
     }
 
-    public record GetBookingsQuery(int PropertyId, string? Status, int Page = 1, int PageSize = 50) : IRequest<PagedResult<BookingDto>>;
+    public record GetBookingsQuery(int PropertyId, string? Status) : IRequest<List<BookingDto>>;
 
-    public class GetBookingsHandler : IRequestHandler<GetBookingsQuery, PagedResult<BookingDto>>
+    public class GetBookingsHandler : IRequestHandler<GetBookingsQuery, List<BookingDto>>
     {
         private readonly IApplicationDbContext _context;
         private readonly ICurrentUser _currentUser;
@@ -53,11 +53,8 @@ namespace Aquri.Application.Bookings
             _currentUser = currentUser;
         }
 
-        public async Task<PagedResult<BookingDto>> Handle(GetBookingsQuery request, CancellationToken cancellationToken)
+        public async Task<List<BookingDto>> Handle(GetBookingsQuery request, CancellationToken cancellationToken)
         {
-            var page = Math.Clamp(request.Page, 1, int.MaxValue);
-            var pageSize = Math.Clamp(request.PageSize, 1, 200);
-
             var query = _context.Bookings
                 .AsNoTracking()
                 .Include(b => b.Guest)
@@ -72,25 +69,16 @@ namespace Aquri.Application.Bookings
             if (!string.IsNullOrWhiteSpace(request.Status))
             {
                 if (!BookingStatusExtensions.TryParseWire(request.Status, out var statusFilter))
-                    return new PagedResult<BookingDto>();
+                    return new List<BookingDto>();
 
                 query = query.Where(b => b.Status == statusFilter);
             }
 
-            var totalCount = await query.CountAsync(cancellationToken);
             var bookings = await query
                 .OrderByDescending(b => b.CheckIn)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
                 .ToListAsync(cancellationToken);
 
-            return new PagedResult<BookingDto>
-            {
-                Data = bookings.Select(BookingDto.FromEntity).ToList(),
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize
-            };
+            return bookings.Select(BookingDto.FromEntity).ToList();
         }
     }
 }

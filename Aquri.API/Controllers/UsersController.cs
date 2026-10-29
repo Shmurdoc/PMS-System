@@ -1,4 +1,3 @@
-using Aquri.Application.Common;
 using Aquri.Application.Common.Interfaces;
 using Aquri.Application.Users;
 using MediatR;
@@ -24,10 +23,10 @@ namespace Aquri.API.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PagedResult<UserDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<PagedResult<UserDto>>> List([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+        [ProducesResponseType(typeof(List<UserDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<List<UserDto>>> List([FromQuery] string? search)
         {
-            var users = await _mediator.Send(new GetUsersQuery(search, page, pageSize));
+            var users = await _mediator.Send(new GetUsersQuery(search));
             return Ok(users);
         }
 

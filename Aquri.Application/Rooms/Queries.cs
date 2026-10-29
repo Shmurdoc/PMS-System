@@ -1,7 +1,6 @@
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-using Aquri.Application.Common;
 using Aquri.Application.Common.Interfaces;
 using Aquri.Application.DTOs;
 using Aquri.Domain.Entities;
@@ -53,11 +52,9 @@ namespace Aquri.Application.Rooms.Queries
     }
 
     /// <summary>Query to get all rooms for a specific property.</summary>
-    public class GetRoomsByPropertyQuery : IRequest<PagedResult<RoomDto>>
+    public class GetRoomsByPropertyQuery : IRequest<List<RoomDto>>
     {
         public int PropertyId { get; set; }
-        public int Page { get; set; } = 1;
-        public int PageSize { get; set; } = 50;
 
         public GetRoomsByPropertyQuery(int propertyId)
         {
@@ -66,7 +63,7 @@ namespace Aquri.Application.Rooms.Queries
     }
 
     /// <summary>Handler for getting all rooms for a property.</summary>
-    public class GetRoomsByPropertyHandler : IRequestHandler<GetRoomsByPropertyQuery, PagedResult<RoomDto>>
+    public class GetRoomsByPropertyHandler : IRequestHandler<GetRoomsByPropertyQuery, List<RoomDto>>
     {
         private readonly IApplicationDbContext _context;
         private readonly IMapper _mapper;
@@ -79,11 +76,8 @@ namespace Aquri.Application.Rooms.Queries
             _currentUser = currentUser;
         }
 
-        public async Task<PagedResult<RoomDto>> Handle(GetRoomsByPropertyQuery request, CancellationToken cancellationToken)
+        public async Task<List<RoomDto>> Handle(GetRoomsByPropertyQuery request, CancellationToken cancellationToken)
         {
-            var page = Math.Clamp(request.Page, 1, int.MaxValue);
-            var pageSize = Math.Clamp(request.PageSize, 1, 200);
-
             var query = _context.Rooms.AsNoTracking().Where(r => r.PropertyId == request.PropertyId);
 
             // Defense in depth: a scoped caller may only read their own property's
@@ -91,19 +85,9 @@ namespace Aquri.Application.Rooms.Queries
             if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
                 query = query.Where(r => r.PropertyId == scope);
 
-            var totalCount = await query.CountAsync(cancellationToken);
-            var rooms = await query
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync(cancellationToken);
+            var rooms = await query.ToListAsync(cancellationToken);
 
-            return new PagedResult<RoomDto>
-            {
-                Data = _mapper.Map<List<RoomDto>>(rooms),
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize
-            };
+            return _mapper.Map<List<RoomDto>>(rooms);
         }
     }
 }

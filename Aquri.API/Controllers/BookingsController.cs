@@ -1,5 +1,4 @@
 using Aquri.Application.Bookings;
-using Aquri.Application.Common;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -50,10 +49,10 @@ namespace Aquri.API.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PagedResult<BookingDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<PagedResult<BookingDto>>> List([FromQuery] int propertyId, [FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+        [ProducesResponseType(typeof(List<BookingDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<List<BookingDto>>> List([FromQuery] int propertyId, [FromQuery] string? status)
         {
-            var bookings = await _mediator.Send(new GetBookingsQuery(propertyId, status, page, pageSize));
+            var bookings = await _mediator.Send(new GetBookingsQuery(propertyId, status));
             return Ok(bookings);
         }
 

@@ -1,4 +1,3 @@
-using Aquri.Application.Common;
 using Aquri.Application.Guests;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -45,10 +44,10 @@ namespace Aquri.API.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PagedResult<GuestDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<PagedResult<GuestDto>>> List([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+        [ProducesResponseType(typeof(List<GuestDto>), StatusCodes.Status200OK)]
+        public async Task<ActionResult<List<GuestDto>>> List([FromQuery] string? search)
         {
-            var guests = await _mediator.Send(new GetGuestsQuery(search, page, pageSize));
+            var guests = await _mediator.Send(new GetGuestsQuery(search));
             return Ok(guests);
         }
 

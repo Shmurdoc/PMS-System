@@ -169,8 +169,8 @@ namespace Aquri.Tests.Bookings
             var all = await handler.Handle(new GetBookingsQuery(1, null), CancellationToken.None);
             var none = await handler.Handle(new GetBookingsQuery(2, null), CancellationToken.None);
 
-            all.Data.Should().HaveCount(1);
-            none.Data.Should().BeEmpty();
+            all.Should().HaveCount(1);
+            none.Should().BeEmpty();
         }
     }
 

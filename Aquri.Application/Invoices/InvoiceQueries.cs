@@ -29,9 +29,9 @@ namespace Aquri.Application.Invoices
         }
     }
 
-    public record GetInvoicesQuery(int PropertyId, string? Status, int Page = 1, int PageSize = 50) : IRequest<PagedResult<InvoiceDto>>;
+    public record GetInvoicesQuery(int PropertyId, string? Status) : IRequest<List<InvoiceDto>>;
 
-    public class GetInvoicesHandler : IRequestHandler<GetInvoicesQuery, PagedResult<InvoiceDto>>
+    public class GetInvoicesHandler : IRequestHandler<GetInvoicesQuery, List<InvoiceDto>>
     {
         private readonly IApplicationDbContext _context;
         private readonly ICurrentUser _currentUser;
@@ -42,11 +42,8 @@ namespace Aquri.Application.Invoices
             _currentUser = currentUser;
         }
 
-        public async Task<PagedResult<InvoiceDto>> Handle(GetInvoicesQuery request, CancellationToken cancellationToken)
+        public async Task<List<InvoiceDto>> Handle(GetInvoicesQuery request, CancellationToken cancellationToken)
         {
-            var page = Math.Clamp(request.Page, 1, int.MaxValue);
-            var pageSize = Math.Clamp(request.PageSize, 1, 200);
-
             var query = _context.Invoices
                 .AsNoTracking()
                 .Include(i => i.Items)
@@ -60,25 +57,13 @@ namespace Aquri.Application.Invoices
             if (!string.IsNullOrWhiteSpace(request.Status))
             {
                 if (!InvoiceStatusExtensions.TryParseWire(request.Status, out var statusFilter))
-                    return new PagedResult<InvoiceDto>();
+                    return new List<InvoiceDto>();
 
                 query = query.Where(i => i.Status == statusFilter);
             }
 
-            var totalCount = await query.CountAsync(cancellationToken);
-            var invoices = await query
-                .OrderByDescending(i => i.IssueDate)
-                .Skip((page - 1) * pageSize)
-                .Take(pageSize)
-                .ToListAsync(cancellationToken);
-
-            return new PagedResult<InvoiceDto>
-            {
-                Data = invoices.Select(InvoiceDto.FromEntity).ToList(),
-                TotalCount = totalCount,
-                Page = page,
-                PageSize = pageSize
-            };
+            var invoices = await query.OrderByDescending(i => i.IssueDate).ToListAsync(cancellationToken);
+            return invoices.Select(InvoiceDto.FromEntity).ToList();
         }
     }
 }
