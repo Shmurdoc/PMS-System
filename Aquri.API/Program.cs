@@ -144,7 +144,9 @@ builder.Services.AddHealthChecks()
     .AddCheck("self", () => Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("API is running"));
 
 // EF Core + PostgreSQL (scoped DbContext IS the unit of work — shared by all handlers)
-builder.Services.AddDbContext<AquriDbContext>(options => options.UseNpgsql(connectionString));
+builder.Services.AddDbContext<AquriDbContext>(options => options
+    .UseNpgsql(connectionString)
+    .ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCacheKeyFactory, PropertyScopeModelCacheKeyFactory>());
 
 // Application layer abstraction over the DbContext (used by MediatR handlers)
 builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequiredService<AquriDbContext>());

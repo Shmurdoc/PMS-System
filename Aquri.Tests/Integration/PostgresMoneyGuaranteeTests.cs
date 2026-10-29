@@ -152,4 +152,36 @@ public sealed class PostgresMoneyGuaranteeTests
 
         (await ctx.Payments.CountAsync()).Should().Be(1, "the filtered unique index must prevent a duplicate row");
     }
+
+    [Fact]
+    public async Task Assignments_Load_Through_The_User_Navigation()
+        {
+            var (ready, ctx) = Ready();
+            if (!ready)
+                return;
+
+            await SeedPropertyAsync(ctx, 1);
+            foreach (var id in new[] { 104, 107, 109 })
+            {
+                if (!await ctx.Properties.AnyAsync(p => p.PropertyId == id))
+                {
+                    ctx.Properties.Add(new Property($"QA Hotel {id}", id));
+                    await ctx.SaveChangesAsync();
+                }
+            }
+
+            var user = new User("pg.multi@nexus.com", "Multi", AppRoles.FrontDesk, "hash");
+            user.ReplacePropertyAssignments(new[] { 104, 107, 109 });
+            ctx.Users.Add(user);
+            await ctx.SaveChangesAsync();
+
+            // Reading the user back with Include must surface the three
+            // assignments; the auth handlers rely on this to issue claims.
+            var loaded = await ctx.Users
+                .Include(u => u.PropertyAssignments)
+                .FirstAsync(u => u.Email == "pg.multi@nexus.com");
+
+            loaded.PropertyAssignments.Select(a => a.PropertyId)
+                .Should().BeEquivalentTo(new[] { 104, 107, 109 });
+        }
 }

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Aquri.Application.Common.Behaviors;
@@ -21,14 +22,22 @@ namespace Aquri.Tests.Common
         private sealed class FakeUser : ICurrentUser
         {
             public FakeUser(int? propertyId, bool isAuthenticated = true)
+                : this(propertyId.HasValue ? new[] { propertyId.Value } : System.Array.Empty<int>(), isAuthenticated)
             {
-                PropertyId = propertyId;
+            }
+
+            public FakeUser(int[] propertyIds, bool isAuthenticated = true)
+            {
+                PropertyIds = propertyIds;
+                PropertyId = propertyIds.Length > 0 ? propertyIds[0] : (int?)null;
                 IsAuthenticated = isAuthenticated;
             }
 
             public bool IsAuthenticated { get; }
 
             public int? PropertyId { get; }
+
+            public IReadOnlyCollection<int> PropertyIds { get; }
 
             public int UserId => 0;
 
@@ -77,7 +86,7 @@ namespace Aquri.Tests.Common
         [Fact]
         public async Task Unrestricted_User_Passes_For_Any_Property()
         {
-            var behavior = BehaviorFor<ScopedRequest>(new FakeUser(null));
+            var behavior = BehaviorFor<ScopedRequest>(new FakeUser((int?)null));
 
             var result = await behavior.Handle(new ScopedRequest(99), Pass, CancellationToken.None);
 

@@ -30,6 +30,7 @@ namespace Aquri.Tests.Rooms
         public RoomHandlerTestBase()
         {
             var options = new DbContextOptionsBuilder<AquriDbContext>()
+                .ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCacheKeyFactory, Aquri.Infrastructure.Persistence.PropertyScopeModelCacheKeyFactory>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
 

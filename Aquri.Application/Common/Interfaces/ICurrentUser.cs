@@ -7,6 +7,13 @@ namespace Aquri.Application.Common.Interfaces
 
         int? PropertyId { get; }
 
+        /// <summary>
+        /// Every property the caller may work in. Empty for an unrestricted
+        /// admin; one entry for the common single-property employee; several for
+        /// staff covering multiple hotels.
+        /// </summary>
+        System.Collections.Generic.IReadOnlyCollection<int> PropertyIds { get; }
+
         /// <summary>The signed-in user's id — 0 when unauthenticated or the claim is missing (matches the fallback the controllers used to apply).</summary>
         int UserId { get; }
 

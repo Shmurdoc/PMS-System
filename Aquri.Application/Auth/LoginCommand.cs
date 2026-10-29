@@ -37,6 +37,7 @@ namespace Aquri.Application.Auth
             var email = request.Email.Trim().ToLowerInvariant();
 
             var user = await _context.Users
+                .Include(u => u.PropertyAssignments)
                 .FirstOrDefaultAsync(u => u.Email.ToLower() == email, cancellationToken);
 
             var hashToVerify = user?.PasswordHash

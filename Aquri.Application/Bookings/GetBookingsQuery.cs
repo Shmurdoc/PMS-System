@@ -29,8 +29,8 @@ namespace Aquri.Application.Bookings
 
             // Defense in depth: a scoped caller may only read their own property's
             // bookings, so probing another property's booking Id returns 404.
-            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
-                query = query.Where(b => b.PropertyId == scope);
+            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyIds.Count > 0)
+                query = query.Where(b => _currentUser.PropertyIds.Contains(b.PropertyId));
 
             var booking = await query.FirstOrDefaultAsync(b => b.Id == request.Id, cancellationToken);
 
@@ -66,8 +66,8 @@ namespace Aquri.Application.Bookings
 
             // Defense in depth: a scoped caller may only read their own property's
             // bookings, even if they supply a different PropertyId in the request.
-            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
-                query = query.Where(b => b.PropertyId == scope);
+            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyIds.Count > 0)
+                query = query.Where(b => _currentUser.PropertyIds.Contains(b.PropertyId));
 
             if (!string.IsNullOrWhiteSpace(request.Status))
             {

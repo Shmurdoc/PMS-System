@@ -2,6 +2,7 @@ using Aquri.Application.Common;
 using Aquri.Application.Common.Interfaces;
 using Aquri.Application.DTOs;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Auth
 {
@@ -19,7 +20,9 @@ namespace Aquri.Application.Auth
 
         public async Task<Result<UserDto>> Handle(GetCurrentUserQuery request, CancellationToken cancellationToken)
         {
-            var user = await _context.Users.FindAsync(new object[] { request.UserId }, cancellationToken);
+            var user = await _context.Users
+                .Include(u => u.PropertyAssignments)
+                .FirstOrDefaultAsync(u => u.Id == request.UserId, cancellationToken);
 
             if (user is null)
                 return Result<UserDto>.NotFoundResult();

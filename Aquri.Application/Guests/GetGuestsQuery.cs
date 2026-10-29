@@ -25,8 +25,8 @@ namespace Aquri.Application.Guests
 
             // Defense in depth: a scoped caller may only read their own property's
             // guests, so probing another property's guest Id returns 404.
-            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
-                query = query.Where(g => g.PropertyId == scope);
+            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyIds.Count > 0)
+                query = query.Where(g => _currentUser.PropertyIds.Contains(g.PropertyId));
 
             var guest = await query
                 .FirstOrDefaultAsync(g => g.Id == request.Id, cancellationToken);
@@ -59,8 +59,8 @@ namespace Aquri.Application.Guests
 
             // Defense in depth: a scoped caller may only read their own property's
             // guests, even if they supply a different PropertyId in the request.
-            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
-                query = query.Where(g => g.PropertyId == scope);
+            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyIds.Count > 0)
+                query = query.Where(g => _currentUser.PropertyIds.Contains(g.PropertyId));
 
             if (!string.IsNullOrWhiteSpace(request.Search))
             {

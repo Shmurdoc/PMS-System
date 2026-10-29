@@ -186,12 +186,17 @@ export async function hydrateFromApi(): Promise<HydrateResult> {
   const meDto = await settle('auth/me', fetchCurrentUser(), failed);
   if (meDto) store.setUser(mapUser(meDto));
 
-  // Per-property endpoints take the tenant id, so a scoped user asks for their
-  // own property only. Fetching the rest would fail the whole collection.
-  const scopedPropertyId = meDto?.propertyId ?? null;
+  // Per-property endpoints take the tenant id. A scoped employee may cover
+  // several hotels, so fetch the whole assigned set; admins (null scope) fetch
+  // every property. Asking for a property outside the scope would be refused.
+  const scopedPropertyIds = meDto?.propertyIds && meDto.propertyIds.length > 0
+    ? meDto.propertyIds
+    : meDto?.propertyId != null
+      ? [meDto.propertyId]
+      : null;
   const propertyIds = propertiesDto
     ? propertiesDto
-        .filter((p) => scopedPropertyId == null || p.propertyId === scopedPropertyId || p.id === scopedPropertyId)
+        .filter((p) => scopedPropertyIds == null || scopedPropertyIds.includes(p.propertyId))
         .map((p) => p.propertyId)
         .filter((id) => id > 0)
     : [];

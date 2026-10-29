@@ -139,8 +139,8 @@ namespace Aquri.Application.Payments
 
             // Defense in depth: a scoped caller may only read their own property's
             // payments, even if they supply a different PropertyId in the request.
-            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
-                query = query.Where(p => p.PropertyId == scope);
+            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyIds.Count > 0)
+                query = query.Where(p => _currentUser.PropertyIds.Contains(p.PropertyId));
 
             if (!string.IsNullOrWhiteSpace(request.Status))
             {

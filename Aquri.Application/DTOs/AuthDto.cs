@@ -1,9 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using Aquri.Domain.Entities;
 
 namespace Aquri.Application.DTOs
 {
-    /// <summary>Public user representation — never exposes PasswordHash.</summary>
+    /// <summary>Public user representation - never exposes PasswordHash.</summary>
     public class UserDto
     {
         public int Id { get; init; }
@@ -11,6 +13,9 @@ namespace Aquri.Application.DTOs
         public string Name { get; init; } = string.Empty;
         public string Role { get; init; } = string.Empty;
         public int? PropertyId { get; init; }
+
+        /// <summary>Every property the account may work in; empty for admins.</summary>
+        public List<int> PropertyIds { get; init; } = new();
         public string? Department { get; init; }
         public string? Phone { get; init; }
         public DateTime Created { get; init; }
@@ -22,6 +27,7 @@ namespace Aquri.Application.DTOs
             Name = user.Name,
             Role = user.Role,
             PropertyId = user.PropertyId,
+            PropertyIds = user.PropertyAssignments.Select(a => a.PropertyId).OrderBy(id => id).ToList(),
             Department = user.Department,
             Phone = user.Phone,
             Created = user.Created

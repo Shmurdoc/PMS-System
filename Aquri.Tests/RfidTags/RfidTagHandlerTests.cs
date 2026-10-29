@@ -20,6 +20,7 @@ namespace Aquri.Tests.RfidTags
         public RfidTagTestBase()
         {
             var options = new DbContextOptionsBuilder<AquriDbContext>()
+                .ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCacheKeyFactory, Aquri.Infrastructure.Persistence.PropertyScopeModelCacheKeyFactory>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
 

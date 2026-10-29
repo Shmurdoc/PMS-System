@@ -43,6 +43,16 @@ namespace Aquri.Infrastructure.Security
             if (user.PropertyId.HasValue)
                 claims.Add(new Claim(AuthClaims.PropertyId, user.PropertyId.Value.ToString()));
 
+            // One claim per property the account may work in. The primary
+            // PropertyId above already covers the first; add the rest so an
+            // employee covering several hotels carries the full scope.
+            foreach (var assignment in user.PropertyAssignments)
+            {
+                if (assignment.PropertyId == user.PropertyId)
+                    continue;
+                claims.Add(new Claim(AuthClaims.PropertyId, assignment.PropertyId.ToString()));
+            }
+
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_key));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

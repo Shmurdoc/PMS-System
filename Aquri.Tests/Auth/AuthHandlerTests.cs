@@ -21,6 +21,7 @@ namespace Aquri.Tests.Auth
         public AuthHandlerTestBase()
         {
             var options = new DbContextOptionsBuilder<AquriDbContext>()
+                .ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCacheKeyFactory, Aquri.Infrastructure.Persistence.PropertyScopeModelCacheKeyFactory>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
 

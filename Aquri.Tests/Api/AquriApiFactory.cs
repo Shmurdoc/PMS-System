@@ -26,8 +26,9 @@ namespace Aquri.Tests.Api
                 if (contextDescriptor is not null)
                     services.Remove(contextDescriptor);
 
-                services.AddDbContext<AquriDbContext>(options =>
-                    options.UseInMemoryDatabase(_databaseName));
+                services.AddDbContext<AquriDbContext>(options => options
+                    .UseInMemoryDatabase(_databaseName)
+                    .ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCacheKeyFactory, Aquri.Infrastructure.Persistence.PropertyScopeModelCacheKeyFactory>());
             });
         }
     }

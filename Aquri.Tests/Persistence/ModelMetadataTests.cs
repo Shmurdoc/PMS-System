@@ -13,6 +13,7 @@ namespace Aquri.Tests.Persistence
         private static AquriDbContext CreateContext()
         {
             var options = new DbContextOptionsBuilder<AquriDbContext>()
+                .ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCacheKeyFactory, Aquri.Infrastructure.Persistence.PropertyScopeModelCacheKeyFactory>()
                 .UseInMemoryDatabase($"model-metadata-{System.Guid.NewGuid()}")
                 .Options;
 

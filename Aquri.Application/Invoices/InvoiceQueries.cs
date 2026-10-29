@@ -54,8 +54,8 @@ namespace Aquri.Application.Invoices
 
             // Defense in depth: a scoped caller may only read their own property's
             // invoices, even if they supply a different PropertyId in the request.
-            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
-                query = query.Where(i => i.PropertyId == scope);
+            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyIds.Count > 0)
+                query = query.Where(i => _currentUser.PropertyIds.Contains(i.PropertyId));
 
             if (!string.IsNullOrWhiteSpace(request.Status))
             {

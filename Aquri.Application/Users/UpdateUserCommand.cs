@@ -21,7 +21,8 @@ namespace Aquri.Application.Users
         string? Role,
         string? Password,
         int? PropertyId = null,
-        bool ClearProperty = false) : IRequest<Result<UserDto>>;
+        bool ClearProperty = false,
+        IReadOnlyList<int>? PropertyIds = null) : IRequest<Result<UserDto>>;
 
     public class UpdateUserHandler : IRequestHandler<UpdateUserCommand, Result<UserDto>>
     {
@@ -39,6 +40,7 @@ namespace Aquri.Application.Users
         public async Task<Result<UserDto>> Handle(UpdateUserCommand request, CancellationToken cancellationToken)
         {
             var user = await _context.Users
+                .Include(u => u.PropertyAssignments)
                 .FirstOrDefaultAsync(u => u.Id == request.Id, cancellationToken);
 
             if (user is null)
@@ -51,37 +53,49 @@ namespace Aquri.Application.Users
                 return Result<UserDto>.Failure($"Password must be at least {UserRules.MinPasswordLength} characters.");
             if (!string.IsNullOrEmpty(request.Role) && !AppRoles.IsValid(request.Role))
                 return Result<UserDto>.Failure($"Role must be one of: {string.Join(", ", AppRoles.All)}.");
-            if (request.ClearProperty && request.PropertyId.HasValue)
-                return Result<UserDto>.Failure("Supply a PropertyId or ClearProperty, not both.");
+            if (request.ClearProperty && (request.PropertyId.HasValue || request.PropertyIds is { Count: > 0 }))
+                return Result<UserDto>.Failure("Supply property ids or ClearProperty, not both.");
+
+            // Merge the single-property shortcut with the full set.
+            var requestedProperties = (request.PropertyIds ?? Array.Empty<int>())
+                .Concat(request.PropertyId.HasValue ? new[] { request.PropertyId.Value } : Array.Empty<int>())
+                .Distinct()
+                .ToList();
+            var propertiesSupplied = request.PropertyIds is not null || request.PropertyId.HasValue;
 
             var targetRole = string.IsNullOrEmpty(request.Role) ? user.Role : request.Role;
-            var targetProperty = request.ClearProperty
-                ? null
-                : request.PropertyId ?? user.PropertyId;
-            if (targetRole != AppRoles.Admin && targetProperty is null)
+            var targetProperties = request.ClearProperty
+                ? new List<int>()
+                : propertiesSupplied
+                    ? requestedProperties
+                    : user.PropertyAssignments.Select(a => a.PropertyId).ToList();
+            if (targetRole != AppRoles.Admin && targetProperties.Count == 0)
                 return Result<UserDto>.Failure("PropertyId is required unless the account is an admin.");
             if (request.ClearProperty && targetRole != AppRoles.Admin)
                 return Result<UserDto>.Failure("Only an admin account can be removed from a property.");
 
-            // A manager can only manage staff at their own property. An admin is
-            // unrestricted and can touch any account on any property.
+            // A manager can only manage staff who work in one of the manager's
+            // own properties. An admin is unrestricted.
             var callerRole = _currentUser.UserRole;
-            if (callerRole != AppRoles.Admin && user.PropertyId != _currentUser.PropertyId)
-                return Result<UserDto>.Failure("You can only manage staff at your own property.");
+            if (callerRole != AppRoles.Admin)
+            {
+                var worksInCallerScope = user.PropertyAssignments.Any(a => _currentUser.PropertyIds.Contains(a.PropertyId))
+                    || (user.PropertyId.HasValue && _currentUser.PropertyIds.Contains(user.PropertyId.Value));
+                if (!worksInCallerScope)
+                    return Result<UserDto>.Failure("You can only manage staff at your own property.");
+            }
 
             try
             {
                 if (!string.IsNullOrEmpty(request.Password))
                     user.SetPasswordHash(_passwordHasher.Hash(request.Password));
 
-                // Apply the property before the role change. An unscoped admin
+                // Apply the properties before the role change. An unscoped admin
                 // becoming a scoped front desk must have a property on the
                 // account before ChangeRole will accept the move; changing role
                 // first rejects a perfectly valid request.
-                if (request.ClearProperty)
-                    user.AssignProperty(null);
-                else if (request.PropertyId.HasValue)
-                    user.AssignProperty(request.PropertyId.Value);
+                if (propertiesSupplied || request.ClearProperty)
+                    user.ReplacePropertyAssignments(targetProperties);
 
                 if (!string.IsNullOrEmpty(request.Role) && user.Role != request.Role)
                     user.ChangeRole(request.Role);

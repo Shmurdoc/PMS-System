@@ -26,6 +26,7 @@ namespace Aquri.Tests
         public UpdatePropertyStatusCommandHandler_Should()
         {
             var options = new DbContextOptionsBuilder<AquriDbContext>()
+                .ReplaceService<Microsoft.EntityFrameworkCore.Infrastructure.IModelCacheKeyFactory, Aquri.Infrastructure.Persistence.PropertyScopeModelCacheKeyFactory>()
                 .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
                 .Options;
 
@@ -82,14 +83,5 @@ namespace Aquri.Tests
             result.NotFound.Should().BeTrue();
             result.Data.Should().BeNull();
         }
-    }
-
-    sealed class FakeCurrentUser : ICurrentUser
-    {
-        public bool IsAuthenticated => true;
-        public int? PropertyId => 1;
-        public int UserId => 1;
-        public string UserName => "test-user";
-        public string UserRole => "admin";
     }
 }

@@ -1,3 +1,4 @@
+using System.Linq;
 using Aquri.Application.Common.Interfaces;
 using Aquri.Domain.Entities;
 using Aquri.Domain.Enums;
@@ -8,13 +9,32 @@ namespace Aquri.Infrastructure.Persistence
     /// <summary>EF Core DbContext for the Aquri PMS. Owns all entity mappings and the change tracking that backs the Unit of Work pattern. Implements IApplicationDbContext so the Application layer depends only on abstractions.</summary>
     public class AquriDbContext : DbContext, IApplicationDbContext
     {
-        private readonly int? _propertyScope;
+        private readonly int[]? _propertyIds;
 
         public AquriDbContext(DbContextOptions<AquriDbContext> options, ICurrentUser? currentUser = null)
             : base(options)
         {
-            _propertyScope = currentUser?.PropertyId;
+            // null             = unrestricted (system/seeder context, or an admin)
+            // authenticated    = confined to the account's property set; an empty
+            //                    set means a misconfigured non-admin and denies
+            //                    every row rather than granting access to all
+            // unauthenticated  = unrestricted; the seeder, login lookup and
+            //                    migrations run before there is a caller
+            if (currentUser is null || !currentUser.IsAuthenticated || currentUser.UserRole == AppRoles.Admin)
+                _propertyIds = null;
+            else
+                _propertyIds = currentUser.PropertyIds.ToArray();
         }
+
+        /// <summary>True when the caller is restricted to a set of properties.</summary>
+        private bool IsScoped => _propertyIds is not null;
+
+        /// <summary>Test hook: the scope actually applied to this context.</summary>
+        public int[]? PropertyScopeIds => _propertyIds;
+
+        /// <summary>Stable key describing this context's scope, used to key the EF model cache.</summary>
+        public string ScopeCacheKey =>
+            _propertyIds is null ? "all" : string.Join(",", _propertyIds.OrderBy(id => id));
 
         public DbSet<Property> Properties => Set<Property>();
 
@@ -23,6 +43,7 @@ namespace Aquri.Infrastructure.Persistence
         public DbSet<Room> Rooms => Set<Room>();
 
         public DbSet<User> Users => Set<User>();
+        public DbSet<UserPropertyAssignment> UserPropertyAssignments => Set<UserPropertyAssignment>();
 
         public DbSet<Guest> Guests => Set<Guest>();
 
@@ -139,6 +160,23 @@ namespace Aquri.Infrastructure.Persistence
                 entity.Property(e => e.Department).HasMaxLength(200);
                 entity.Property(e => e.Phone).HasMaxLength(50);
                 entity.HasIndex(e => e.Email).IsUnique();
+                // Each account may work several properties (an employee covering
+                // three hotels); the assignment rows are the authorization scope.
+                entity.HasMany(e => e.PropertyAssignments)
+                    .WithOne()
+                    .HasForeignKey(a => a.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            modelBuilder.Entity<UserPropertyAssignment>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.HasIndex(e => new { e.UserId, e.PropertyId }).IsUnique();
+                entity.HasIndex(e => e.PropertyId);
+                entity.HasOne<Property>().WithMany()
+                    .HasForeignKey(e => e.PropertyId)
+                    .HasPrincipalKey(p => p.PropertyId)
+                    .OnDelete(DeleteBehavior.Cascade);
             });
 
             modelBuilder.Entity<Guest>(entity =>
@@ -601,36 +639,38 @@ namespace Aquri.Infrastructure.Persistence
         }
 
         /// <summary>
-        /// Hides rows from other properties for scoped users. Admins have no
-        /// scope, so the filter always passes for them. Filtering in the model
-        /// covers by-id routes, dashboards, and controller queries without a
-        /// check in each one.
+        /// Hides rows from properties outside the caller's scope. Admins have no
+        /// scope, so the filter always passes for them. A scoped account sees
+        /// every property it is assigned to (an employee covering three hotels
+        /// sees those three). Filtering in the model covers by-id routes,
+        /// dashboards, and controller queries without a check in each one.
         /// </summary>
         private void ApplyPropertyFilters(ModelBuilder modelBuilder)
         {
-            modelBuilder.Entity<Property>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<Room>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<Booking>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<Invoice>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<Payment>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<Ticket>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<MaintenanceRequest>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<Expense>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<Message>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<InventoryItem>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<RatePlan>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<TaxConfig>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<Shift>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<AttendanceRecord>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<AuditLog>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<ElectricityRecord>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<RfidTag>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<Integration>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<EmployeeCompensation>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<PayrollRun>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<Payslip>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<User>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
-            modelBuilder.Entity<Guest>().HasQueryFilter(e => _propertyScope == null || e.PropertyId == _propertyScope);
+            modelBuilder.Entity<Property>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<Room>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<Booking>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<Invoice>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<Payment>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<Ticket>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<MaintenanceRequest>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<Expense>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<Message>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<InventoryItem>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<RatePlan>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<TaxConfig>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<Shift>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<AttendanceRecord>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<AuditLog>().HasQueryFilter(e => _propertyIds == null || e.PropertyId == null || _propertyIds.Contains(e.PropertyId.Value));
+            modelBuilder.Entity<ElectricityRecord>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<RfidTag>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<Integration>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<EmployeeCompensation>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<PayrollRun>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<Payslip>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<User>().HasQueryFilter(e => _propertyIds == null || (e.PropertyId != null && _propertyIds.Contains(e.PropertyId.Value)));
+            modelBuilder.Entity<Guest>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<UserPropertyAssignment>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
         }
     }
 }
