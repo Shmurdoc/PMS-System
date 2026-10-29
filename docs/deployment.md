@@ -15,7 +15,9 @@ cp .env.example .env        # then edit — compose refuses to boot without real
 docker compose up -d --build
 ```
 
-On first boot the API seeds the demo users (admin@nexus.com / manager@nexus.com / front@nexus.com — see `docs/getting-started.md`) and the sample AI layer (agents, insights, workflows) unless `SEED_DEMO_USERS=false`. Migrations do not auto-apply; run them once per database (below).
+On first boot the API applies any pending EF migrations automatically, then seeds the demo users (admin@nexus.com / manager@nexus.com / front@nexus.com — see `docs/getting-started.md`) and the sample AI layer (agents, insights, workflows) only when `SEED_DEMO_USERS=true`. Seeding is off by default now, so a fresh production database starts with no accounts. Because the API refuses to start if a migration fails, a broken schema surfaces at deploy time instead of at the first request.
+
+One trap worth knowing: compose reads `.env` automatically and its value overrides the compose default. If `.env` still says `SEED_DEMO_USERS=true` you get demo logins even though the default is `false`. Check with `docker exec aquri-api printenv Seed__DemoUsers`.
 
 ## Environment variables
 
@@ -25,7 +27,7 @@ On first boot the API seeds the demo users (admin@nexus.com / manager@nexus.com 
 |---|---|---|
 | `POSTGRES_PASSWORD` | yes | Postgres password for `aquri_user`; compose fails fast if unset |
 | `JWT_KEY` | yes | Signing key, minimum 32 characters; compose fails fast if unset |
-| `SEED_DEMO_USERS` | no (default `true`) | Seed demo logins and sample AI data on first boot; set `false` for real deployments |
+| `SEED_DEMO_USERS` | no (default `false`) | Seeds demo logins and sample AI data on first boot. Leave `false` for real deployments; compose falls back to `false` when unset, but a `.env` entry wins |
 
 Passed into the API container:
 
@@ -62,11 +64,13 @@ Build manually with `docker build -t aquri-api .` (root Dockerfile) if not using
 
 ## Database migrations
 
-The API does not auto-migrate. Apply once per database:
+The API applies pending migrations at startup (`db.Database.Migrate()` in `Program.cs`) and refuses to start if one fails. The manual command below is still useful for a dry run or to migrate a database while the API is stopped:
 
 ```bash
 dotnet ef database update --project Aquri.Infrastructure --startup-project Aquri.API
 ```
+
+Note the booking overlap constraint needs the `btree_gist` extension; the migration creates it (`CREATE EXTENSION IF NOT EXISTS btree_gist`), which requires a database user allowed to install extensions. The compose `POSTGRES_USER` is a superuser, so this works out of the box there.
 
 The design-time factory (`AquriDbContextFactory`) resolves `ConnectionStrings__DefaultConnection` first, so point the env var at the target database before running. Inside a running compose stack the DB is only reachable on the internal network; apply migrations from the host against the published port (default `127.0.0.1:5433`).
 
@@ -100,7 +104,7 @@ Omitting `Port=` silently defaults to 5432 and talks to whatever native Postgres
 
 ## CI
 
-`.github/workflows/ci.yml` builds and tests the backend (`dotnet build` + `dotnet test`, dummy connection/JWT env) and lints + builds the frontend (`npm ci`, ESLint, `npm run build`). There is no CD pipeline — deployments are manual (`docker compose up -d --build` on the target host, or your platform of choice using the root Dockerfile).
+`.github/workflows/ci.yml` builds and tests the backend (`dotnet build` + `dotnet test`) against a real PostgreSQL service container, so the money guarantees (booking overlap exclusion constraint, payment idempotency index) are exercised rather than skipped: the suite fails if the database is unreachable (`AQURI_REQUIRE_POSTGRES=1`). The frontend job runs `npm ci`, ESLint and `npm run build`. There is no CD pipeline - deployments are manual (`docker compose up -d --build` on the target host, or your platform of choice using the root Dockerfile).
 
 ## Production checklist
 
@@ -108,6 +112,16 @@ Omitting `Port=` silently defaults to 5432 and talks to whatever native Postgres
 - [ ] Strong `POSTGRES_PASSWORD` and a random 32+ char `JWT_KEY`; rotate the JWT key by restarting the API (invalidates outstanding tokens).
 - [ ] Restrict `Cors__AllowedOrigins__*` to the real frontend origin(s).
 - [ ] Do not commit `.env`; keep `appsettings.Production.json` out of source control if it holds secrets.
-- [ ] Run migrations once after each release that includes a new migration.
+- [ ] Confirm the container applied migrations on boot (`docker logs aquri-api | grep -i migrat`) and that it stayed up; a failed migration stops the API by design.
 - [ ] Terminate TLS in front of the API (reverse proxy or platform); the container serves plain HTTP on 8080.
 - [ ] Point readiness probes at `/health/ready`.
+
+## Known gaps before real money
+
+Verified as still open:
+
+- No automated backup/restore procedure or runbook. Postgres runs in a compose volume with no scheduled dump.
+- No frontend test harness (no Vitest/Jest, zero test files). UI behaviour is covered only by type-check and build.
+- Server-side audit covers users, payments, invoices, payroll runs, properties, bookings and expenses. Still unaudited: inventory changes, room status changes, rate plans, tickets, payroll compensation edits.
+- Single currency per property is scaffolding only: one tax jurisdiction (South Africa) and no FX conversion.
+- Rate limiting is configured for auth and payment endpoints but tests disable it, so it has not been exercised end to end.

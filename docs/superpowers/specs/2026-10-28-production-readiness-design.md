@@ -331,10 +331,10 @@ frontend/src/lib/rbac.ts                           → DONE (manager manageUsers
 - Invoice send/cancel transitions enforced server-side; invalid transition → 409.
 - AuditLog row created on `CreatePayment`, `CompletePayment`, `CancelInvoice`.
 
-**Frontend (Vitest / existing test setup):**
-
-- `syncToApi` rollback reverts optimistic payment on failure.
-- AdminPanel property dropdown shows only manager's own property.
+**Frontend:** no unit test harness exists yet (no Vitest/Jest setup, zero
+`*.test.ts(x)` files), so the rollback behaviour and the manager-scoped
+property dropdown are verified only by `tsc -b` and the production build,
+not by tests. Adding a frontend test harness is outstanding work.
 
 ## Boundaries
 
