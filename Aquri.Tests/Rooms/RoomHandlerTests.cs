@@ -16,6 +16,7 @@ using AutoMapper;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using Aquri.Tests.Common;
 
 namespace Aquri.Tests.Rooms
 {
@@ -479,14 +480,5 @@ namespace Aquri.Tests.Rooms
             result.Success.Should().BeFalse();
             result.NotFound.Should().BeTrue();
         }
-    }
-
-    sealed class FakeCurrentUser : ICurrentUser
-    {
-        public bool IsAuthenticated => true;
-        public int? PropertyId => 1;
-        public int UserId => 1;
-        public string UserName => "test-user";
-        public string UserRole => "admin";
     }
 }

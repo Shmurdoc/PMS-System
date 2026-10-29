@@ -9,6 +9,7 @@ using Aquri.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using Aquri.Tests.Common;
 
 namespace Aquri.Tests.Bookings
 {
@@ -50,7 +51,7 @@ namespace Aquri.Tests.Bookings
         [Fact]
         public async Task Create_Booking_And_Mark_Room_Occupied()
         {
-            var handler = new CreateBookingHandler(Context);
+            var handler = new CreateBookingHandler(Context, CurrentUser);
             var command = new CreateBookingCommand(1, GuestId, RoomId,
                 DateTime.UtcNow.Date.AddDays(1), DateTime.UtcNow.Date.AddDays(3), 2, 199.99m, "direct");
 
@@ -68,7 +69,7 @@ namespace Aquri.Tests.Bookings
         [Fact]
         public async Task Reject_Overlapping_Booking()
         {
-            var handler = new CreateBookingHandler(Context);
+            var handler = new CreateBookingHandler(Context, CurrentUser);
             var checkIn = DateTime.UtcNow.Date.AddDays(1);
             var checkOut = DateTime.UtcNow.Date.AddDays(3);
 
@@ -82,7 +83,7 @@ namespace Aquri.Tests.Bookings
         [Fact]
         public async Task Fail_For_Unknown_Room()
         {
-            var handler = new CreateBookingHandler(Context);
+            var handler = new CreateBookingHandler(Context, CurrentUser);
             var command = new CreateBookingCommand(1, GuestId, 999,
                 DateTime.UtcNow.Date.AddDays(1), DateTime.UtcNow.Date.AddDays(2), 1, 100m, "direct");
 
@@ -95,7 +96,7 @@ namespace Aquri.Tests.Bookings
         [Fact]
         public async Task Reject_Booking_When_Room_Belongs_To_Different_Property()
         {
-            var handler = new CreateBookingHandler(Context);
+            var handler = new CreateBookingHandler(Context, CurrentUser);
             // RoomId is seeded under PropertyId 1 — stamping the booking onto
             // PropertyId 2 must be rejected, not silently persisted.
             var command = new CreateBookingCommand(2, GuestId, RoomId,
@@ -112,7 +113,7 @@ namespace Aquri.Tests.Bookings
     {
         private async Task<int> SeedBooking()
         {
-            var created = await new CreateBookingHandler(Context).Handle(
+            var created = await new CreateBookingHandler(Context, CurrentUser).Handle(
                 new CreateBookingCommand(1, GuestId, RoomId,
                     DateTime.UtcNow.Date.AddDays(1), DateTime.UtcNow.Date.AddDays(3), 2, 199.99m, "direct"),
                 CancellationToken.None);
@@ -159,7 +160,7 @@ namespace Aquri.Tests.Bookings
         [Fact]
         public async Task Filter_By_Property_And_Status()
         {
-            await new CreateBookingHandler(Context).Handle(
+            await new CreateBookingHandler(Context, CurrentUser).Handle(
                 new CreateBookingCommand(1, GuestId, RoomId,
                     DateTime.UtcNow.Date.AddDays(1), DateTime.UtcNow.Date.AddDays(3), 2, 199.99m, "direct"),
                 CancellationToken.None);
@@ -172,14 +173,5 @@ namespace Aquri.Tests.Bookings
             all.Should().HaveCount(1);
             none.Should().BeEmpty();
         }
-    }
-
-    sealed class FakeCurrentUser : ICurrentUser
-    {
-        public bool IsAuthenticated => true;
-        public int? PropertyId => 1;
-        public int UserId => 1;
-        public string UserName => "test-user";
-        public string UserRole => "admin";
     }
 }

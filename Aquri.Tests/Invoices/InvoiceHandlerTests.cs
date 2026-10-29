@@ -10,6 +10,7 @@ using Aquri.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using Aquri.Tests.Common;
 
 namespace Aquri.Tests.Invoices
 {
@@ -153,7 +154,7 @@ namespace Aquri.Tests.Invoices
             var room = new Room("102", 1, "double");
             Context.Rooms.Add(room);
             await Context.SaveChangesAsync();
-            var booking = await new CreateBookingHandler(Context).Handle(
+            var booking = await new CreateBookingHandler(Context, CurrentUser).Handle(
                 new CreateBookingCommand(1, GuestId, room.Id,
                     DateTime.UtcNow.Date.AddDays(1), DateTime.UtcNow.Date.AddDays(2), 1, 100m, "direct"),
                 CancellationToken.None);
@@ -195,14 +196,5 @@ namespace Aquri.Tests.Invoices
             draft.Should().HaveCount(1);
             paid.Should().BeEmpty();
         }
-    }
-
-    sealed class FakeCurrentUser : ICurrentUser
-    {
-        public bool IsAuthenticated => true;
-        public int? PropertyId => 1;
-        public int UserId => 1;
-        public string UserName => "test-user";
-        public string UserRole => "admin";
     }
 }

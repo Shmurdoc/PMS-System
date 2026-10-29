@@ -7,6 +7,7 @@ using Aquri.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using Aquri.Tests.Common;
 
 namespace Aquri.Tests.Guests
 {
@@ -110,14 +111,5 @@ namespace Aquri.Tests.Guests
             result.Should().HaveCount(1);
             result[0].Name.Should().Be("Jane Doe");
         }
-    }
-
-    sealed class FakeCurrentUser : ICurrentUser
-    {
-        public bool IsAuthenticated => true;
-        public int? PropertyId => 1;
-        public int UserId => 1;
-        public string UserName => "test-user";
-        public string UserRole => "admin";
     }
 }
