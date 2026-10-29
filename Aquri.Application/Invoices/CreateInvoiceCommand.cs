@@ -28,11 +28,13 @@ namespace Aquri.Application.Invoices
     {
         private readonly IApplicationDbContext _context;
         private readonly INumberGenerator _numbers;
+        private readonly ICurrentUser _currentUser;
 
-        public CreateInvoiceHandler(IApplicationDbContext context, INumberGenerator numbers)
+        public CreateInvoiceHandler(IApplicationDbContext context, INumberGenerator numbers, ICurrentUser currentUser)
         {
             _context = context;
             _numbers = numbers;
+            _currentUser = currentUser;
         }
 
         public async Task<Result<InvoiceDto>> Handle(CreateInvoiceCommand request, CancellationToken cancellationToken)
@@ -58,6 +60,11 @@ namespace Aquri.Application.Invoices
                     return Result<InvoiceDto>.Failure("Booking does not belong to the specified property.");
             }
 
+            var property = await _context.Properties
+                .FirstOrDefaultAsync(p => p.PropertyId == request.PropertyId, cancellationToken);
+            if (property is null)
+                return Result<InvoiceDto>.Failure("Property not found.");
+
             // Tax rates are server-derived from the property's TaxConfig rules
             // (roadmap: "tax rules live in the TaxConfig entity rather than being
             // hardcoded"). The client-sent rate is only used as a fallback when no
@@ -75,6 +82,7 @@ namespace Aquri.Application.Invoices
                     request.DueDate, request.CreatedBy);
 
                 invoice.SetType(type);
+                invoice.SetCurrency(property.Currency);
                 if (request.BookingId.HasValue)
                     invoice.AttachToBooking(request.BookingId.Value);
                 if (request.DiscountAmount > 0)
@@ -88,6 +96,9 @@ namespace Aquri.Application.Invoices
                 }
 
                 _context.Invoices.Add(invoice);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                AuditTrail.Write(_context, _currentUser, "create_invoice", "invoice", invoice.Id.ToString(), invoice.InvoiceNumber);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return Result<InvoiceDto>.SuccessResult(InvoiceDto.FromEntity(invoice));

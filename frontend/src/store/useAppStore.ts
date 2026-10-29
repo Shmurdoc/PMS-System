@@ -180,17 +180,24 @@ function normalizeAppRole(role: string): string {
 // Local-first sync: state is already updated; fire-and-forget the API call (demo sessions with no token skip it).
 // onOk, when given, receives the response — creates use it to swap the local id for the server's.
 // onErr, when given, handles the failure itself (custom message); without it the store shows a generic toast.
-function syncToApi(label: string, task: () => Promise<unknown>, onOk?: (data: unknown) => void, onErr?: (error: unknown) => void): void {
+function syncToApi(
+  label: string,
+  task: () => Promise<unknown>,
+  onOk?: (data: unknown) => void,
+  onErr?: (error: unknown) => void,
+  onRollback?: () => void
+): void {
   if (!getAuthToken()) return;
   void task()
     .then((data) => onOk?.(data))
     .catch((error) => {
       console.warn(`[api] ${label} failed:`, error);
+      onRollback?.(); // revert the optimistic change before surfacing the error
       if (onErr) {
         onErr(error);
       } else {
         toast.error('Sync failed', {
-          description: `${label} didn't reach the server. The change stays on screen until it does.`,
+          description: `${label} didn't reach the server. The change has been reverted.`,
           duration: 5000,
         });
       }
@@ -1760,10 +1767,13 @@ export const useAppStore = create<AppState>()(
           ratePerNight: booking.ratePerNight ?? booking.amount,
           source: booking.source,
         };
+        const rollback = () => set((state) => ({
+          bookings: state.bookings.filter((b) => b.id !== booking.id),
+        }));
         syncToApi(`createBooking(${booking.id})`, () => createBooking(input), (data) => {
           const dto = data as ApiBooking;
           get().reconcileBooking(booking.id, String(dto.id));
-        });
+        }, undefined, rollback);
       },
       updateBooking: (id, updates) => {
         const prevDeposit = get().bookings.find((b) => b.id === id)?.depositPaid;
@@ -1777,7 +1787,10 @@ export const useAppStore = create<AppState>()(
           syncToApi(`changeBookingStatus(${id})`, () => changeBookingStatus(numericId, updates.status!));
         }
         if (updates.depositPaid !== undefined && updates.depositPaid !== prevDeposit) {
-          syncToApi(`recordBookingDeposit(${id})`, () => recordBookingDeposit(numericId, updates.depositPaid!));
+          const rollback = () => set((state) => ({
+            bookings: state.bookings.map((b) => b.id === id ? { ...b, depositPaid: prevDeposit } : b)
+          }));
+          syncToApi(`recordBookingDeposit(${id})`, () => recordBookingDeposit(numericId, updates.depositPaid!), undefined, rollback);
         }
       },
       deleteBooking: (id) => {
@@ -2123,6 +2136,9 @@ export const useAppStore = create<AppState>()(
           processedBy: payment.processedBy,
           reference: payment.reference ?? null,
         };
+        const rollback = () => set((state) => ({
+          payments: state.payments.filter((p) => p.id !== payment.id),
+        }));
         syncToApi(`createPayment(${payment.id})`, () => createPayment(input), (data) => {
           const dto = data as ApiPayment;
           get().reconcilePayment(payment.id, String(dto.id), dto.paymentNumber);
@@ -2133,11 +2149,18 @@ export const useAppStore = create<AppState>()(
               `completePayment(${dto.id})`,
               () => completePayment(dto.id, payment.transactionId ?? null),
               () => refreshInvoice(dto.invoiceId, get),
+              // Nested complete failed: revert the reconciled payment to pending.
+              () => set((state) => ({
+                payments: state.payments.map((p) =>
+                  p.id === String(dto.id) ? { ...p, status: 'pending' as const } : p
+                ),
+              })),
             );
           }
-        });
+        }, undefined, rollback);
       },
       updatePayment: (id, updates) => {
+        const prevPayment = get().payments.find((p) => p.id === id);
         const invoiceId = get().payments.find((p) => p.id === id)?.invoiceId ?? null;
         set((state) => ({
           payments: state.payments.map((p) => p.id === id ? { ...p, ...updates } : p)
@@ -2145,12 +2168,16 @@ export const useAppStore = create<AppState>()(
         const numericId = toNumericId(id);
         if (numericId === null) return;
         // Complete and refund have endpoints; everything else stays local.
+        const rollback = () => prevPayment && set((state) => ({
+          payments: state.payments.map((p) => p.id === id ? { ...prevPayment } : p)
+        }));
         if (updates.status === 'completed') {
           const transactionId = updates.transactionId ?? null;
           syncToApi(
             `completePayment(${id})`,
             () => completePayment(numericId, transactionId),
             () => refreshInvoice(invoiceId, get),
+            rollback,
           );
         }
         if (updates.status === 'refunded') {
@@ -2158,6 +2185,7 @@ export const useAppStore = create<AppState>()(
             `refundPayment(${id})`,
             () => refundPayment(numericId),
             () => refreshInvoice(invoiceId, get),
+            rollback,
           );
         }
       },

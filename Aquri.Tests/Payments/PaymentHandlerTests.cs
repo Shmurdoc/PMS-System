@@ -1,6 +1,7 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Aquri.Application.Common.Interfaces;
 using Aquri.Application.Invoices;
 using Aquri.Application.Payments;
 using Aquri.Domain.Entities;
@@ -9,12 +10,14 @@ using Aquri.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using Aquri.Tests.Common;
 
 namespace Aquri.Tests.Payments
 {
     public class PaymentHandlerTestBase : IDisposable
     {
         protected readonly AquriDbContext Context;
+        protected readonly ICurrentUser CurrentUser = new FakeCurrentUser();
         private readonly string _databaseName;
         protected int GuestId;
 
@@ -37,6 +40,9 @@ namespace Aquri.Tests.Payments
 
         private async Task Seed()
         {
+            // A property row is needed: CreatePaymentHandler and
+            // CreateInvoiceHandler now inherit the property's currency.
+            Context.Properties.Add(new Property("Test HQ", 1));
             var guest = new Guest("Jane Doe", "jane@mail.com", "0820000000", "9001015800089", "SA");
             Context.Guests.Add(guest);
             await Context.SaveChangesAsync();
@@ -45,7 +51,7 @@ namespace Aquri.Tests.Payments
 
         protected async Task<int> SeedPayment(decimal amount = 500m, string method = "card", int? invoiceId = null)
         {
-            var created = await new CreatePaymentHandler(Context, new NumberGenerator(Context)).Handle(
+            var created = await new CreatePaymentHandler(Context, new NumberGenerator(Context), CurrentUser).Handle(
                 new CreatePaymentCommand(1, GuestId, invoiceId, null, amount, method, "front@nexus.com"),
                 CancellationToken.None);
             return created.Data!.Id;
@@ -54,7 +60,7 @@ namespace Aquri.Tests.Payments
         /// <summary>An invoice whose total is exactly <paramref name="total"/> (no tax).</summary>
         protected async Task<int> SeedInvoice(decimal total = 200m)
         {
-            var created = await new CreateInvoiceHandler(Context, new NumberGenerator(Context)).Handle(
+            var created = await new CreateInvoiceHandler(Context, new NumberGenerator(Context), CurrentUser).Handle(
                 new CreateInvoiceCommand(1, GuestId, null, "booking", DateTime.UtcNow.AddDays(7), 0, "",
                     new List<InvoiceItemInput> { new("Room night", 1, total, 0m, "room") },
                     "front@nexus.com"),
@@ -71,7 +77,7 @@ namespace Aquri.Tests.Payments
         [Fact]
         public async Task Create_Pending_Payment()
         {
-            var handler = new CreatePaymentHandler(Context, new NumberGenerator(Context));
+            var handler = new CreatePaymentHandler(Context, new NumberGenerator(Context), CurrentUser);
             var command = new CreatePaymentCommand(1, GuestId, null, null, 500m, "card", "front@nexus.com");
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -86,7 +92,7 @@ namespace Aquri.Tests.Payments
         [Fact]
         public async Task Fail_On_Negative_Amount()
         {
-            var handler = new CreatePaymentHandler(Context, new NumberGenerator(Context));
+            var handler = new CreatePaymentHandler(Context, new NumberGenerator(Context), CurrentUser);
             var command = new CreatePaymentCommand(1, GuestId, null, null, -1m, "card", "front@nexus.com");
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -97,7 +103,7 @@ namespace Aquri.Tests.Payments
         [Fact]
         public async Task Fail_For_Unknown_Guest()
         {
-            var handler = new CreatePaymentHandler(Context, new NumberGenerator(Context));
+            var handler = new CreatePaymentHandler(Context, new NumberGenerator(Context), CurrentUser);
             var command = new CreatePaymentCommand(1, 999, null, null, 100m, "card", "front@nexus.com");
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -109,7 +115,7 @@ namespace Aquri.Tests.Payments
         [Fact]
         public async Task Fail_For_Unknown_Invoice()
         {
-            var handler = new CreatePaymentHandler(Context, new NumberGenerator(Context));
+            var handler = new CreatePaymentHandler(Context, new NumberGenerator(Context), CurrentUser);
             var command = new CreatePaymentCommand(1, GuestId, 999, null, 100m, "card", "front@nexus.com");
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -121,7 +127,7 @@ namespace Aquri.Tests.Payments
         [Fact]
         public async Task Fail_For_Unknown_Booking()
         {
-            var handler = new CreatePaymentHandler(Context, new NumberGenerator(Context));
+            var handler = new CreatePaymentHandler(Context, new NumberGenerator(Context), CurrentUser);
             var command = new CreatePaymentCommand(1, GuestId, null, 999, 100m, "card", "front@nexus.com");
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -133,14 +139,14 @@ namespace Aquri.Tests.Payments
         [Fact]
         public async Task Fail_For_Invoice_Belonging_To_Different_Property()
         {
-            var created = await new CreateInvoiceHandler(Context, new NumberGenerator(Context)).Handle(
+            var created = await new CreateInvoiceHandler(Context, new NumberGenerator(Context), CurrentUser).Handle(
                 new CreateInvoiceCommand(1, GuestId, null, "booking",
                     DateTime.UtcNow.AddDays(7), 0, "",
                     new List<InvoiceItemInput> { new("Room night", 1, 100m, 0.15m, "room") },
                     "front@nexus.com"),
                 CancellationToken.None);
 
-            var handler = new CreatePaymentHandler(Context, new NumberGenerator(Context));
+            var handler = new CreatePaymentHandler(Context, new NumberGenerator(Context), CurrentUser);
             var command = new CreatePaymentCommand(2, GuestId, created.Data!.Id, null, 100m, "card", "front@nexus.com");
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -156,7 +162,7 @@ namespace Aquri.Tests.Payments
         public async Task Complete_Pending_Payment()
         {
             var id = await SeedPayment();
-            var handler = new CompletePaymentHandler(Context);
+            var handler = new CompletePaymentHandler(Context, CurrentUser);
 
             var result = await handler.Handle(new CompletePaymentCommand(id, "TXN-123"), CancellationToken.None);
 
@@ -170,7 +176,7 @@ namespace Aquri.Tests.Payments
             var invoiceId = await SeedInvoice(200m);
             var id = await SeedPayment(200m, invoiceId: invoiceId);
 
-            var result = await new CompletePaymentHandler(Context)
+            var result = await new CompletePaymentHandler(Context, CurrentUser)
                 .Handle(new CompletePaymentCommand(id, "TXN-1"), CancellationToken.None);
 
             result.Success.Should().BeTrue();
@@ -186,7 +192,7 @@ namespace Aquri.Tests.Payments
             var invoiceId = await SeedInvoice(200m);
             var id = await SeedPayment(50m, invoiceId: invoiceId);
 
-            await new CompletePaymentHandler(Context)
+            await new CompletePaymentHandler(Context, CurrentUser)
                 .Handle(new CompletePaymentCommand(id, "TXN-1"), CancellationToken.None);
 
             var invoice = await Context.Invoices.AsNoTracking().FirstAsync(i => i.Id == invoiceId);
@@ -200,7 +206,7 @@ namespace Aquri.Tests.Payments
             var invoiceId = await SeedInvoice(200m);
             var id = await SeedPayment(500m, invoiceId: invoiceId);
 
-            var result = await new CompletePaymentHandler(Context)
+            var result = await new CompletePaymentHandler(Context, CurrentUser)
                 .Handle(new CompletePaymentCommand(id, "TXN-1"), CancellationToken.None);
 
             result.Success.Should().BeFalse();
@@ -221,7 +227,7 @@ namespace Aquri.Tests.Payments
         {
             var invoiceId = await SeedInvoice(200m);
             var id = await SeedPayment(200m, invoiceId: invoiceId);
-            var handler = new CompletePaymentHandler(Context);
+            var handler = new CompletePaymentHandler(Context, CurrentUser);
 
             await handler.Handle(new CompletePaymentCommand(id, "TXN-1"), CancellationToken.None);
             var second = await handler.Handle(new CompletePaymentCommand(id, "TXN-1"), CancellationToken.None);
@@ -234,7 +240,7 @@ namespace Aquri.Tests.Payments
         [Fact]
         public async Task Return_NotFound_For_Unknown_Payment()
         {
-            var handler = new CompletePaymentHandler(Context);
+            var handler = new CompletePaymentHandler(Context, CurrentUser);
 
             var result = await handler.Handle(new CompletePaymentCommand(999, "TXN-123"), CancellationToken.None);
 
@@ -249,9 +255,9 @@ namespace Aquri.Tests.Payments
         public async Task Refund_Completed_Payment()
         {
             var id = await SeedPayment();
-            await new CompletePaymentHandler(Context).Handle(new CompletePaymentCommand(id, "TXN-123"), CancellationToken.None);
+            await new CompletePaymentHandler(Context, CurrentUser).Handle(new CompletePaymentCommand(id, "TXN-123"), CancellationToken.None);
 
-            var handler = new RefundPaymentHandler(Context);
+            var handler = new RefundPaymentHandler(Context, CurrentUser);
             var result = await handler.Handle(new RefundPaymentCommand(id), CancellationToken.None);
 
             result.Success.Should().BeTrue();
@@ -263,10 +269,10 @@ namespace Aquri.Tests.Payments
         {
             var invoiceId = await SeedInvoice(200m);
             var id = await SeedPayment(200m, invoiceId: invoiceId);
-            await new CompletePaymentHandler(Context)
+            await new CompletePaymentHandler(Context, CurrentUser)
                 .Handle(new CompletePaymentCommand(id, "TXN-1"), CancellationToken.None);
 
-            var result = await new RefundPaymentHandler(Context)
+            var result = await new RefundPaymentHandler(Context, CurrentUser)
                 .Handle(new RefundPaymentCommand(id), CancellationToken.None);
 
             result.Success.Should().BeTrue();
@@ -282,12 +288,12 @@ namespace Aquri.Tests.Payments
             var invoiceId = await SeedInvoice(200m);
             var first = await SeedPayment(100m, invoiceId: invoiceId);
             var second = await SeedPayment(100m, invoiceId: invoiceId);
-            await new CompletePaymentHandler(Context)
+            await new CompletePaymentHandler(Context, CurrentUser)
                 .Handle(new CompletePaymentCommand(first, "TXN-1"), CancellationToken.None);
-            await new CompletePaymentHandler(Context)
+            await new CompletePaymentHandler(Context, CurrentUser)
                 .Handle(new CompletePaymentCommand(second, "TXN-2"), CancellationToken.None);
 
-            await new RefundPaymentHandler(Context)
+            await new RefundPaymentHandler(Context, CurrentUser)
                 .Handle(new RefundPaymentCommand(second), CancellationToken.None);
 
             var invoice = await Context.Invoices.AsNoTracking().FirstAsync(i => i.Id == invoiceId);
@@ -301,9 +307,9 @@ namespace Aquri.Tests.Payments
         {
             var invoiceId = await SeedInvoice(200m);
             var id = await SeedPayment(100m, invoiceId: invoiceId);
-            await new CompletePaymentHandler(Context)
+            await new CompletePaymentHandler(Context, CurrentUser)
                 .Handle(new CompletePaymentCommand(id, "TXN-1"), CancellationToken.None);
-            var handler = new RefundPaymentHandler(Context);
+            var handler = new RefundPaymentHandler(Context, CurrentUser);
 
             await handler.Handle(new RefundPaymentCommand(id), CancellationToken.None);
             var second = await handler.Handle(new RefundPaymentCommand(id), CancellationToken.None);
@@ -318,7 +324,7 @@ namespace Aquri.Tests.Payments
         public async Task Reject_Refunding_Pending_Payment()
         {
             var id = await SeedPayment();
-            var handler = new RefundPaymentHandler(Context);
+            var handler = new RefundPaymentHandler(Context, CurrentUser);
 
             var result = await handler.Handle(new RefundPaymentCommand(id), CancellationToken.None);
 
@@ -333,13 +339,13 @@ namespace Aquri.Tests.Payments
         {
             await SeedPayment();
 
-            var handler = new GetPaymentsHandler(Context);
+            var handler = new GetPaymentsHandler(Context, CurrentUser);
 
             var pending = await handler.Handle(new GetPaymentsQuery(1, "pending"), CancellationToken.None);
             var other = await handler.Handle(new GetPaymentsQuery(1, "refunded"), CancellationToken.None);
 
-            pending.Should().HaveCount(1);
-            other.Should().BeEmpty();
+            pending.Data.Should().HaveCount(1);
+            other.Data.Should().BeEmpty();
         }
     }
 }

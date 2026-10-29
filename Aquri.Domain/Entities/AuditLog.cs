@@ -6,13 +6,13 @@ namespace Aquri.Domain.Entities
     public class AuditLog
     {
         public static readonly string[] ValidEntityTypes =
-            { "booking", "guest", "room", "invoice", "payment", "ticket", "user", "property", "expense", "inventory", "workflow" };
+            { "booking", "guest", "room", "invoice", "payment", "ticket", "user", "property", "expense", "inventory", "workflow", "payroll_run", "employee_compensation" };
 
         public int Id { get; private set; }
-        public int PropertyId { get; private set; }
+        public int? PropertyId { get; private set; }
         public string Action { get; private set; } = string.Empty;
 
-        /// <summary>booking | guest | room | invoice | payment | ticket | user | property | expense | inventory | workflow.</summary>
+        /// <summary>booking | guest | room | invoice | payment | ticket | user | property | expense | inventory | workflow | payroll_run | employee_compensation.</summary>
         public string EntityType { get; private set; } = string.Empty;
         public string EntityId { get; private set; } = string.Empty;
         public string EntityName { get; private set; } = string.Empty;
@@ -30,11 +30,11 @@ namespace Aquri.Domain.Entities
         public AuditLog() { }
 
         public AuditLog(
-            int propertyId, string action, string entityType, string entityId, string entityName,
+            int? propertyId, string action, string entityType, string entityId, string entityName,
             int userId, string userName, string userRole, string details)
         {
-            if (propertyId <= 0)
-                throw new ArgumentException("PropertyId must be positive.", nameof(propertyId));
+            if (propertyId.HasValue && propertyId.Value <= 0)
+                throw new ArgumentException("PropertyId must be positive when supplied.", nameof(propertyId));
             if (string.IsNullOrWhiteSpace(action))
                 throw new ArgumentException("Action cannot be empty.", nameof(action));
             if (!ValidEntityTypes.Contains(entityType))

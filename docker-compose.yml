@@ -34,7 +34,7 @@ services:
       Jwt__Key: "${JWT_KEY:?set JWT_KEY in .env (copy .env.example, minimum 32 characters)}"
       Jwt__Issuer: "Aquri.API"
       Jwt__Audience: "Aquri.Client"
-      Seed__DemoUsers: "${SEED_DEMO_USERS:-true}"
+      Seed__DemoUsers: "${SEED_DEMO_USERS:-false}"
       Cors__AllowedOrigins__0: "http://localhost:4200"
       Cors__AllowedOrigins__1: "http://localhost:5173"
       Cors__AllowedOrigins__2: "http://localhost:3000"

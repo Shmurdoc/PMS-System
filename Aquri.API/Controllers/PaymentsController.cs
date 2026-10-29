@@ -2,6 +2,7 @@ using Aquri.Application.Payments;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 
 namespace Aquri.API.Controllers
 {
@@ -18,6 +19,7 @@ namespace Aquri.API.Controllers
 
         [HttpPost]
         [Authorize(Roles = "admin,manager,front_desk")]
+        [EnableRateLimiting("payments")]
         [ProducesResponseType(typeof(PaymentDto), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
         public async Task<ActionResult<PaymentDto>> Create([FromBody] CreatePaymentCommand command)
@@ -31,6 +33,7 @@ namespace Aquri.API.Controllers
 
         [HttpPost("{id:int}/complete")]
         [Authorize(Roles = "admin,manager,front_desk")]
+        [EnableRateLimiting("payments")]
         [ProducesResponseType(typeof(PaymentDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -50,6 +53,7 @@ namespace Aquri.API.Controllers
         /// <summary>Refunds a completed payment. The attached invoice is reversed with it.</summary>
         [HttpPost("{id:int}/refund")]
         [Authorize(Roles = "admin,manager")]
+        [EnableRateLimiting("payments")]
         [ProducesResponseType(typeof(PaymentDto), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
@@ -68,10 +72,13 @@ namespace Aquri.API.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(List<PaymentDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<List<PaymentDto>>> List([FromQuery] int propertyId, [FromQuery] string? status)
+        public async Task<ActionResult<List<PaymentDto>>> List([FromQuery] int propertyId, [FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
-            var payments = await _mediator.Send(new GetPaymentsQuery(propertyId, status));
-            return Ok(payments);
+            var rows = await _mediator.Send(new GetPaymentsQuery(propertyId, status, page, pageSize));
+            Response.Headers["X-Total-Count"] = rows.TotalCount.ToString();
+            Response.Headers["X-Page"] = rows.Page.ToString();
+            Response.Headers["X-Page-Size"] = rows.PageSize.ToString();
+            return Ok(rows.Data);
         }
     }
 }

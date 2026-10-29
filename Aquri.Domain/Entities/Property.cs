@@ -32,6 +32,9 @@ namespace Aquri.Domain.Entities
         /// <summary>Email address for the property.</summary>
         public string? Email { get; private set; }
 
+        /// <summary>Default currency for the property (ISO 4217 code, e.g. "ZAR", "USD").</summary>
+        public string Currency { get; private set; } = "ZAR";
+
         /// <summary>Current status of the property.</summary>
         public PropertyStatus Status { get; private set; }
 

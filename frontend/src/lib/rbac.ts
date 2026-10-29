@@ -1,6 +1,6 @@
 import { useAppStore } from '../store/useAppStore';
 
-export type UserRole = 'admin' | 'manager' | 'front_desk' | 'housekeeping' | 'maintenance' | 'auditor' | 'guest';
+export type UserRole = 'admin' | 'manager' | 'front_desk' | 'housekeeping' | 'maintenance' | 'auditor';
 
 export interface RolePermission {
   viewDashboard: boolean;
@@ -94,7 +94,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermission> = {
     viewReports: true,
     exportReports: true,
     viewUsers: true,
-    manageUsers: false,
+    manageUsers: true,
     viewSchedules: true,
     viewRfid: true,
     viewMessaging: true,
@@ -256,42 +256,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, RolePermission> = {
     viewPayroll: false,
     viewAllProperties: false,
   },
-  guest: {
-    viewDashboard: false,
-    viewBookings: false,
-    createBookings: false,
-    editBookings: false,
-    cancelBookings: false,
-    viewGuests: false,
-    createGuests: false,
-    editGuests: false,
-    deleteGuests: false,
-    viewRooms: false,
-    manageRooms: false,
-    viewFinances: false,
-    createInvoices: false,
-    refundPayments: false,
-    viewReports: false,
-    exportReports: false,
-    viewUsers: false,
-    manageUsers: false,
-    viewSchedules: false,
-    viewRfid: false,
-    viewMessaging: false,
-    viewMaintenance: false,
-    createMaintenanceTickets: false,
-    assignTickets: false,
-    viewAuditLog: false,
-    manageSettings: false,
-    viewIntegrations: false,
-    manageIntegrations: false,
-    viewAIInsights: false,
-    useAICommands: false,
-    viewInventory: false,
-    manageInventory: false,
-    viewPayroll: false,
-    viewAllProperties: false,
-  },
 };
 
 export function hasPermission(permission: keyof RolePermission): boolean {
@@ -341,7 +305,6 @@ export function getRoleLabel(role: UserRole): string {
     housekeeping: 'Housekeeping',
     maintenance: 'Maintenance',
     auditor: 'Auditor',
-    guest: 'Guest',
   };
   return labels[role];
 }

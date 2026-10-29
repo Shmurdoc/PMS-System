@@ -211,5 +211,12 @@ namespace Aquri.Domain.Entities
             Notes = notes;
             LastModified = DateTime.UtcNow;
         }
+
+        public void SetCurrency(string currency)
+        {
+            if (string.IsNullOrWhiteSpace(currency) || currency.Length > 3)
+                throw new ArgumentException("Currency must be a 3-character ISO 4217 code.", nameof(currency));
+            Currency = currency.Trim().ToUpperInvariant();
+        }
     }
 }

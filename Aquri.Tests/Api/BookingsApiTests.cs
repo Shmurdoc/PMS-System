@@ -135,5 +135,65 @@ namespace Aquri.Tests.Api
 
             response.StatusCode.Should().Be(HttpStatusCode.Forbidden);
         }
+
+        [Fact]
+        public async Task CreateBooking_OverlappingDates_Returns409()
+        {
+            var client = await AdminClientAsync();
+            var propertyId = await CreatePropertyAsync(client, 901);
+            var roomId = await CreateRoomAsync(client, propertyId, "920");
+            var guestId = await CreateGuestAsync(client, "ws2.bk.overlap@nexus.com", propertyId);
+
+            // First booking: Oct 30 - Nov 2
+            var booking1 = await client.PostAsync("/api/v1/bookings", JsonBody(new
+            {
+                propertyId,
+                guestId,
+                roomId,
+                checkIn = "2026-10-30T14:00:00",
+                checkOut = "2026-11-02T11:00:00",
+                guests = 1,
+                ratePerNight = 750m,
+                source = "direct"
+            }));
+            booking1.StatusCode.Should().Be(HttpStatusCode.Created);
+
+            // Overlapping second booking -> 409
+            var booking2 = await client.PostAsync("/api/v1/bookings", JsonBody(new
+            {
+                propertyId,
+                guestId,
+                roomId,
+                checkIn = "2026-10-31T10:00:00",
+                checkOut = "2026-11-01T10:00:00",
+                guests = 1,
+                ratePerNight = 750m,
+                source = "direct"
+            }));
+            booking2.StatusCode.Should().Be(HttpStatusCode.Conflict);
+
+            // Back-to-back (check-out == check-in) is allowed: tstzrange '[)'
+            // excludes the upper bound, and the exclusion constraint mirrors it.
+            var booking3 = await client.PostAsync("/api/v1/bookings", JsonBody(new
+            {
+                propertyId,
+                guestId,
+                roomId,
+                checkIn = "2026-11-02T11:00:00",
+                checkOut = "2026-11-05T11:00:00",
+                guests = 1,
+                ratePerNight = 750m,
+                source = "direct"
+            }));
+            booking3.StatusCode.Should().Be(HttpStatusCode.Created);
+
+            // Cleanup
+            using var doc1 = JsonDocument.Parse(await booking1.Content.ReadAsStringAsync());
+            var id1 = doc1.RootElement.GetProperty("data").GetProperty("id").GetInt32();
+            using var doc3 = JsonDocument.Parse(await booking3.Content.ReadAsStringAsync());
+            var id3 = doc3.RootElement.GetProperty("data").GetProperty("id").GetInt32();
+            await client.DeleteAsync($"/api/v1/bookings/{id1}");
+            await client.DeleteAsync($"/api/v1/bookings/{id3}");
+        }
     }
 }

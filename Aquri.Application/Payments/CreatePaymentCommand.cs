@@ -2,7 +2,9 @@ using System;
 using Aquri.Application.Common;
 using Aquri.Application.Common.Interfaces;
 using Aquri.Domain.Entities;
+using Aquri.Domain.Enums;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.Payments
 {
@@ -15,21 +17,41 @@ namespace Aquri.Application.Payments
         decimal Amount,
         string Method,
         string ProcessedBy,
-        string? Reference = null) : IRequest<Result<PaymentDto>>;
+        string? Reference = null,
+        string? IdempotencyKey = null) : IRequest<Result<PaymentDto>>;
 
     public class CreatePaymentHandler : IRequestHandler<CreatePaymentCommand, Result<PaymentDto>>
     {
         private readonly IApplicationDbContext _context;
         private readonly INumberGenerator _numbers;
+        private readonly ICurrentUser _currentUser;
 
-        public CreatePaymentHandler(IApplicationDbContext context, INumberGenerator numbers)
+        public CreatePaymentHandler(IApplicationDbContext context, INumberGenerator numbers, ICurrentUser currentUser)
         {
             _context = context;
             _numbers = numbers;
+            _currentUser = currentUser;
         }
 
         public async Task<Result<PaymentDto>> Handle(CreatePaymentCommand request, CancellationToken cancellationToken)
         {
+            // Idempotency: if a key was supplied and a non-failed payment already
+            // exists with this key for this property, return that payment instead
+            // of creating a duplicate. A retried request (double-click, network
+            // retry) gets the same answer as the first.
+            if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
+            {
+                var existing = await _context.Payments
+                    .FirstOrDefaultAsync(p =>
+                        p.PropertyId == request.PropertyId &&
+                        p.IdempotencyKey == request.IdempotencyKey! &&
+                        p.Status != PaymentStatus.Failed,
+                    cancellationToken);
+
+                if (existing is not null)
+                    return Result<PaymentDto>.SuccessResult(PaymentDto.FromEntity(existing));
+            }
+
             // The invoice/booking FKs are client-supplied IDs — verify they exist
             // and belong to the same property before stamping them onto the
             // payment, otherwise dangling or cross-property references persist.
@@ -55,6 +77,11 @@ namespace Aquri.Application.Payments
                     return Result<PaymentDto>.Failure("Booking does not belong to the specified property.");
             }
 
+            var property = await _context.Properties
+                .FirstOrDefaultAsync(p => p.PropertyId == request.PropertyId, cancellationToken);
+            if (property is null)
+                return Result<PaymentDto>.Failure("Property not found.");
+
             var paymentNumber = await _numbers.NextPaymentNumberAsync(cancellationToken);
 
             try
@@ -62,8 +89,13 @@ namespace Aquri.Application.Payments
                 var payment = new Payment(paymentNumber, request.GuestId, request.PropertyId,
                     request.Amount, request.Method, request.ProcessedBy);
 
+                payment.SetCurrency(property.Currency);
+
                 if (!string.IsNullOrWhiteSpace(request.Reference))
                     payment.SetReference(request.Reference.Trim());
+
+                if (!string.IsNullOrWhiteSpace(request.IdempotencyKey))
+                    payment.SetIdempotencyKey(request.IdempotencyKey.Trim());
 
                 if (request.InvoiceId.HasValue)
                     payment.AttachToInvoice(request.InvoiceId.Value);
@@ -71,6 +103,9 @@ namespace Aquri.Application.Payments
                     payment.AttachToBooking(request.BookingId.Value);
 
                 _context.Payments.Add(payment);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                AuditTrail.Write(_context, _currentUser, "create_payment", "payment", payment.Id.ToString(), payment.ProcessedBy);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return Result<PaymentDto>.SuccessResult(PaymentDto.FromEntity(payment));

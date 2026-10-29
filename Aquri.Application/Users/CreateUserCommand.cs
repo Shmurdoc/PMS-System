@@ -26,11 +26,13 @@ namespace Aquri.Application.Users
     {
         private readonly IApplicationDbContext _context;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly ICurrentUser _currentUser;
 
-        public CreateUserHandler(IApplicationDbContext context, IPasswordHasher passwordHasher)
+        public CreateUserHandler(IApplicationDbContext context, IPasswordHasher passwordHasher, ICurrentUser currentUser)
         {
             _context = context;
             _passwordHasher = passwordHasher;
+            _currentUser = currentUser;
         }
 
         public async Task<Result<UserDto>> Handle(CreateUserCommand request, CancellationToken cancellationToken)
@@ -43,6 +45,14 @@ namespace Aquri.Application.Users
                 return Result<UserDto>.Failure($"Role must be one of: {string.Join(", ", AppRoles.All)}.");
             if (request.Role != AppRoles.Admin && !request.PropertyId.HasValue)
                 return Result<UserDto>.Failure("PropertyId is required unless the account is an admin.");
+
+            // A manager can only create staff at their own property. The
+            // pipeline behavior also rejects a mismatched PropertyId, but we
+            // check here too so the rule survives even if the behavior is
+            // ever bypassed.
+            var callerRole = _currentUser.UserRole;
+            if (callerRole != AppRoles.Admin && request.PropertyId != _currentUser.PropertyId)
+                return Result<UserDto>.Failure("You can only create staff at your own property.");
 
             // Unique login identity — proactive check so the invariant holds on
             // every provider (the InMemory test provider does not enforce the
@@ -68,6 +78,9 @@ namespace Aquri.Application.Users
                 user.AssignProperty(request.PropertyId);
 
                 _context.Users.Add(user);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                AuditTrail.Write(_context, _currentUser, "create_user", "user", user.Id.ToString(), user.Name);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return Result<UserDto>.SuccessResult(UserDto.FromEntity(user));

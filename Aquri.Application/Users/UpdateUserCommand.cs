@@ -27,11 +27,13 @@ namespace Aquri.Application.Users
     {
         private readonly IApplicationDbContext _context;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly ICurrentUser _currentUser;
 
-        public UpdateUserHandler(IApplicationDbContext context, IPasswordHasher passwordHasher)
+        public UpdateUserHandler(IApplicationDbContext context, IPasswordHasher passwordHasher, ICurrentUser currentUser)
         {
             _context = context;
             _passwordHasher = passwordHasher;
+            _currentUser = currentUser;
         }
 
         public async Task<Result<UserDto>> Handle(UpdateUserCommand request, CancellationToken cancellationToken)
@@ -58,20 +60,34 @@ namespace Aquri.Application.Users
                 : request.PropertyId ?? user.PropertyId;
             if (targetRole != AppRoles.Admin && targetProperty is null)
                 return Result<UserDto>.Failure("PropertyId is required unless the account is an admin.");
+            if (request.ClearProperty && targetRole != AppRoles.Admin)
+                return Result<UserDto>.Failure("Only an admin account can be removed from a property.");
+
+            // A manager can only manage staff at their own property. An admin is
+            // unrestricted and can touch any account on any property.
+            var callerRole = _currentUser.UserRole;
+            if (callerRole != AppRoles.Admin && user.PropertyId != _currentUser.PropertyId)
+                return Result<UserDto>.Failure("You can only manage staff at your own property.");
 
             try
             {
                 if (!string.IsNullOrEmpty(request.Password))
                     user.SetPasswordHash(_passwordHasher.Hash(request.Password));
-                if (!string.IsNullOrEmpty(request.Role) && user.Role != request.Role)
-                    user.ChangeRole(request.Role);
 
+                // Apply the property before the role change. An unscoped admin
+                // becoming a scoped front desk must have a property on the
+                // account before ChangeRole will accept the move; changing role
+                // first rejects a perfectly valid request.
                 if (request.ClearProperty)
                     user.AssignProperty(null);
                 else if (request.PropertyId.HasValue)
                     user.AssignProperty(request.PropertyId.Value);
 
+                if (!string.IsNullOrEmpty(request.Role) && user.Role != request.Role)
+                    user.ChangeRole(request.Role);
+
                 user.UpdateProfile(request.Name, request.Department, request.Phone);
+                AuditTrail.Write(_context, _currentUser, "update_user", "user", user.Id.ToString(), user.Name);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return Result<UserDto>.SuccessResult(UserDto.FromEntity(user));

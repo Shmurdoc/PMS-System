@@ -15,11 +15,13 @@ namespace Aquri.Application.Properties.Commands
     {
         private readonly IApplicationDbContext _context;
         private readonly IMapper _mapper;
+        private readonly ICurrentUser _currentUser;
 
-        public CreatePropertyWithRoomsHandler(IApplicationDbContext context, IMapper mapper)
+        public CreatePropertyWithRoomsHandler(IApplicationDbContext context, IMapper mapper, ICurrentUser currentUser)
         {
             _context = context;
             _mapper = mapper;
+            _currentUser = currentUser;
         }
 
         public async Task<Result<PropertyDto>> Handle(CreatePropertyWithRoomsCommand request, CancellationToken cancellationToken)
@@ -50,6 +52,8 @@ namespace Aquri.Application.Properties.Commands
             }
 
             _context.Properties.Add(property);
+
+            AuditTrail.Write(_context, _currentUser, "create_property", "property", request.PropertyId.ToString(), request.Name);
 
             if (request.InitialRooms != null && request.InitialRooms.Count > 0)
             {

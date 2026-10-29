@@ -16,6 +16,7 @@ using AutoMapper;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using Aquri.Tests.Common;
 
 namespace Aquri.Tests.Rooms
 {
@@ -24,6 +25,7 @@ namespace Aquri.Tests.Rooms
     {
         protected readonly AquriDbContext Context;
         protected readonly IMapper Mapper;
+        protected readonly ICurrentUser CurrentUser = new FakeCurrentUser();
 
         public RoomHandlerTestBase()
         {
@@ -304,7 +306,7 @@ namespace Aquri.Tests.Rooms
         [Fact]
         public async Task Create_Property_With_Initial_Rooms()
         {
-            var handler = new CreatePropertyWithRoomsHandler(Context, Mapper);
+            var handler = new CreatePropertyWithRoomsHandler(Context, Mapper, CurrentUser);
             var command = new CreatePropertyWithRoomsCommand
             {
                 Name = "Grand Hotel",
@@ -345,7 +347,7 @@ namespace Aquri.Tests.Rooms
             Context.Properties.Add(new Property("Existing", 10));
             await Context.SaveChangesAsync();
 
-            var handler = new CreatePropertyWithRoomsHandler(Context, Mapper);
+            var handler = new CreatePropertyWithRoomsHandler(Context, Mapper, CurrentUser);
             var command = new CreatePropertyWithRoomsCommand
             {
                 Name = "Duplicate",
@@ -368,7 +370,7 @@ namespace Aquri.Tests.Rooms
             Context.Rooms.Add(room);
             await Context.SaveChangesAsync();
 
-            var handler = new GetRoomHandler(Context, Mapper);
+            var handler = new GetRoomHandler(Context, Mapper, CurrentUser);
             var query = new GetRoomQuery(room.Id);
 
             var result = await handler.Handle(query, CancellationToken.None);
@@ -381,7 +383,7 @@ namespace Aquri.Tests.Rooms
         [Fact]
         public async Task Return_Null_When_Not_Found()
         {
-            var handler = new GetRoomHandler(Context, Mapper);
+            var handler = new GetRoomHandler(Context, Mapper, CurrentUser);
             var query = new GetRoomQuery(999);
 
             var result = await handler.Handle(query, CancellationToken.None);
@@ -400,13 +402,13 @@ namespace Aquri.Tests.Rooms
             Context.Rooms.Add(new Room("903", 2, "single"));
             await Context.SaveChangesAsync();
 
-            var handler = new GetRoomsByPropertyHandler(Context, Mapper);
+            var handler = new GetRoomsByPropertyHandler(Context, Mapper, CurrentUser);
             var query = new GetRoomsByPropertyQuery(1);
 
             var result = await handler.Handle(query, CancellationToken.None);
 
-            result.Should().HaveCount(2);
-            result.Should().OnlyContain(r => r.PropertyId == 1);
+            result.Data.Should().HaveCount(2);
+            result.Data.Should().OnlyContain(r => r.PropertyId == 1);
         }
     }
 
@@ -456,7 +458,7 @@ namespace Aquri.Tests.Rooms
             Context.Properties.Add(new Property("To Delete", 1));
             await Context.SaveChangesAsync();
 
-            var handler = new DeletePropertyHandler(Context);
+            var handler = new DeletePropertyHandler(Context, CurrentUser);
             var command = new DeletePropertyCommand(1);
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -470,7 +472,7 @@ namespace Aquri.Tests.Rooms
         [Fact]
         public async Task Return_NotFound_When_Property_Not_Found()
         {
-            var handler = new DeletePropertyHandler(Context);
+            var handler = new DeletePropertyHandler(Context, CurrentUser);
             var command = new DeletePropertyCommand(999);
 
             var result = await handler.Handle(command, CancellationToken.None);

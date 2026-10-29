@@ -45,10 +45,13 @@ namespace Aquri.API.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(List<GuestDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<List<GuestDto>>> List([FromQuery] string? search)
+        public async Task<ActionResult<List<GuestDto>>> List([FromQuery] string? search, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
-            var guests = await _mediator.Send(new GetGuestsQuery(search));
-            return Ok(guests);
+            var rows = await _mediator.Send(new GetGuestsQuery(search, page, pageSize));
+            Response.Headers["X-Total-Count"] = rows.TotalCount.ToString();
+            Response.Headers["X-Page"] = rows.Page.ToString();
+            Response.Headers["X-Page-Size"] = rows.PageSize.ToString();
+            return Ok(rows.Data);
         }
 
         [HttpPut("{id:int}")]

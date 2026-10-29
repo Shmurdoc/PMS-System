@@ -45,5 +45,16 @@ namespace Aquri.Tests.Entities
 
             act.Should().Throw<ArgumentException>();
         }
+
+        [Fact]
+        public void Constructor_Accepts_Payroll_Entity_Types()
+        {
+            // Payroll handlers write audit rows with these types; if they are
+            // rejected, approve/pay/cancel 500s in production. The handler
+            // tests do not exercise this path, so pin it here.
+            var act = () => new AuditLog(1, "approve_payroll_run", "payroll_run", "7", "R2026-10", 1, "Admin", "admin", "Approved.");
+
+            act.Should().NotThrow();
+        }
     }
 }

@@ -43,14 +43,45 @@ namespace Aquri.Tests.Api
         }
 
         [Fact]
-        public async Task Manager_Can_List_But_Cannot_Write()
+        public async Task Manager_Can_Manage_Staff_At_Own_Property_But_Not_Others()
         {
             var client = await ManagerClientAsync();
 
+            // Manager can list the roster (messaging needs to see colleagues).
             (await client.GetAsync("/api/v1/users")).StatusCode.Should().Be(HttpStatusCode.OK);
-            (await client.PostAsync("/api/v1/users", JsonBody(NewUser("mgr.write@nexus.com"))))
+
+            // Manager can create a staff account at their own property (property 1).
+            (await client.PostAsync("/api/v1/users", JsonBody(NewUser("mgr.own@nexus.com"))))
+                .StatusCode.Should().Be(HttpStatusCode.Created);
+
+            // Manager cannot create a staff account at another property. The
+            // pipeline behavior rejects a mismatched PropertyId before the
+            // handler ever runs.
+            var otherProperty = new
+            {
+                email = "mgr.other@nexus.com",
+                name = "Other Property Staff",
+                password = "secret123",
+                role = "housekeeping",
+                department = "Housekeeping",
+                phone = "+27123456789",
+                propertyId = 999
+            };
+            (await client.PostAsync("/api/v1/users", JsonBody(otherProperty)))
                 .StatusCode.Should().Be(HttpStatusCode.Forbidden);
-            (await client.DeleteAsync("/api/v1/users/3")).StatusCode.Should().Be(HttpStatusCode.Forbidden);
+        }
+
+        [Fact]
+        public async Task Manager_Cannot_Delete_Own_Account()
+        {
+            var client = await ManagerClientAsync();
+
+            var me = await client.GetAsync("/api/v1/auth/me");
+            using var meDoc = JsonDocument.Parse(await me.Content.ReadAsStringAsync());
+            var managerId = meDoc.RootElement.GetProperty("data").GetProperty("id").GetInt32();
+
+            (await client.DeleteAsync($"/api/v1/users/{managerId}"))
+                .StatusCode.Should().Be(HttpStatusCode.Conflict);
         }
 
         [Fact]

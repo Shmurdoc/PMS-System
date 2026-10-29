@@ -18,8 +18,13 @@ namespace Aquri.Application.Payments
     public class CompletePaymentHandler : IRequestHandler<CompletePaymentCommand, Result<PaymentDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public CompletePaymentHandler(IApplicationDbContext context) => _context = context;
+        public CompletePaymentHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result<PaymentDto>> Handle(CompletePaymentCommand request, CancellationToken cancellationToken)
         {
@@ -42,6 +47,7 @@ namespace Aquri.Application.Payments
             {
                 payment.Complete(request.TransactionId);
                 invoice?.RecordPayment(payment.Amount, payment.Method);
+                AuditTrail.Write(_context, _currentUser, "complete_payment", "payment", payment.Id.ToString(), payment.ProcessedBy);
                 await _context.SaveChangesAsync(cancellationToken);
                 return Result<PaymentDto>.SuccessResult(PaymentDto.FromEntity(payment));
             }
@@ -70,8 +76,13 @@ namespace Aquri.Application.Payments
     public class RefundPaymentHandler : IRequestHandler<RefundPaymentCommand, Result<PaymentDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public RefundPaymentHandler(IApplicationDbContext context) => _context = context;
+        public RefundPaymentHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result<PaymentDto>> Handle(RefundPaymentCommand request, CancellationToken cancellationToken)
         {
@@ -93,6 +104,7 @@ namespace Aquri.Application.Payments
             {
                 payment.Refund();
                 invoice?.ReversePayment(payment.Amount);
+                AuditTrail.Write(_context, _currentUser, "refund_payment", "payment", payment.Id.ToString(), payment.ProcessedBy);
                 await _context.SaveChangesAsync(cancellationToken);
                 return Result<PaymentDto>.SuccessResult(PaymentDto.FromEntity(payment));
             }
@@ -103,30 +115,55 @@ namespace Aquri.Application.Payments
         }
     }
 
-    public record GetPaymentsQuery(int PropertyId, string? Status) : IRequest<List<PaymentDto>>;
+    public record GetPaymentsQuery(int PropertyId, string? Status, int Page = 1, int PageSize = 50) : IRequest<PagedRows<PaymentDto>>;
 
-    public class GetPaymentsHandler : IRequestHandler<GetPaymentsQuery, List<PaymentDto>>
+    public class GetPaymentsHandler : IRequestHandler<GetPaymentsQuery, PagedRows<PaymentDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public GetPaymentsHandler(IApplicationDbContext context) => _context = context;
-
-        public async Task<List<PaymentDto>> Handle(GetPaymentsQuery request, CancellationToken cancellationToken)
+        public GetPaymentsHandler(IApplicationDbContext context, ICurrentUser currentUser)
         {
+            _context = context;
+            _currentUser = currentUser;
+        }
+
+        public async Task<PagedRows<PaymentDto>> Handle(GetPaymentsQuery request, CancellationToken cancellationToken)
+        {
+            var page = Math.Clamp(request.Page, 1, int.MaxValue);
+            var pageSize = Math.Clamp(request.PageSize, 1, 200);
+
             var query = _context.Payments
                 .AsNoTracking()
                 .Where(p => p.PropertyId == request.PropertyId);
 
+            // Defense in depth: a scoped caller may only read their own property's
+            // payments, even if they supply a different PropertyId in the request.
+            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
+                query = query.Where(p => p.PropertyId == scope);
+
             if (!string.IsNullOrWhiteSpace(request.Status))
             {
                 if (!PaymentStatusExtensions.TryParseWire(request.Status, out var statusFilter))
-                    return new List<PaymentDto>();
+                    return new PagedRows<PaymentDto>();
 
                 query = query.Where(p => p.Status == statusFilter);
             }
 
-            var payments = await query.OrderByDescending(p => p.Created).ToListAsync(cancellationToken);
-            return payments.Select(PaymentDto.FromEntity).ToList();
+            var totalCount = await query.CountAsync(cancellationToken);
+            var payments = await query
+                .OrderByDescending(p => p.Created)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return new PagedRows<PaymentDto>
+            {
+                Data = payments.Select(PaymentDto.FromEntity).ToList(),
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
     }
 }

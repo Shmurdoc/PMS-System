@@ -118,15 +118,25 @@ const me = useAppStore((s) => s.user);
   });
 
   // ── derived ─────────────────────────────────────────────────────────────
+  const isManager = me?.role === 'manager';
+  const myPropertyId = me?.propertyId ?? '';
+
+  // Managers can only see and manage staff at their own property. Admins see
+  // everyone; front desk and below see no users at all (viewUsers is false for
+  // them in RBAC), but we filter here too as defense in depth.
   const filteredUsers = useMemo(() => {
-    if (!searchQuery) return users;
+    let list = users;
+    if (isManager && myPropertyId) {
+      list = list.filter(u => u.propertyId === myPropertyId);
+    }
+    if (!searchQuery) return list;
     const q = searchQuery.toLowerCase();
-    return users.filter(u =>
+    return list.filter(u =>
       u.name.toLowerCase().includes(q) ||
       u.email.toLowerCase().includes(q) ||
       u.role.toLowerCase().includes(q)
     );
-  }, [users, searchQuery]);
+  }, [users, searchQuery, isManager, myPropertyId]);
 
   // ── user CRUD handlers ─────────────────────────────────────────────────
   // The property list arrives with the hydrate wave, so the modal can open
@@ -134,11 +144,13 @@ const me = useAppStore((s) => s.user);
   // render and at submit instead of writing state from an effect.
   const needsProperty = userForm.role !== 'admin';
   const effectivePropertyId = needsProperty
-    ? userForm.propertyId || properties[0]?.propertyId || ''
+    ? userForm.propertyId || (isManager ? myPropertyId : properties[0]?.propertyId) || ''
     : '';
 
   const openNewUser = () => {
-    setUserForm({ ...emptyUserForm, propertyId: properties[0]?.propertyId ?? '' });
+    // A manager creating staff must pin them to the manager's own property.
+    // An admin is unrestricted and picks from the full list.
+    setUserForm({ ...emptyUserForm, propertyId: isManager ? myPropertyId : properties[0]?.propertyId ?? '' });
     setUserErrors({});
     setEditUserId(null);
     setShowUserModal(true);
@@ -748,10 +760,13 @@ const me = useAppStore((s) => s.user);
                 <div>
                   <label className="text-sm font-medium mb-2 block">Property {userForm.role !== 'admin' && <span className="text-danger">*</span>}</label>
                   <select value={effectivePropertyId} onChange={(e) => setUserForm(f => ({ ...f, propertyId: e.target.value }))}
-                    disabled={userForm.role === 'admin'}
+                    disabled={userForm.role === 'admin' || isManager}
                     className={`w-full px-4 py-2.5 bg-muted border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors disabled:opacity-60 ${userErrors.propertyId ? 'border-danger/50' : 'border-border/30'}`}>
-                    <option value="">{userForm.role === 'admin' ? 'All properties (admin)' : 'Select property'}</option>
-                    {properties.map(p => <option key={p.id} value={p.propertyId}>{p.name}</option>)}
+                    <option value="">{userForm.role === 'admin' ? 'All properties (admin)' : isManager ? `My property (${myPropertyId})` : 'Select property'}</option>
+                    {!isManager && properties.map(p => <option key={p.id} value={p.propertyId}>{p.name}</option>)}
+                    {isManager && myPropertyId && properties.find(p => p.propertyId === myPropertyId) && (
+                      <option key={myPropertyId} value={myPropertyId}>{properties.find(p => p.propertyId === myPropertyId)!.name}</option>
+                    )}
                   </select>
                   {userErrors.propertyId && !effectivePropertyId && <p className="text-xs text-danger mt-1">{userErrors.propertyId}</p>}
                 </div>

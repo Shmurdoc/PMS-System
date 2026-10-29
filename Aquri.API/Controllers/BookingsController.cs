@@ -21,9 +21,14 @@ namespace Aquri.API.Controllers
         [Authorize(Roles = "admin,manager,front_desk")]
         [ProducesResponseType(typeof(BookingDto), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
         public async Task<ActionResult<BookingDto>> Create([FromBody] CreateBookingCommand command)
         {
             var result = await _mediator.Send(command);
+            if (result.NotFound)
+                return NotFound();
+            if (result.Conflict)
+                return Conflict(result.Error);
             if (!result.Success)
                 return BadRequest(result.Error);
 
@@ -45,10 +50,13 @@ namespace Aquri.API.Controllers
 
         [HttpGet]
         [ProducesResponseType(typeof(List<BookingDto>), StatusCodes.Status200OK)]
-        public async Task<ActionResult<List<BookingDto>>> List([FromQuery] int propertyId, [FromQuery] string? status)
+        public async Task<ActionResult<List<BookingDto>>> List([FromQuery] int propertyId, [FromQuery] string? status, [FromQuery] int page = 1, [FromQuery] int pageSize = 50)
         {
-            var bookings = await _mediator.Send(new GetBookingsQuery(propertyId, status));
-            return Ok(bookings);
+            var rows = await _mediator.Send(new GetBookingsQuery(propertyId, status, page, pageSize));
+            Response.Headers["X-Total-Count"] = rows.TotalCount.ToString();
+            Response.Headers["X-Page"] = rows.Page.ToString();
+            Response.Headers["X-Page-Size"] = rows.PageSize.ToString();
+            return Ok(rows.Data);
         }
 
         [HttpPatch("{id:int}/status")]

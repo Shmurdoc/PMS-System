@@ -1,5 +1,6 @@
 using Aquri.Application.Common;
 using Aquri.Application.Common.Interfaces;
+using Aquri.Domain.Entities;
 using Aquri.Domain.Enums;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -28,31 +29,56 @@ namespace Aquri.Application.Invoices
         }
     }
 
-    public record GetInvoicesQuery(int PropertyId, string? Status) : IRequest<List<InvoiceDto>>;
+    public record GetInvoicesQuery(int PropertyId, string? Status, int Page = 1, int PageSize = 50) : IRequest<PagedRows<InvoiceDto>>;
 
-    public class GetInvoicesHandler : IRequestHandler<GetInvoicesQuery, List<InvoiceDto>>
+    public class GetInvoicesHandler : IRequestHandler<GetInvoicesQuery, PagedRows<InvoiceDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public GetInvoicesHandler(IApplicationDbContext context) => _context = context;
-
-        public async Task<List<InvoiceDto>> Handle(GetInvoicesQuery request, CancellationToken cancellationToken)
+        public GetInvoicesHandler(IApplicationDbContext context, ICurrentUser currentUser)
         {
+            _context = context;
+            _currentUser = currentUser;
+        }
+
+        public async Task<PagedRows<InvoiceDto>> Handle(GetInvoicesQuery request, CancellationToken cancellationToken)
+        {
+            var page = Math.Clamp(request.Page, 1, int.MaxValue);
+            var pageSize = Math.Clamp(request.PageSize, 1, 200);
+
             var query = _context.Invoices
                 .AsNoTracking()
                 .Include(i => i.Items)
                 .Where(i => i.PropertyId == request.PropertyId);
 
+            // Defense in depth: a scoped caller may only read their own property's
+            // invoices, even if they supply a different PropertyId in the request.
+            if (_currentUser.UserRole != AppRoles.Admin && _currentUser.PropertyId is int scope)
+                query = query.Where(i => i.PropertyId == scope);
+
             if (!string.IsNullOrWhiteSpace(request.Status))
             {
                 if (!InvoiceStatusExtensions.TryParseWire(request.Status, out var statusFilter))
-                    return new List<InvoiceDto>();
+                    return new PagedRows<InvoiceDto>();
 
                 query = query.Where(i => i.Status == statusFilter);
             }
 
-            var invoices = await query.OrderByDescending(i => i.IssueDate).ToListAsync(cancellationToken);
-            return invoices.Select(InvoiceDto.FromEntity).ToList();
+            var totalCount = await query.CountAsync(cancellationToken);
+            var invoices = await query
+                .OrderByDescending(i => i.IssueDate)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return new PagedRows<InvoiceDto>
+            {
+                Data = invoices.Select(InvoiceDto.FromEntity).ToList(),
+                TotalCount = totalCount,
+                Page = page,
+                PageSize = pageSize
+            };
         }
     }
 }

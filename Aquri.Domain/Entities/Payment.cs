@@ -30,6 +30,7 @@ namespace Aquri.Domain.Entities
 
         /// <summary>Bank or PSP reference shown on statements.</summary>
         public string? Reference { get; private set; }
+        public string? IdempotencyKey { get; private set; }
         public string? TransactionId { get; private set; }
 
         /// <summary>Staff member who keyed the payment in.</summary>
@@ -74,6 +75,11 @@ namespace Aquri.Domain.Entities
                 throw new ArgumentException("InvoiceId must be positive.", nameof(invoiceId));
 
             InvoiceId = invoiceId;
+        }
+
+        public void DetachFromInvoice()
+        {
+            InvoiceId = null;
         }
 
         public void AttachToBooking(int bookingId)
@@ -132,6 +138,20 @@ namespace Aquri.Domain.Entities
         public void SetReference(string? reference)
         {
             Reference = reference;
+        }
+
+        public void SetIdempotencyKey(string? key)
+        {
+            if (key is not null && key.Length > 200)
+                throw new ArgumentException("Idempotency key cannot exceed 200 characters.", nameof(key));
+            IdempotencyKey = key;
+        }
+
+        public void SetCurrency(string currency)
+        {
+            if (string.IsNullOrWhiteSpace(currency) || currency.Length > 3)
+                throw new ArgumentException("Currency must be a 3-character ISO 4217 code.", nameof(currency));
+            Currency = currency.Trim().ToUpperInvariant();
         }
     }
 }

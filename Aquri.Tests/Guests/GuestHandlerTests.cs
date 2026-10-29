@@ -1,17 +1,20 @@
 using System;
 using System.Threading;
 using System.Threading.Tasks;
+using Aquri.Application.Common.Interfaces;
 using Aquri.Application.Guests;
 using Aquri.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
+using Aquri.Tests.Common;
 
 namespace Aquri.Tests.Guests
 {
     public class GuestHandlerTestBase : IDisposable
     {
         protected readonly AquriDbContext Context;
+        protected readonly ICurrentUser CurrentUser = new FakeCurrentUser();
 
         public GuestHandlerTestBase()
         {
@@ -101,12 +104,12 @@ namespace Aquri.Tests.Guests
             await new CreateGuestHandler(Context).Handle(
                 new CreateGuestCommand("John Roe", "john@mail.com", "0830000000", "8502025800080", "SA", PropertyId: 1), CancellationToken.None);
 
-            var handler = new GetGuestsHandler(Context);
+            var handler = new GetGuestsHandler(Context, CurrentUser);
 
             var result = await handler.Handle(new GetGuestsQuery("jane"), CancellationToken.None);
 
-            result.Should().HaveCount(1);
-            result[0].Name.Should().Be("Jane Doe");
+            result.Data.Should().HaveCount(1);
+            result.Data[0].Name.Should().Be("Jane Doe");
         }
     }
 }

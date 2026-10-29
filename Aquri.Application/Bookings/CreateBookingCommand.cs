@@ -22,8 +22,13 @@ namespace Aquri.Application.Bookings
     public class CreateBookingHandler : IRequestHandler<CreateBookingCommand, Result<BookingDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public CreateBookingHandler(IApplicationDbContext context) => _context = context;
+        public CreateBookingHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result<BookingDto>> Handle(CreateBookingCommand request, CancellationToken cancellationToken)
         {
@@ -32,7 +37,7 @@ namespace Aquri.Application.Bookings
                 return Result<BookingDto>.Failure("Room not found.");
 
             // The booking's PropertyId is client-supplied, so verify the room
-            // actually belongs to that property — otherwise a caller could stamp
+            // actually belongs to that property. Otherwise a caller could stamp
             // a booking onto a different property than its room.
             if (room.PropertyId != request.PropertyId)
                 return Result<BookingDto>.Failure("Room does not belong to the specified property.");
@@ -49,7 +54,7 @@ namespace Aquri.Application.Bookings
                     b.CheckOut > request.CheckIn);
 
             if (overlapping)
-                return Result<BookingDto>.Failure("Room is not available for the selected dates.");
+                return Result<BookingDto>.ConflictResult("Room is not available for the selected dates.");
 
             try
             {
@@ -60,7 +65,16 @@ namespace Aquri.Application.Bookings
                 room.ChangeStatus(RoomStatus.Occupied);
                 await _context.SaveChangesAsync(cancellationToken);
 
+                AuditTrail.Write(_context, _currentUser, "create_booking", "booking", booking.Id.ToString(), booking.Id.ToString());
+                await _context.SaveChangesAsync(cancellationToken);
+
                 return Result<BookingDto>.SuccessResult(BookingDto.FromEntity(booking));
+            }
+            catch (DbUpdateException ex) when (IsExclusionViolation(ex))
+            {
+                // PostgreSQL exclusion constraint (CK_Bookings_NoOverlap) fired:
+                // a concurrent request booked the same overlapping dates first.
+                return Result<BookingDto>.ConflictResult("Room is not available for the selected dates. Another booking overlaps those dates.");
             }
             catch (DomainException ex)
             {
@@ -70,6 +84,16 @@ namespace Aquri.Application.Bookings
             {
                 return Result<BookingDto>.Failure(ex.Message);
             }
+        }
+
+        private static bool IsExclusionViolation(DbUpdateException ex)
+        {
+            // PostgreSQL exclusion constraint (CK_Bookings_NoOverlap) fired.
+            // Detect by message text so the Application layer stays free of the
+            // Npgsql dependency. Other DbUpdateExceptions (connection, etc.)
+            // don't match and bubble up as 500, which is correct.
+            var message = (ex.InnerException?.Message ?? ex.Message) ?? string.Empty;
+            return message.Contains("violates exclusion constraint", StringComparison.OrdinalIgnoreCase);
         }
     }
 }
