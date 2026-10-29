@@ -53,7 +53,14 @@ public sealed class PostgresTestDatabase : IDisposable
         }
 
         if (reason is not null)
+        {
+            // In CI the postgres service must be up; a silent skip would let a
+            // broken money guarantee pass. Opt in with AQURI_REQUIRE_POSTGRES=1.
+            if (Environment.GetEnvironmentVariable("AQURI_REQUIRE_POSTGRES") == "1")
+                throw new InvalidOperationException($"PostgreSQL is required but unavailable: {reason}");
+
             Console.WriteLine($"[postgres] SKIPPED: {reason}");
+        }
     }
 
     /// <summary>Wipes the tables this suite touches so tests are repeatable.</summary>

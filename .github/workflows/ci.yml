@@ -19,6 +19,9 @@ jobs:
       # payment idempotency index) connect here. The service container below
       # matches these credentials; when absent the tests self-skip.
       ConnectionStrings__PostgresTests: "Host=localhost;Port=5432;Database=Aquri;Username=aquri_user;Password=test-only-local"
+      # Fail instead of silently skipping if the postgres service is down, so a
+      # green backend job means the money guarantees actually ran.
+      AQURI_REQUIRE_POSTGRES: "1"
       Jwt__Key: "ci-dummy-signing-key-0123456789abcdef"
     services:
       postgres:
