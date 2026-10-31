@@ -64,5 +64,7 @@ jobs:
       # Full-repo eslint is clean as of bae63ef; keep it a hard gate so it stays that way.
       - name: Lint
         run: npx eslint src
+      - name: Unit tests
+        run: npm test
       - name: Build (tsc + vite)
         run: npm run build

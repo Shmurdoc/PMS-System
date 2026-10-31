@@ -85,7 +85,7 @@ Timeout, 5xx, or a malformed response falls back to the deterministic answer, so
 
 ## Applying migrations
 
-EF migrations are in `Aquri.Infrastructure\Persistence\Migrations\`, in order: `InitialCreate` (Properties, Rooms, MaintenanceRequests, Users), `AddCoreEntities`, `AddSupportingEntities`, `AddNumberSequences`, `DropOrphanNavigationForeignKeys`, `AddAiAgentLayer`, `AddRfidTags`, `AddUserPropertyScope`, `MakeRfidTagIndexActiveOnly`, `AddElectricityAndIntegrations`.
+EF migrations are in `Aquri.Infrastructure\Persistence\Migrations\`, in order: `InitialCreate` (Properties, Rooms, MaintenanceRequests, Users), `AddCoreEntities`, `AddSupportingEntities`, `AddNumberSequences`, `DropOrphanNavigationForeignKeys`, `AddAiAgentLayer`, `AddRfidTags`, `AddUserPropertyScope`, `MakeRfidTagIndexActiveOnly`, `AddElectricityAndIntegrations`, `MultiPropertyAssignments` (the `UserPropertyAssignments` table, backfilled from `Users.PropertyId`).
 
 To apply against a live database:
 

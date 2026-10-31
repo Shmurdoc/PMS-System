@@ -1,39 +1,8 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using Aquri.Domain.Entities;
+using Aquri.Application.Users;
 
 namespace Aquri.Application.DTOs
 {
-    /// <summary>Public user representation - never exposes PasswordHash.</summary>
-    public class UserDto
-    {
-        public int Id { get; init; }
-        public string Email { get; init; } = string.Empty;
-        public string Name { get; init; } = string.Empty;
-        public string Role { get; init; } = string.Empty;
-        public int? PropertyId { get; init; }
-
-        /// <summary>Every property the account may work in; empty for admins.</summary>
-        public List<int> PropertyIds { get; init; } = new();
-        public string? Department { get; init; }
-        public string? Phone { get; init; }
-        public DateTime Created { get; init; }
-
-        public static UserDto FromEntity(User user) => new()
-        {
-            Id = user.Id,
-            Email = user.Email,
-            Name = user.Name,
-            Role = user.Role,
-            PropertyId = user.PropertyId,
-            PropertyIds = user.PropertyAssignments.Select(a => a.PropertyId).OrderBy(id => id).ToList(),
-            Department = user.Department,
-            Phone = user.Phone,
-            Created = user.Created
-        };
-    }
-
     /// <summary>Login credentials sent by the frontend.</summary>
     public class LoginRequestDto
     {
@@ -45,6 +14,8 @@ namespace Aquri.Application.DTOs
     public class LoginResponseDto
     {
         public string Token { get; init; } = string.Empty;
+
+        /// <summary>Same shape the users endpoints return, so the client has one profile type.</summary>
         public UserDto User { get; init; } = new();
     }
 }

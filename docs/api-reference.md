@@ -106,12 +106,14 @@ Sparse updates: `PUT` bodies treat absent/null fields as "keep current value". D
 
 ## Users — staff accounts. Reads for admin/manager, writes admin-only; password hash never returned.
 
+Staff accounts carry a property scope: `propertyIds` (array) is the set of hotels the account may work in, and `propertyId` is the primary/home property (the first assignment, used for payroll defaults and display). Admins have an empty set and see everything. An authenticated non-admin with no assignment is refused (403) rather than promoted to all properties. Create and update accept `propertyIds`; the older single `propertyId` still works and is treated as a one-element set.
+
 | Method + Route | Roles | Purpose |
 |---|---|---|
 | `GET /api/v1/Users?search=` | admin, manager | List accounts; optional name/email/role search |
 | `GET /api/v1/Users/{id}` | admin, manager | Get one account |
-| `POST /api/v1/Users` | admin | Create with hashed password; 409 on duplicate |
-| `PUT /api/v1/Users/{id}` | admin | Update profile / role / password (email immutable) |
+| `POST /api/v1/Users` | admin | Create with hashed password and optional `propertyIds`; 409 on duplicate |
+| `PUT /api/v1/Users/{id}` | admin | Update profile / role / password / `propertyIds` (email immutable) |
 | `DELETE /api/v1/Users/{id}` | admin | Delete; 409 protects self, last admin, accounts with dependents |
 
 ## Expenses — staff expenses with approval workflow.

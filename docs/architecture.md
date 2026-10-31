@@ -45,9 +45,11 @@ Take `POST /api/v1/rooms`:
 
 The DbContext registered as `IApplicationDbContext` is the same instance as `AquriDbContext` in a given scope (`Program.cs:93`). That is the unit of work: every mutation in one HTTP request commits in a single `SaveChangesAsync` call, one transaction. There is no repository layer and no `IUnitOfWork`. Handlers own their queries. If you find yourself wanting a repository, you probably want a narrower DbSet query or a projection instead.
 
+`AquriDbContext` also carries the property scope. For an authenticated non-admin it applies global query filters of the form `_propertyIds.Contains(e.PropertyId)`, so a scoped employee only ever reads rows from their assigned hotels, even when a handler forgets a `Where`. The scope comes from the constructor: null means unrestricted (admins, the seeder, migrations), a non-empty array means confined, an empty array means deny-all for an authenticated non-admin. EF freezes collection filters into the compiled model, so `PropertyScopeModelCacheKeyFactory` keys the model cache on the scope; without it every property set would share the first cached model and silently query the wrong filter.
+
 ## Where auth fits
 
-Login is `POST /api/v1/auth/login`. The `LoginHandler` looks up the user by email, verifies the PBKDF2 hash via `IPasswordHasher`, and asks `ITokenService` for a JWT. The token carries `ClaimTypes.NameIdentifier`, `Email`, `Name`, and `Role`. Controllers enforce access with `[Authorize(Roles = "admin,manager")]` and friends — the role strings are the constants in `AppRoles` (Domain). `GET /api/v1/auth/me` reads the id claim back out and returns the profile.
+Login is `POST /api/v1/auth/login`. The `LoginHandler` looks up the user by email, verifies the PBKDF2 hash via `IPasswordHasher`, and asks `ITokenService` for a JWT. The token carries `ClaimTypes.NameIdentifier`, `Email`, `Name`, `Role`, and one `property_id` claim per assigned property (admins get none, which means unrestricted). Controllers enforce access with `[Authorize(Roles = "admin,manager")]` and friends — the role strings are the constants in `AppRoles` (Domain). `GET /api/v1/auth/me` reads the id claim back out and returns the profile.
 
 Password hashing and token issuance are interfaces in Application (`IPasswordHasher`, `ITokenService`) implemented in Infrastructure (`Security\`). That keeps the crypto details out of the handlers and lets tests fake them.
 
