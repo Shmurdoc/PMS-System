@@ -1,6 +1,7 @@
 using Aquri.Application.Auth;
 using Aquri.Application.Common.Interfaces;
 using Aquri.Application.DTOs;
+using Aquri.Application.Users;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;

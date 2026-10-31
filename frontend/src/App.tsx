@@ -43,6 +43,7 @@ import { MetricCard, Panel, PageHeader, StatusBadge } from './components/shared'
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table';
 import { useAppStore } from './store/useAppStore';
 import { canAccessRoute, getRoleLabel, ROLE_PERMISSIONS, type UserRole } from './lib/rbac';
+import { assignedPropertyIds, initialPropertySelection, propertyOptions } from './lib/propertyScope';
 import { hydrateFromApi } from './lib/api/hydrate';
 import { login as apiLogin, sendChat } from './lib/api/services';
 import { clearAuthToken, getAuthToken, setAuthToken } from './lib/api/config';
@@ -739,13 +740,11 @@ function App() {
     : false;
   // Every hotel this employee covers. Falls back to the primary property for
   // responses from before multi-property assignment existed.
-  const myPropertyIds = user?.propertyIds?.length
-    ? user.propertyIds
-    : user?.propertyId
-      ? [user.propertyId]
-      : [];
-  const myProperties = properties.filter((p) => myPropertyIds.includes(p.propertyId));
+  const myPropertyIds = assignedPropertyIds(user);
+  // Employees switch between their hotels but always view one at a time, so
+  // there is no combined option for them.
   const canSwitchProperties = canViewAllProperties || myPropertyIds.length > 1;
+  const headerPropertyOptions = propertyOptions(user, properties, canViewAllProperties);
   const assignedProperty = user?.propertyId
     ? properties.find((p) => p.propertyId === user.propertyId)
     : undefined;
@@ -763,16 +762,13 @@ function App() {
     localStorage.setItem('nexus_theme', darkMode ? 'dark' : 'light');
   }, [darkMode]);
 
-  const myPropertyKey = myPropertyIds.join(',');
+  // An employee always works one hotel at a time and lands on their primary;
+  // admins keep the portfolio overview.
+  const initialSelectedProperty = initialPropertySelection(user, canViewAllProperties);
   useEffect(() => {
-    // Admins keep the "all properties" overview. An employee covering several
-    // hotels starts on the combined view; a single-property employee is pinned
-    // to that property.
     if (canViewAllProperties) return;
-    const ids = myPropertyKey ? myPropertyKey.split(',') : [];
-    if (ids.length === 1) setSelectedPropertyId(ids[0]);
-    else if (ids.length > 1) setSelectedPropertyId('all');
-  }, [canViewAllProperties, myPropertyKey]);
+    setSelectedPropertyId(initialSelectedProperty);
+  }, [canViewAllProperties, initialSelectedProperty]);
 
   // Login handler — API-first; demo credentials fall back to offline mode.
   const handleLogin = async (email: string, password: string): Promise<void> => {
@@ -1344,12 +1340,14 @@ function App() {
                     aria-label="Select property"
                     className="appearance-none pl-2.5 pr-7 py-1.5 bg-muted border border-border rounded-lg text-xs font-medium focus:outline-none focus:ring-2 focus:ring-ring/50 cursor-pointer"
                   >
-                    <option value="all">
-                      {canViewAllProperties ? `${properties.length} Properties` : `All my properties (${myPropertyIds.length})`}
-                    </option>
-                    {(canViewAllProperties ? properties : myProperties).map(p => (
-                      <option key={p.id} value={p.propertyId}>{p.name}</option>
-                    ))}
+                    {canViewAllProperties && (
+                      <option value="all">{headerPropertyOptions[0]?.label ?? 'All Properties'}</option>
+                    )}
+                    {headerPropertyOptions
+                      .filter(o => o.value !== 'all')
+                      .map(o => (
+                        <option key={o.value} value={o.value}>{o.label}</option>
+                      ))}
                   </select>
                   <Building2 className="absolute right-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground pointer-events-none" aria-hidden="true" />
                 </div>

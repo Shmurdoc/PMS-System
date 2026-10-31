@@ -1,6 +1,7 @@
 using Aquri.Application.Common;
 using Aquri.Application.Common.Interfaces;
 using Aquri.Application.DTOs;
+using Aquri.Application.Users;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
