@@ -17,8 +17,13 @@ namespace Aquri.Application.Shifts
     public class CreateShiftHandler : IRequestHandler<CreateShiftCommand, Result<ShiftDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public CreateShiftHandler(IApplicationDbContext context) => _context = context;
+        public CreateShiftHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result<ShiftDto>> Handle(CreateShiftCommand request, CancellationToken cancellationToken)
         {
@@ -36,6 +41,9 @@ namespace Aquri.Application.Shifts
                     shift.SetDepartment(request.Department);
 
                 _context.Shifts.Add(shift);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                AuditTrail.Write(_context, _currentUser, "create_shift", "shift", shift.Id.ToString(), shift.UserName);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return Result<ShiftDto>.SuccessResult(ShiftDto.FromEntity(shift));

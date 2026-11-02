@@ -17,11 +17,13 @@ namespace Aquri.Application.Rooms.Handlers
     {
         private readonly IApplicationDbContext _context;
         private readonly IMapper _mapper;
+        private readonly ICurrentUser _currentUser;
 
-        public CreateRoomHandler(IApplicationDbContext context, IMapper mapper)
+        public CreateRoomHandler(IApplicationDbContext context, IMapper mapper, ICurrentUser currentUser)
         {
             _context = context;
             _mapper = mapper;
+            _currentUser = currentUser;
         }
 
         public async Task<Result<RoomDto>> Handle(CreateRoomCommand request, CancellationToken cancellationToken)
@@ -62,6 +64,9 @@ namespace Aquri.Application.Rooms.Handlers
             _context.Rooms.Add(room);
             await _context.SaveChangesAsync(cancellationToken);
 
+            AuditTrail.Write(_context, _currentUser, "create_room", "room", room.Id.ToString(), room.Number);
+            await _context.SaveChangesAsync(cancellationToken);
+
             return Result<RoomDto>.SuccessResult(_mapper.Map<RoomDto>(room));
         }
     }
@@ -70,10 +75,12 @@ namespace Aquri.Application.Rooms.Handlers
     public class DeleteRoomHandler : IRequestHandler<DeleteRoomCommand, Result<bool>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public DeleteRoomHandler(IApplicationDbContext context)
+        public DeleteRoomHandler(IApplicationDbContext context, ICurrentUser currentUser)
         {
             _context = context;
+            _currentUser = currentUser;
         }
 
         public async Task<Result<bool>> Handle(DeleteRoomCommand request, CancellationToken cancellationToken)
@@ -86,7 +93,9 @@ namespace Aquri.Application.Rooms.Handlers
                 return Result<bool>.Failure($"Room with ID {request.RoomId} not found.");
             }
 
+            var roomNumber = room.Number;
             _context.Rooms.Remove(room);
+            AuditTrail.Write(_context, _currentUser, "delete_room", "room", request.RoomId.ToString(), roomNumber);
             await _context.SaveChangesAsync(cancellationToken);
 
             return Result<bool>.SuccessResult(true);

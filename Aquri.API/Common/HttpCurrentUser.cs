@@ -58,5 +58,8 @@ namespace Aquri.API.Common
 
         public string UserRole =>
             Principal?.FindFirst(ClaimTypes.Role)?.Value ?? string.Empty;
+
+        public string? IpAddress =>
+            _accessor.HttpContext?.Connection.RemoteIpAddress?.ToString();
     }
 }

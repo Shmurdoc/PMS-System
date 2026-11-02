@@ -33,6 +33,9 @@ namespace Aquri.Application.DTOs
         /// <summary>Email address for the property.</summary>
         public string? Email { get; set; }
 
+        /// <summary>Default currency for the property (ISO 4217 code, e.g. "ZAR", "USD", "EUR").</summary>
+        public string Currency { get; set; } = "ZAR";
+
         /// <summary>Date when the property was created (UTC).</summary>
         public DateTime Created { get; set; }
 

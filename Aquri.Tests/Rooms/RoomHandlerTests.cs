@@ -55,7 +55,7 @@ namespace Aquri.Tests.Rooms
             Context.Properties.Add(new Property("Test Hotel", 1));
             await Context.SaveChangesAsync();
 
-            var handler = new CreateRoomHandler(Context, Mapper);
+            var handler = new CreateRoomHandler(Context, Mapper, CurrentUser);
             var command = new CreateRoomCommand
             {
                 Number = "101",
@@ -95,7 +95,7 @@ namespace Aquri.Tests.Rooms
         [Fact]
         public async Task Return_Failure_When_Property_Not_Found()
         {
-            var handler = new CreateRoomHandler(Context, Mapper);
+            var handler = new CreateRoomHandler(Context, Mapper, CurrentUser);
             var command = new CreateRoomCommand
             {
                 Number = "101",
@@ -120,7 +120,7 @@ namespace Aquri.Tests.Rooms
             Context.Rooms.Add(room);
             await Context.SaveChangesAsync();
 
-            var handler = new UpdateRoomStatusHandler(Context, Mapper);
+            var handler = new UpdateRoomStatusHandler(Context, Mapper, CurrentUser);
             var command = new UpdateRoomStatusCommand { RoomId = room.Id, Status = "occupied" };
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -132,7 +132,7 @@ namespace Aquri.Tests.Rooms
         [Fact]
         public async Task Return_Failure_When_Room_Not_Found()
         {
-            var handler = new UpdateRoomStatusHandler(Context, Mapper);
+            var handler = new UpdateRoomStatusHandler(Context, Mapper, CurrentUser);
             var command = new UpdateRoomStatusCommand { RoomId = 999, Status = "occupied" };
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -151,7 +151,7 @@ namespace Aquri.Tests.Rooms
             Context.Rooms.Add(room);
             await Context.SaveChangesAsync();
 
-            var handler = new UpdateRoomPriceHandler(Context, Mapper);
+            var handler = new UpdateRoomPriceHandler(Context, Mapper, CurrentUser);
             var command = new UpdateRoomPriceCommand { RoomId = room.Id, Price = 250.00m };
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -170,7 +170,7 @@ namespace Aquri.Tests.Rooms
             Context.Rooms.Add(room);
             await Context.SaveChangesAsync();
 
-            var handler = new UpdateRoomMaxOccupancyHandler(Context, Mapper);
+            var handler = new UpdateRoomMaxOccupancyHandler(Context, Mapper, CurrentUser);
             var command = new UpdateRoomMaxOccupancyCommand { RoomId = room.Id, MaxOccupancy = 4 };
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -189,7 +189,7 @@ namespace Aquri.Tests.Rooms
             Context.Rooms.Add(room);
             await Context.SaveChangesAsync();
 
-            var handler = new UpdateRoomAmenitiesHandler(Context, Mapper);
+            var handler = new UpdateRoomAmenitiesHandler(Context, Mapper, CurrentUser);
             var command = new UpdateRoomAmenitiesCommand { RoomId = room.Id, Action = "add", Amenity = "sauna" };
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -206,7 +206,7 @@ namespace Aquri.Tests.Rooms
             Context.Rooms.Add(room);
             await Context.SaveChangesAsync();
 
-            var handler = new UpdateRoomAmenitiesHandler(Context, Mapper);
+            var handler = new UpdateRoomAmenitiesHandler(Context, Mapper, CurrentUser);
             var command = new UpdateRoomAmenitiesCommand { RoomId = room.Id, Action = "remove", Amenity = "sauna" };
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -223,7 +223,7 @@ namespace Aquri.Tests.Rooms
             Context.Rooms.Add(room);
             await Context.SaveChangesAsync();
 
-            var handler = new UpdateRoomAmenitiesHandler(Context, Mapper);
+            var handler = new UpdateRoomAmenitiesHandler(Context, Mapper, CurrentUser);
             var command = new UpdateRoomAmenitiesCommand { RoomId = room.Id, Action = "invalid", Amenity = "wifi" };
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -241,7 +241,7 @@ namespace Aquri.Tests.Rooms
             Context.Rooms.Add(room);
             await Context.SaveChangesAsync();
 
-            var handler = new UpdateRoomAmenitiesHandler(Context, Mapper);
+            var handler = new UpdateRoomAmenitiesHandler(Context, Mapper, CurrentUser);
             var command = new UpdateRoomAmenitiesCommand { RoomId = room.Id, Action = "add", Amenity = "  " };
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -260,7 +260,7 @@ namespace Aquri.Tests.Rooms
             Context.Rooms.Add(room);
             await Context.SaveChangesAsync();
 
-            var handler = new UpdateRoomViewHandler(Context, Mapper);
+            var handler = new UpdateRoomViewHandler(Context, Mapper, CurrentUser);
             var command = new UpdateRoomViewCommand { RoomId = room.Id, View = "mountain" };
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -279,7 +279,7 @@ namespace Aquri.Tests.Rooms
             Context.Rooms.Add(room);
             await Context.SaveChangesAsync();
 
-            var handler = new DeleteRoomHandler(Context);
+            var handler = new DeleteRoomHandler(Context, CurrentUser);
             var command = new DeleteRoomCommand { RoomId = room.Id };
 
             var result = await handler.Handle(command, CancellationToken.None);
@@ -292,7 +292,7 @@ namespace Aquri.Tests.Rooms
         [Fact]
         public async Task Return_Failure_When_Room_Not_Found()
         {
-            var handler = new DeleteRoomHandler(Context);
+            var handler = new DeleteRoomHandler(Context, CurrentUser);
             var command = new DeleteRoomCommand { RoomId = 999 };
 
             var result = await handler.Handle(command, CancellationToken.None);

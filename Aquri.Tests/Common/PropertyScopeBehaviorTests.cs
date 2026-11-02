@@ -44,6 +44,8 @@ namespace Aquri.Tests.Common
             public string UserName => string.Empty;
 
             public string UserRole => string.Empty;
+
+            public string? IpAddress => "127.0.0.1";
         }
 
         private static PropertyScopeBehavior<TRequest, string> BehaviorFor<TRequest>(ICurrentUser user)

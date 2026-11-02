@@ -29,6 +29,7 @@ namespace Aquri.Application.Common
                 currentUser.UserRole,
                 details: string.Empty);
             log.RecordChange(oldValue, newValue);
+            log.SetIpAddress(currentUser.IpAddress);
             context.AuditLogs.Add(log);
         }
     }

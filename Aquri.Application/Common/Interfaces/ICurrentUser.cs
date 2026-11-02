@@ -22,5 +22,8 @@ namespace Aquri.Application.Common.Interfaces
 
         /// <summary>The signed-in user's role (admin / manager / …) — empty when the claim is missing.</summary>
         string UserRole { get; }
+
+        /// <summary>Caller's IP address for audit correlation — empty outside an HTTP request.</summary>
+        string? IpAddress { get; }
     }
 }

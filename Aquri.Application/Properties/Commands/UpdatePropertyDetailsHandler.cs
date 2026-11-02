@@ -35,6 +35,9 @@ namespace Aquri.Application.Properties.Commands
 
             try
             {
+                var oldCurrency = property.Currency;
+                var oldName = property.Name;
+
                 property.Rename(request.Name);
                 property.UpdateDetails(
                     request.Description,
@@ -43,16 +46,23 @@ namespace Aquri.Application.Properties.Commands
                     request.Rating,
                     request.Phone,
                     request.Email);
+
+                if (!string.IsNullOrWhiteSpace(request.Currency) && request.Currency != oldCurrency)
+                    property.SetCurrency(request.Currency);
+
+                var changes = new List<string>();
+                if (oldName != property.Name) changes.Add($"name: {oldName} → {property.Name}");
+                if (oldCurrency != property.Currency) changes.Add($"currency: {oldCurrency} → {property.Currency}");
+                var details = changes.Count > 0 ? string.Join("; ", changes) : "no field changes";
+                AuditTrail.Write(_context, _currentUser, "update_property", "property", property.Id.ToString(), property.Name, null, details);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                return Result<PropertyDto>.SuccessResult(_mapper.Map<PropertyDto>(property));
             }
             catch (ArgumentException ex)
             {
                 return Result<PropertyDto>.Failure(ex.Message);
             }
-
-            AuditTrail.Write(_context, _currentUser, "update_property", "property", property.Id.ToString(), property.Name);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            return Result<PropertyDto>.SuccessResult(_mapper.Map<PropertyDto>(property));
         }
     }
 }

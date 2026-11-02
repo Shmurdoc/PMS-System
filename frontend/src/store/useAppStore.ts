@@ -1443,9 +1443,12 @@ export const useAppStore = create<AppState>()(
           paymentMethod: expense.paymentMethod,
           notes: expense.notes,
         };
+        const rollback = () => set((state) => ({
+          expenses: state.expenses.filter((e) => e.id !== expense.id),
+        }));
         syncToApi(`createExpense(${expense.id})`, () => createExpense(input), (data) => {
           get().reconcileExpense(expense.id, String((data as ApiExpense).id));
-        });
+        }, undefined, rollback);
       },
       updateExpense: (id, updates) => {
         set((state) => ({
@@ -1793,23 +1796,31 @@ export const useAppStore = create<AppState>()(
         const numericId = toNumericId(id);
         if (numericId === null) return;
         // Status and deposit have endpoints; everything else stays local.
+        const prevBooking = get().bookings.find((b) => b.id === id);
+        const rollback = () => prevBooking && set((state) => ({
+          bookings: state.bookings.map((b) => b.id === id ? { ...prevBooking } : b)
+        }));
         if (updates.status !== undefined) {
-          syncToApi(`changeBookingStatus(${id})`, () => changeBookingStatus(numericId, updates.status!));
+          syncToApi(`changeBookingStatus(${id})`, () => changeBookingStatus(numericId, updates.status!), undefined, rollback);
         }
         if (updates.depositPaid !== undefined && updates.depositPaid !== prevDeposit) {
-          const rollback = () => set((state) => ({
+          const depositRollback = () => set((state) => ({
             bookings: state.bookings.map((b) => b.id === id ? { ...b, depositPaid: prevDeposit } : b)
           }));
-          syncToApi(`recordBookingDeposit(${id})`, () => recordBookingDeposit(numericId, updates.depositPaid!), undefined, rollback);
+          syncToApi(`recordBookingDeposit(${id})`, () => recordBookingDeposit(numericId, updates.depositPaid!), undefined, depositRollback);
         }
       },
       deleteBooking: (id) => {
+        const prevBooking = get().bookings.find((b) => b.id === id);
         set((state) => ({
           bookings: state.bookings.filter((b) => b.id !== id)
         }));
         const numericId = toNumericId(id);
         if (numericId !== null) {
-          syncToApi(`deleteBooking(${id})`, () => apiDeleteBooking(numericId));
+          const rollback = () => prevBooking && set((state) => ({
+            bookings: [...state.bookings, prevBooking]
+          }));
+          syncToApi(`deleteBooking(${id})`, () => apiDeleteBooking(numericId), undefined, rollback);
         }
       },
 
@@ -2099,10 +2110,13 @@ export const useAppStore = create<AppState>()(
           })),
           createdBy: invoice.createdBy,
         };
+        const rollback = () => set((state) => ({
+          invoices: state.invoices.filter((i) => i.id !== invoice.id),
+        }));
         syncToApi(`createInvoice(${invoice.id})`, () => createInvoice(input), (data) => {
           const dto = data as ApiInvoice;
           get().reconcileInvoice(invoice.id, mapInvoice(dto));
-        });
+        }, undefined, rollback);
       },
       updateInvoice: (id, updates) => {
         // There is no invoice PUT yet, so status changes stay local. Settlement
@@ -2113,12 +2127,16 @@ export const useAppStore = create<AppState>()(
         }));
       },
       deleteInvoice: (id) => {
+        const prevInvoice = get().invoices.find((i) => i.id === id);
         set((state) => ({
           invoices: state.invoices.filter((i) => i.id !== id)
         }));
         const numericId = toNumericId(id);
         if (numericId !== null) {
-          syncToApi(`deleteInvoice(${id})`, () => apiDeleteInvoice(numericId));
+          const rollback = () => prevInvoice && set((state) => ({
+            invoices: [...state.invoices, prevInvoice]
+          }));
+          syncToApi(`deleteInvoice(${id})`, () => apiDeleteInvoice(numericId), undefined, rollback);
         }
       },
 

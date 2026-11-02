@@ -3,6 +3,7 @@ using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Aquri.Application.Common.Interfaces;
 using Aquri.Domain.Entities;
+using Aquri.Infrastructure.Persistence;
 using FluentAssertions;
 using Microsoft.Extensions.DependencyInjection;
 using Xunit;
@@ -17,11 +18,14 @@ namespace Aquri.Tests.Api
         private HttpClient ScopedClient(int propertyId)
         {
             using var scope = Factory.Services.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<AquriDbContext>();
             var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHasher>();
             var tokens = scope.ServiceProvider.GetRequiredService<ITokenService>();
 
             var user = new User("scoped@nexus.com", "Scoped User", AppRoles.FrontDesk, hasher.Hash("scoped123"));
             user.AssignProperty(propertyId);
+            context.Users.Add(user);
+            context.SaveChanges();
 
             var client = Factory.CreateClient();
             client.DefaultRequestHeaders.Authorization =

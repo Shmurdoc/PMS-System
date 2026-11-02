@@ -17,8 +17,13 @@ namespace Aquri.Application.Shifts
     public class UpdateShiftHandler : IRequestHandler<UpdateShiftCommand, Result<ShiftDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public UpdateShiftHandler(IApplicationDbContext context) => _context = context;
+        public UpdateShiftHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result<ShiftDto>> Handle(UpdateShiftCommand request, CancellationToken cancellationToken)
         {
@@ -30,6 +35,12 @@ namespace Aquri.Application.Shifts
 
             try
             {
+                var oldBreakStart = shift.BreakStart;
+                var oldBreakEnd = shift.BreakEnd;
+                var oldOvertime = shift.Overtime;
+                var oldNotes = shift.Notes;
+                var oldDepartment = shift.Department;
+
                 if (request.BreakStart.HasValue || request.BreakEnd.HasValue)
                 {
                     if (!request.BreakStart.HasValue || !request.BreakEnd.HasValue)
@@ -47,6 +58,19 @@ namespace Aquri.Application.Shifts
                 if (request.Department is not null)
                     shift.SetDepartment(request.Department);
 
+                var changes = new List<string>();
+                if (oldBreakStart != shift.BreakStart || oldBreakEnd != shift.BreakEnd)
+                    changes.Add($"break: {oldBreakStart:t}-{oldBreakEnd:t} → {shift.BreakStart:t}-{shift.BreakEnd:t}");
+                if (oldOvertime != shift.Overtime)
+                    changes.Add($"overtime: {oldOvertime} → {shift.Overtime}");
+                if (oldNotes != shift.Notes)
+                    changes.Add($"notes: {oldNotes ?? "(none)"} → {shift.Notes ?? "(none)"}");
+                if (oldDepartment != shift.Department)
+                    changes.Add($"department: {oldDepartment ?? "(none)"} → {shift.Department ?? "(none)"}");
+                var details = changes.Count > 0 ? string.Join("; ", changes) : "no field changes";
+
+                await _context.SaveChangesAsync(cancellationToken);
+                AuditTrail.Write(_context, _currentUser, "update_shift", "shift", shift.Id.ToString(), shift.UserName, null, details);
                 await _context.SaveChangesAsync(cancellationToken);
                 return Result<ShiftDto>.SuccessResult(ShiftDto.FromEntity(shift));
             }

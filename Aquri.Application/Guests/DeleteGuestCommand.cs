@@ -11,8 +11,13 @@ namespace Aquri.Application.Guests
     public class DeleteGuestHandler : IRequestHandler<DeleteGuestCommand, Result>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public DeleteGuestHandler(IApplicationDbContext context) => _context = context;
+        public DeleteGuestHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result> Handle(DeleteGuestCommand request, CancellationToken cancellationToken)
         {
@@ -30,7 +35,10 @@ namespace Aquri.Application.Guests
                 return Result.ConflictResult(
                     "Guest has bookings, invoices, or payments and cannot be deleted.");
 
+            var guestName = guest.Name;
+            var guestId = guest.Id.ToString();
             _context.Guests.Remove(guest);
+            AuditTrail.Write(_context, _currentUser, "delete_guest", "guest", guestId, guestName);
             await _context.SaveChangesAsync(cancellationToken);
             return Result.Ok();
         }

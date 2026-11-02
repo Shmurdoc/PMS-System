@@ -38,6 +38,10 @@ namespace Aquri.Application.Guests
                 _context.Guests.Add(guest);
                 await _context.SaveChangesAsync(cancellationToken);
 
+                if (_currentUser is not null)
+                    AuditTrail.Write(_context, _currentUser, "create_guest", "guest", guest.Id.ToString(), guest.Name);
+                await _context.SaveChangesAsync(cancellationToken);
+
                 return Result<GuestDto>.SuccessResult(GuestDto.FromEntity(guest));
             }
             catch (ArgumentException ex)

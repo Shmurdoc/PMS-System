@@ -87,6 +87,13 @@ namespace Aquri.Application.Users
 
             try
             {
+                var oldName = user.Name;
+                var oldDepartment = user.Department;
+                var oldPhone = user.Phone;
+                var oldRole = user.Role;
+                var oldProperties = string.Join(",", user.PropertyAssignments.Select(a => a.PropertyId).OrderBy(id => id));
+                var oldPasswordSet = !string.IsNullOrEmpty(user.PasswordHash);
+
                 if (!string.IsNullOrEmpty(request.Password))
                     user.SetPasswordHash(_passwordHasher.Hash(request.Password));
 
@@ -101,7 +108,18 @@ namespace Aquri.Application.Users
                     user.ChangeRole(request.Role);
 
                 user.UpdateProfile(request.Name, request.Department, request.Phone);
-                AuditTrail.Write(_context, _currentUser, "update_user", "user", user.Id.ToString(), user.Name);
+
+                var changes = new List<string>();
+                if (oldName != user.Name) changes.Add($"name: {oldName} → {user.Name}");
+                if (oldDepartment != user.Department) changes.Add($"department: {oldDepartment ?? "(none)"} → {user.Department ?? "(none)"}");
+                if (oldPhone != user.Phone) changes.Add($"phone: {oldPhone ?? "(none)"} → {user.Phone ?? "(none)"}");
+                if (oldRole != user.Role) changes.Add($"role: {oldRole} → {user.Role}");
+                if (oldProperties != string.Join(",", user.PropertyAssignments.Select(a => a.PropertyId).OrderBy(id => id)))
+                    changes.Add($"properties: {oldProperties ?? "(none)"} → {string.Join(",", user.PropertyAssignments.Select(a => a.PropertyId).OrderBy(id => id))}");
+                if (!oldPasswordSet && !string.IsNullOrEmpty(request.Password)) changes.Add("password: reset");
+
+                var details = changes.Count > 0 ? string.Join("; ", changes) : "no field changes";
+                AuditTrail.Write(_context, _currentUser, "update_user", "user", user.Id.ToString(), user.Name, null, details);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return Result<UserDto>.SuccessResult(UserDto.FromEntity(user));

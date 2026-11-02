@@ -18,8 +18,13 @@ namespace Aquri.Application.Attendance
     public class CreateAttendanceHandler : IRequestHandler<CreateAttendanceCommand, Result<AttendanceDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public CreateAttendanceHandler(IApplicationDbContext context) => _context = context;
+        public CreateAttendanceHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result<AttendanceDto>> Handle(CreateAttendanceCommand request, CancellationToken cancellationToken)
         {
@@ -43,6 +48,9 @@ namespace Aquri.Application.Attendance
                     record.SetNotes(request.Notes);
 
                 _context.AttendanceRecords.Add(record);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                AuditTrail.Write(_context, _currentUser, "create_attendance", "attendance", record.Id.ToString(), record.UserName);
                 await _context.SaveChangesAsync(cancellationToken);
 
                 return Result<AttendanceDto>.SuccessResult(AttendanceDto.FromEntity(record));

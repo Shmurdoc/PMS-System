@@ -12,8 +12,13 @@ namespace Aquri.Application.Shifts
     public class ChangeShiftStatusHandler : IRequestHandler<ChangeShiftStatusCommand, Result<ShiftDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public ChangeShiftStatusHandler(IApplicationDbContext context) => _context = context;
+        public ChangeShiftStatusHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result<ShiftDto>> Handle(ChangeShiftStatusCommand request, CancellationToken cancellationToken)
         {
@@ -25,7 +30,9 @@ namespace Aquri.Application.Shifts
 
             try
             {
+                var oldStatus = shift.Status;
                 shift.ChangeStatus(request.Status);
+                AuditTrail.Write(_context, _currentUser, "change_shift_status", "shift", shift.Id.ToString(), shift.UserName, oldStatus, shift.Status);
                 await _context.SaveChangesAsync(cancellationToken);
                 return Result<ShiftDto>.SuccessResult(ShiftDto.FromEntity(shift));
             }
@@ -42,8 +49,13 @@ namespace Aquri.Application.Shifts
     public class SwapShiftHandler : IRequestHandler<SwapShiftCommand, Result<ShiftDto>>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public SwapShiftHandler(IApplicationDbContext context) => _context = context;
+        public SwapShiftHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result<ShiftDto>> Handle(SwapShiftCommand request, CancellationToken cancellationToken)
         {
@@ -55,7 +67,9 @@ namespace Aquri.Application.Shifts
 
             try
             {
+                var oldStaffName = shift.UserName;
                 shift.Swap(request.NewStaffName);
+                AuditTrail.Write(_context, _currentUser, "swap_shift_staff", "shift", shift.Id.ToString(), shift.UserName, oldStaffName, shift.UserName);
                 await _context.SaveChangesAsync(cancellationToken);
                 return Result<ShiftDto>.SuccessResult(ShiftDto.FromEntity(shift));
             }
@@ -75,8 +89,13 @@ namespace Aquri.Application.Shifts
     public class DeleteShiftHandler : IRequestHandler<DeleteShiftCommand, Result>
     {
         private readonly IApplicationDbContext _context;
+        private readonly ICurrentUser _currentUser;
 
-        public DeleteShiftHandler(IApplicationDbContext context) => _context = context;
+        public DeleteShiftHandler(IApplicationDbContext context, ICurrentUser currentUser)
+        {
+            _context = context;
+            _currentUser = currentUser;
+        }
 
         public async Task<Result> Handle(DeleteShiftCommand request, CancellationToken cancellationToken)
         {
@@ -86,7 +105,10 @@ namespace Aquri.Application.Shifts
             if (shift is null)
                 return Result.NotFoundResult();
 
+            var shiftUserName = shift.UserName;
+            var shiftId = shift.Id.ToString();
             _context.Shifts.Remove(shift);
+            AuditTrail.Write(_context, _currentUser, "delete_shift", "shift", shiftId, shiftUserName);
             await _context.SaveChangesAsync(cancellationToken);
             return Result.Ok();
         }

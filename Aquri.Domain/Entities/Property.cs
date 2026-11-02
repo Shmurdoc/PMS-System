@@ -106,6 +106,15 @@ namespace Aquri.Domain.Entities
             LastModified = DateTime.UtcNow;
         }
 
+        /// <summary>Changes the property's default currency (ISO 4217, 3 characters). Changing currency after transactions exist does not convert historical amounts — new invoices and payments use the new currency.</summary>
+        public void SetCurrency(string currency)
+        {
+            if (string.IsNullOrWhiteSpace(currency) || currency.Length != 3)
+                throw new ArgumentException("Currency must be a 3-character ISO 4217 code.", nameof(currency));
+            Currency = currency.Trim().ToUpperInvariant();
+            LastModified = DateTime.UtcNow;
+        }
+
         /// <summary>Validates the entity is in a valid state.</summary>
         /// <returns>True if the entity is valid</returns>
         public bool IsValid()

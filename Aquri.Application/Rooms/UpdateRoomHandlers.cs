@@ -16,15 +16,18 @@ namespace Aquri.Application.Rooms.Handlers
     public abstract class UpdateRoomHandlerBase<TCommand> : IRequestHandler<TCommand, Result<RoomDto>>
         where TCommand : IRequest<Result<RoomDto>>
     {
-        protected UpdateRoomHandlerBase(IApplicationDbContext context, IMapper mapper)
+        protected UpdateRoomHandlerBase(IApplicationDbContext context, IMapper mapper, ICurrentUser currentUser)
         {
             Context = context;
             Mapper = mapper;
+            CurrentUser = currentUser;
         }
 
         protected IApplicationDbContext Context { get; }
 
         protected IMapper Mapper { get; }
+
+        protected ICurrentUser CurrentUser { get; }
 
         protected abstract int RoomId(TCommand request);
 
@@ -58,6 +61,8 @@ namespace Aquri.Application.Rooms.Handlers
 
             await Context.SaveChangesAsync(cancellationToken);
 
+            AuditTrail.Write(Context, CurrentUser, "update_room", "room", roomId.ToString(), roomId.ToString());
+
             return Result<RoomDto>.SuccessResult(Mapper.Map<RoomDto>(room));
         }
     }
@@ -65,8 +70,8 @@ namespace Aquri.Application.Rooms.Handlers
     /// <summary>Handler for updating room status.</summary>
     public class UpdateRoomStatusHandler : UpdateRoomHandlerBase<UpdateRoomStatusCommand>
     {
-        public UpdateRoomStatusHandler(IApplicationDbContext context, IMapper mapper)
-            : base(context, mapper)
+        public UpdateRoomStatusHandler(IApplicationDbContext context, IMapper mapper, ICurrentUser currentUser)
+            : base(context, mapper, currentUser)
         {
         }
 
@@ -85,8 +90,8 @@ namespace Aquri.Application.Rooms.Handlers
     /// <summary>Handler for updating room price.</summary>
     public class UpdateRoomPriceHandler : UpdateRoomHandlerBase<UpdateRoomPriceCommand>
     {
-        public UpdateRoomPriceHandler(IApplicationDbContext context, IMapper mapper)
-            : base(context, mapper)
+        public UpdateRoomPriceHandler(IApplicationDbContext context, IMapper mapper, ICurrentUser currentUser)
+            : base(context, mapper, currentUser)
         {
         }
 
@@ -102,8 +107,8 @@ namespace Aquri.Application.Rooms.Handlers
     /// <summary>Handler for updating room max occupancy.</summary>
     public class UpdateRoomMaxOccupancyHandler : UpdateRoomHandlerBase<UpdateRoomMaxOccupancyCommand>
     {
-        public UpdateRoomMaxOccupancyHandler(IApplicationDbContext context, IMapper mapper)
-            : base(context, mapper)
+        public UpdateRoomMaxOccupancyHandler(IApplicationDbContext context, IMapper mapper, ICurrentUser currentUser)
+            : base(context, mapper, currentUser)
         {
         }
 
@@ -121,11 +126,13 @@ namespace Aquri.Application.Rooms.Handlers
     {
         private readonly IApplicationDbContext _context;
         private readonly IMapper _mapper;
+        private readonly ICurrentUser _currentUser;
 
-        public UpdateRoomAmenitiesHandler(IApplicationDbContext context, IMapper mapper)
+        public UpdateRoomAmenitiesHandler(IApplicationDbContext context, IMapper mapper, ICurrentUser currentUser)
         {
             _context = context;
             _mapper = mapper;
+            _currentUser = currentUser;
         }
 
         public async Task<Result<RoomDto>> Handle(UpdateRoomAmenitiesCommand request, CancellationToken cancellationToken)
@@ -146,6 +153,8 @@ namespace Aquri.Application.Rooms.Handlers
                 return Result<RoomDto>.Failure($"Room with ID {request.RoomId} not found.");
             }
 
+            var oldAmenities = string.Join(",", room.Amenities.OrderBy(a => a));
+
             if (request.Action == "add")
             {
                 room.AddAmenity(request.Amenity);
@@ -161,6 +170,10 @@ namespace Aquri.Application.Rooms.Handlers
 
             await _context.SaveChangesAsync(cancellationToken);
 
+            var newAmenities = string.Join(",", room.Amenities.OrderBy(a => a));
+            AuditTrail.Write(_context, _currentUser, "update_room_amenities", "room", request.RoomId.ToString(), request.RoomId.ToString(),
+                oldAmenities, newAmenities);
+
             return Result<RoomDto>.SuccessResult(_mapper.Map<RoomDto>(room));
         }
     }
@@ -168,8 +181,8 @@ namespace Aquri.Application.Rooms.Handlers
     /// <summary>Handler for updating room view.</summary>
     public class UpdateRoomViewHandler : UpdateRoomHandlerBase<UpdateRoomViewCommand>
     {
-        public UpdateRoomViewHandler(IApplicationDbContext context, IMapper mapper)
-            : base(context, mapper)
+        public UpdateRoomViewHandler(IApplicationDbContext context, IMapper mapper, ICurrentUser currentUser)
+            : base(context, mapper, currentUser)
         {
         }
 
