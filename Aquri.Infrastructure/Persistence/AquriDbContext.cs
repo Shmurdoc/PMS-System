@@ -88,6 +88,8 @@ namespace Aquri.Infrastructure.Persistence
         public DbSet<RfidTag> RfidTags => Set<RfidTag>();
         public DbSet<ElectricityRecord> ElectricityRecords => Set<ElectricityRecord>();
         public DbSet<Integration> Integrations => Set<Integration>();
+        public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
+
         public DbSet<EmployeeCompensation> EmployeeCompensations => Set<EmployeeCompensation>();
         public DbSet<PayrollRun> PayrollRuns => Set<PayrollRun>();
         public DbSet<Payslip> Payslips => Set<Payslip>();
@@ -635,6 +637,20 @@ namespace Aquri.Infrastructure.Persistence
                 entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
             });
 
+            modelBuilder.Entity<ApiKey>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Prefix).IsRequired().HasMaxLength(20);
+                entity.Property(e => e.KeyHash).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.PropertyId);
+                entity.Property(e => e.ExpiresAt);
+                entity.HasIndex(e => e.UserId);
+                entity.HasIndex(e => e.PropertyId);
+                entity.HasIndex(e => e.IsActive);
+                entity.HasOne<Property>().WithMany().HasForeignKey(e => e.PropertyId).HasPrincipalKey(p => p.PropertyId).OnDelete(DeleteBehavior.Restrict);
+            });
+
             ApplyPropertyFilters(modelBuilder);
         }
 
@@ -665,6 +681,7 @@ namespace Aquri.Infrastructure.Persistence
             modelBuilder.Entity<ElectricityRecord>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
             modelBuilder.Entity<RfidTag>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
             modelBuilder.Entity<Integration>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<ApiKey>().HasQueryFilter(e => _propertyIds == null || e.PropertyId == null || _propertyIds.Contains(e.PropertyId.Value));
             modelBuilder.Entity<EmployeeCompensation>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
             modelBuilder.Entity<PayrollRun>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
             modelBuilder.Entity<Payslip>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));

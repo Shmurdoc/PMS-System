@@ -6,7 +6,7 @@ namespace Aquri.Domain.Entities
     public class AuditLog
     {
         public static readonly string[] ValidEntityTypes =
-            { "booking", "guest", "room", "shift", "attendance", "invoice", "payment", "ticket", "user", "property", "expense", "inventory", "workflow", "payroll_run", "employee_compensation" };
+            { "booking", "guest", "room", "shift", "attendance", "invoice", "payment", "ticket", "user", "property", "expense", "inventory", "workflow", "payroll_run", "employee_compensation", "api_key" };
 
         public int Id { get; private set; }
         public int? PropertyId { get; private set; }

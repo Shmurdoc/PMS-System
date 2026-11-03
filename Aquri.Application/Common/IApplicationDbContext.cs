@@ -35,6 +35,7 @@ namespace Aquri.Application.Common.Interfaces
         DbSet<RfidTag> RfidTags { get; }
         DbSet<ElectricityRecord> ElectricityRecords { get; }
         DbSet<Integration> Integrations { get; }
+        DbSet<ApiKey> ApiKeys { get; }
         DbSet<EmployeeCompensation> EmployeeCompensations { get; }
         DbSet<PayrollRun> PayrollRuns { get; }
         DbSet<Payslip> Payslips { get; }

@@ -319,6 +319,11 @@ app.UseCors("FrontendPolicy");
 app.UseRateLimiter();
 
 app.UseAuthentication();
+
+// API key authentication — allows programmatic access via "Authorization: Apikey <key>".
+// Runs after JWT auth so JWT still works for browser sessions; API key overrides when present.
+app.UseMiddleware<Aquri.API.Middleware.ApiKeyAuthenticationMiddleware>();
+
 app.UseAuthorization();
 
 app.MapControllers();
