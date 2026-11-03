@@ -48,6 +48,12 @@ namespace Aquri.Domain.Entities
         public DateTime Created { get; private set; }
         public DateTime LastModified { get; private set; }
 
+        /// <summary>Soft-delete flag. Deleted bookings are hidden from queries but retained for audit and revenue reconciliation.</summary>
+        public bool IsDeleted { get; private set; }
+
+        /// <summary>When the booking was soft-deleted. Null when not deleted.</summary>
+        public DateTime? DeletedAt { get; private set; }
+
         public Guest? Guest { get; private set; }
         public Room? Room { get; private set; }
 
@@ -127,6 +133,22 @@ namespace Aquri.Domain.Entities
         public void SetNotes(string? notes)
         {
             Notes = notes;
+            LastModified = DateTime.UtcNow;
+        }
+
+        /// <summary>Soft-deletes the booking. Hidden from queries but retained for audit and revenue reconciliation.</summary>
+        public void SoftDelete()
+        {
+            if (IsDeleted)
+                throw new DomainException("Booking is already deleted.");
+            IsDeleted = true;
+            DeletedAt = DateTime.UtcNow;
+            LastModified = DateTime.UtcNow;
+        }
+
+        /// <summary>Permanently purges the booking (GDPR right to be forgotten). Irreversible.</summary>
+        public void Purge()
+        {
             LastModified = DateTime.UtcNow;
         }
     }

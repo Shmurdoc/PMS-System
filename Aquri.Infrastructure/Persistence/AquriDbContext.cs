@@ -649,7 +649,7 @@ namespace Aquri.Infrastructure.Persistence
         {
             modelBuilder.Entity<Property>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
             modelBuilder.Entity<Room>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
-            modelBuilder.Entity<Booking>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<Booking>().HasQueryFilter(e => !e.IsDeleted && (_propertyIds == null || _propertyIds.Contains(e.PropertyId)));
             modelBuilder.Entity<Invoice>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
             modelBuilder.Entity<Payment>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
             modelBuilder.Entity<Ticket>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
@@ -669,7 +669,7 @@ namespace Aquri.Infrastructure.Persistence
             modelBuilder.Entity<PayrollRun>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
             modelBuilder.Entity<Payslip>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
             modelBuilder.Entity<User>().HasQueryFilter(e => _propertyIds == null || (e.PropertyId != null && _propertyIds.Contains(e.PropertyId.Value)));
-            modelBuilder.Entity<Guest>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<Guest>().HasQueryFilter(e => !e.IsDeleted && (_propertyIds == null || _propertyIds.Contains(e.PropertyId)));
             modelBuilder.Entity<UserPropertyAssignment>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
         }
     }

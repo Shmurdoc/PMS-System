@@ -69,7 +69,7 @@ namespace Aquri.API.Controllers
             return Ok(result.Data);
         }
 
-        /// <summary>Deletes a guest (admin,manager only). Conflicts (409) protect guests referenced by bookings, invoices, or payments.</summary>
+        /// <summary>Deletes a guest (admin,manager only). Soft-deletes — hidden from queries but retained for audit. Conflicts (409) protect guests referenced by bookings, invoices, or payments.</summary>
         [HttpDelete("{id:int}")]
         [Authorize(Roles = "admin,manager")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
@@ -78,6 +78,22 @@ namespace Aquri.API.Controllers
         public async Task<IActionResult> Delete(int id)
         {
             var result = await _mediator.Send(new DeleteGuestCommand(id));
+            if (result.NotFound)
+                return NotFound();
+            if (result.Conflict)
+                return Conflict(result.Error);
+            return NoContent();
+        }
+
+        /// <summary>Permanently purges a guest (admin only). GDPR right to be forgotten — irreversible.</summary>
+        [HttpDelete("{id:int}/purge")]
+        [Authorize(Roles = "admin")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status409Conflict)]
+        public async Task<IActionResult> Purge(int id)
+        {
+            var result = await _mediator.Send(new PurgeGuestCommand(id));
             if (result.NotFound)
                 return NotFound();
             if (result.Conflict)
