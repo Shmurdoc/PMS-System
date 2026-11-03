@@ -666,7 +666,7 @@ namespace Aquri.Infrastructure.Persistence
             modelBuilder.Entity<Property>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
             modelBuilder.Entity<Room>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
             modelBuilder.Entity<Booking>().HasQueryFilter(e => !e.IsDeleted && (_propertyIds == null || _propertyIds.Contains(e.PropertyId)));
-            modelBuilder.Entity<Invoice>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
+            modelBuilder.Entity<Invoice>().HasQueryFilter(e => !e.IsDeleted && (_propertyIds == null || _propertyIds.Contains(e.PropertyId)));
             modelBuilder.Entity<Payment>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
             modelBuilder.Entity<Ticket>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
             modelBuilder.Entity<MaintenanceRequest>().HasQueryFilter(e => _propertyIds == null || _propertyIds.Contains(e.PropertyId));
