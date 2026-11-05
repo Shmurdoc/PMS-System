@@ -15,5 +15,8 @@ namespace Aquri.Application.Properties.Commands
         public double Rating { get; set; }
         public string? Phone { get; set; }
         public string? Email { get; set; }
+
+        /// <summary>Default currency for the property (ISO 4217 code, e.g. "ZAR", "USD", "EUR").</summary>
+        public string? Currency { get; set; }
     }
 }

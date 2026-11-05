@@ -125,7 +125,7 @@ namespace Aquri.Tests.Bookings
         public async Task Transition_Pending_To_Confirmed()
         {
             var id = await SeedBooking();
-            var handler = new ChangeBookingStatusHandler(Context);
+            var handler = new ChangeBookingStatusHandler(Context, CurrentUser);
 
             var result = await handler.Handle(new ChangeBookingStatusCommand(id, "confirmed"), CancellationToken.None);
 
@@ -137,7 +137,7 @@ namespace Aquri.Tests.Bookings
         public async Task Reject_Illegal_Transition()
         {
             var id = await SeedBooking();
-            var handler = new ChangeBookingStatusHandler(Context);
+            var handler = new ChangeBookingStatusHandler(Context, CurrentUser);
 
             var result = await handler.Handle(new ChangeBookingStatusCommand(id, "checked-out"), CancellationToken.None);
 
@@ -147,7 +147,7 @@ namespace Aquri.Tests.Bookings
         [Fact]
         public async Task Return_NotFound_For_Unknown_Booking()
         {
-            var handler = new ChangeBookingStatusHandler(Context);
+            var handler = new ChangeBookingStatusHandler(Context, CurrentUser);
 
             var result = await handler.Handle(new ChangeBookingStatusCommand(999, "confirmed"), CancellationToken.None);
 

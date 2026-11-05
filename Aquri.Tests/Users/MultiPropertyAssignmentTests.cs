@@ -184,6 +184,7 @@ namespace Aquri.Tests.Users
             public int UserId => 1;
             public string UserName => "Admin";
             public string UserRole => AppRoles.Admin;
+            public string? IpAddress => "127.0.0.1";
         }
 
         private sealed class ScopedUser : ICurrentUser
@@ -200,6 +201,7 @@ namespace Aquri.Tests.Users
             public int UserId => 2;
             public string UserName => "Front Desk";
             public string UserRole => AppRoles.FrontDesk;
+            public string? IpAddress => "127.0.0.1";
         }
 
         private sealed class PassthroughHasher : IPasswordHasher

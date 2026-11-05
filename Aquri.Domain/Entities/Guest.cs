@@ -43,6 +43,12 @@ namespace Aquri.Domain.Entities
         public DateTime Created { get; private set; }
         public DateTime LastModified { get; private set; }
 
+        /// <summary>Soft-delete flag. Deleted guests are hidden from all queries but retained for audit.</summary>
+        public bool IsDeleted { get; private set; }
+
+        /// <summary>When the guest was soft-deleted. Null when not deleted.</summary>
+        public DateTime? DeletedAt { get; private set; }
+
         public Guest() { }
 
         public Guest(string name, string email, string phone, string idNumber, string nationality)
@@ -110,6 +116,22 @@ namespace Aquri.Domain.Entities
                 throw new ArgumentException($"VIP level must be one of: {string.Join(", ", ValidVipLevels)}.", nameof(level));
 
             VipLevel = level;
+            LastModified = DateTime.UtcNow;
+        }
+
+        /// <summary>Soft-deletes the guest. Hidden from all queries but retained for audit.</summary>
+        public void SoftDelete()
+        {
+            if (IsDeleted)
+                throw new DomainException("Guest is already deleted.");
+            IsDeleted = true;
+            DeletedAt = DateTime.UtcNow;
+            LastModified = DateTime.UtcNow;
+        }
+
+        /// <summary>Permanently removes the guest (GDPR right to be forgotten). Irreversible.</summary>
+        public void Purge()
+        {
             LastModified = DateTime.UtcNow;
         }
 

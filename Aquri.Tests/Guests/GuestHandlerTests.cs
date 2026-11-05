@@ -69,7 +69,7 @@ namespace Aquri.Tests.Guests
                 new CreateGuestCommand("Jane Doe", "jane@mail.com", "0820000000", "9001015800089", "South African", PropertyId: 1),
                 CancellationToken.None);
 
-            var handler = new UpdateGuestHandler(Context);
+            var handler = new UpdateGuestHandler(Context, CurrentUser);
             var command = new UpdateGuestCommand(
                 created.Data!.Id, "Jane Smith", "0821111111", "South African",
                 "12 Long St", "John Doe", "0822222222", "Prefers late checkout", "gold");
@@ -85,7 +85,7 @@ namespace Aquri.Tests.Guests
         [Fact]
         public async Task Return_NotFound_For_Unknown_Guest()
         {
-            var handler = new UpdateGuestHandler(Context);
+            var handler = new UpdateGuestHandler(Context, CurrentUser);
             var command = new UpdateGuestCommand(999, "Jane", "082", "SA", null, null, null, "", null);
 
             var result = await handler.Handle(command, CancellationToken.None);

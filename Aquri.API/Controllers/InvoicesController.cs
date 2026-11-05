@@ -139,5 +139,18 @@ namespace Aquri.API.Controllers
                 return NotFound();
             return NoContent();
         }
+
+        /// <summary>Permanently purges an invoice (admin only). GDPR right to be forgotten — irreversible.</summary>
+        [HttpDelete("{id:int}/purge")]
+        [Authorize(Roles = "admin")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Purge(int id)
+        {
+            var result = await _mediator.Send(new PurgeInvoiceCommand(id));
+            if (result.NotFound)
+                return NotFound();
+            return NoContent();
+        }
     }
 }

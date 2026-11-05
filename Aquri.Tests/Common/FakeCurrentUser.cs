@@ -19,5 +19,6 @@ namespace Aquri.Tests.Common
         public int UserId => 1;
         public string UserName => "test-user";
         public string UserRole => "admin";
+        public string? IpAddress => "127.0.0.1";
     }
 }

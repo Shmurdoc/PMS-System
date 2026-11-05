@@ -56,6 +56,12 @@ namespace Aquri.Domain.Entities
         public DateTime Created { get; private set; }
         public DateTime LastModified { get; private set; }
 
+        /// <summary>Soft-delete flag. Deleted invoices are hidden from queries but retained for audit and tax reconciliation.</summary>
+        public bool IsDeleted { get; private set; }
+
+        /// <summary>When the invoice was soft-deleted. Null when not deleted.</summary>
+        public DateTime? DeletedAt { get; private set; }
+
         public Guest? Guest { get; private set; }
 
         public Invoice() { }
@@ -217,6 +223,22 @@ namespace Aquri.Domain.Entities
             if (string.IsNullOrWhiteSpace(currency) || currency.Length > 3)
                 throw new ArgumentException("Currency must be a 3-character ISO 4217 code.", nameof(currency));
             Currency = currency.Trim().ToUpperInvariant();
+        }
+
+        /// <summary>Soft-deletes the invoice. Hidden from queries but retained for audit and tax reconciliation.</summary>
+        public void SoftDelete()
+        {
+            if (IsDeleted)
+                throw new DomainException("Invoice is already deleted.");
+            IsDeleted = true;
+            DeletedAt = DateTime.UtcNow;
+            LastModified = DateTime.UtcNow;
+        }
+
+        /// <summary>Permanently purges the invoice (GDPR right to be forgotten). Irreversible.</summary>
+        public void Purge()
+        {
+            LastModified = DateTime.UtcNow;
         }
     }
 }

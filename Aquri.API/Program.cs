@@ -5,6 +5,7 @@ using System.Text;
 using System.Linq;
 using AutoMapper;
 using Aquri.API.Common;
+using Aquri.Application.ApiKeys;
 using Aquri.Application.Common.Behaviors;
 using Aquri.Application.Common.Interfaces;
 using Aquri.Application.DTOs;
@@ -154,6 +155,9 @@ builder.Services.AddScoped<IApplicationDbContext>(provider => provider.GetRequir
 // Auth: password hashing (PBKDF2) + JWT issuance
 builder.Services.AddScoped<IPasswordHasher, Pbkdf2PasswordHasher>();
 builder.Services.AddScoped<ITokenService, JwtTokenService>();
+
+// API key authentication: validates keys, records usage, builds claims principal
+builder.Services.AddScoped<IApiKeyAuthenticationService, ApiKeyAuthenticationService>();
 
 // Current caller from the JWT principal — drives the property-scope behavior
 // below (null scope = unrestricted, the security default)
@@ -319,6 +323,11 @@ app.UseCors("FrontendPolicy");
 app.UseRateLimiter();
 
 app.UseAuthentication();
+
+// API key authentication — allows programmatic access via "Authorization: Apikey <key>".
+// Runs after JWT auth so JWT still works for browser sessions; API key overrides when present.
+app.UseMiddleware<Aquri.API.Middleware.ApiKeyAuthenticationMiddleware>();
+
 app.UseAuthorization();
 
 app.MapControllers();

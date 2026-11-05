@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using Aquri.Application.Common.Behaviors;
+using Aquri.Application.Common.Exceptions;
 using Aquri.Application.Common.Interfaces;
-using Aquri.Domain.Exceptions;
 using FluentAssertions;
 using MediatR;
 using Xunit;
@@ -44,6 +44,8 @@ namespace Aquri.Tests.Common
             public string UserName => string.Empty;
 
             public string UserRole => string.Empty;
+
+            public string? IpAddress => "127.0.0.1";
         }
 
         private static PropertyScopeBehavior<TRequest, string> BehaviorFor<TRequest>(ICurrentUser user)
