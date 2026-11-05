@@ -1,6 +1,6 @@
 using System.Reflection;
+using Aquri.Application.Common.Exceptions;
 using Aquri.Application.Common.Interfaces;
-using Aquri.Domain.Exceptions;
 using MediatR;
 
 namespace Aquri.Application.Common.Behaviors

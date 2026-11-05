@@ -1,6 +1,6 @@
 using System.Text.Json;
 using Aquri.API.Common;
-using Aquri.Domain.Exceptions;
+using Aquri.Application.Common.Exceptions;
 using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.API.Middleware
@@ -86,18 +86,6 @@ namespace Aquri.API.Middleware
                 // (not 401: authenticated; not 400: the request shape is fine).
                 await WriteErrorAsync(context, originalBody, requestId,
                     StatusCodes.Status403Forbidden, ErrorCodes.Forbidden, ex.Message);
-            }
-            catch (DomainException ex)
-            {
-                // If the response already started streaming, we cannot rewrite it —
-                // rethrow and let the host log the failure.
-                if (context.Response.HasStarted) throw;
-
-                // Business-rule violation (illegal transition, overpayment, …).
-                // The request was well-formed but the operation is not allowed —
-                // 400 VALIDATION, not a generic 500.
-                await WriteErrorAsync(context, originalBody, requestId,
-                    StatusCodes.Status400BadRequest, ErrorCodes.Validation, ex.Message);
             }
             catch (FluentValidation.ValidationException ex)
             {
