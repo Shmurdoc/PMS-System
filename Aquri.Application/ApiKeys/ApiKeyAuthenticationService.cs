@@ -1,6 +1,8 @@
 using System.Security.Claims;
+using System.Threading.Tasks;
 using Aquri.Application.Common.Exceptions;
 using Aquri.Application.Common.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace Aquri.Application.ApiKeys;
 
@@ -18,21 +20,23 @@ public sealed class ApiKeyAuthenticationService : IApiKeyAuthenticationService
         _hasher = hasher;
     }
 
-    public ClaimsPrincipal? Authenticate(string rawKey)
+    public async Task<ClaimsPrincipal?> AuthenticateAsync(string rawKey)
     {
         if (string.IsNullOrWhiteSpace(rawKey))
             return null;
 
         var keyHash = _hasher.Hash(rawKey.Trim());
 
-        var apiKey = _context.ApiKeys
-            .FirstOrDefault(k => k.KeyHash == keyHash && k.IsActive);
+        var apiKey = await _context.ApiKeys
+            .FirstOrDefaultAsync(k => k.KeyHash == keyHash && k.IsActive);
 
         if (apiKey is null || apiKey.IsExpired())
             return null;
 
-        // Record usage — commits with the caller's SaveChanges scope.
+        // Record usage and persist immediately so usage is never lost,
+        // even if a later pipeline stage short-circuits the request.
         apiKey.RecordUsage();
+        await _context.SaveChangesAsync();
 
         var claims = new List<Claim>
         {

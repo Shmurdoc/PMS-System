@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace Aquri.Application.Common.Interfaces;
 
@@ -6,5 +7,5 @@ namespace Aquri.Application.Common.Interfaces;
 public interface IApiKeyAuthenticationService
 {
     /// <summary>Authenticates an "Authorization: Apikey <key>" request. Returns the key owner's <see cref="ClaimsPrincipal"/> on success, or null when the key is invalid, inactive, or expired.</summary>
-    ClaimsPrincipal? Authenticate(string rawKey);
+    Task<ClaimsPrincipal?> AuthenticateAsync(string rawKey);
 }

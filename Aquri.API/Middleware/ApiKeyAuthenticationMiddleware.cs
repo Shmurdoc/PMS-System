@@ -30,7 +30,7 @@ public class ApiKeyAuthenticationMiddleware
                 // constructors are resolved from the root provider, so scoped
                 // services must be looked up per-request.
                 var authService = context.RequestServices.GetRequiredService<IApiKeyAuthenticationService>();
-                var principal = authService.Authenticate(rawKey);
+                var principal = await authService.AuthenticateAsync(rawKey);
                 if (principal is not null)
                     context.User = principal;
                 else
